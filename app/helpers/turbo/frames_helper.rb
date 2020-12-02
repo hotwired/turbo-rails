@@ -5,24 +5,22 @@ module Turbo::FramesHelper
   #
   # === Examples
   #
-  #   # => <turbolinks-frame id="tray" links-target="top" src="http://example.com/trays/1"></turbolinks-frame>
+  #   # => turbo-frame id="tray" links-target="top" src="http://example.com/trays/1"></turbolinks-frame>
   #   <%= turbo_frame_tag "tray", src: tray_path(tray) %>
   #
-  #   # => <turbolinks-frame id="tray" src="http://example.com/trays/1"></turbolinks-frame>
+  #   # => turbo-frame id="tray" src="http://example.com/trays/1"></turbolinks-frame>
   #   <%= turbo_frame_tag "tray", src: tray_path(tray), links_target: false %>
   #
-  #   # => <turbolinks-frame id="tray" links-target="other_tray"></turbolinks-frame>
+  #   # => turbo-frame id="tray" links-target="other_tray"></turbolinks-frame>
   #   <%= turbo_frame_tag "tray", links_target: "other_tray" %>
   #
-  #   # => <turbolinks-frame id="tray"><div>My tray frame!</div></turbolinks-frame>
+  #   # => turbo-frame id="tray"><div>My tray frame!</div></turbolinks-frame>
   #   <%= turbo_frame_tag "tray" do %>
   #     <div>My tray frame!</div>
   #   <% end %>
-  #
-  # FIXME: turbolinks-frame -> turbo-frame
   def turbo_frame_tag(id, src: nil, links_target: nil, **attributes, &block)
     links_target ||= links_target != false && src.present? ? "top" : nil
 
-    tag.turbolinks_frame(**attributes.merge(id: id, src: src, "links-target": links_target).compact, &block)
+    tag.turbo_frame(**attributes.merge(id: id, src: src, "links-target": links_target).compact, &block)
   end
 end
