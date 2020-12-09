@@ -7,6 +7,10 @@ module Turbo
     config.eager_load_namespaces << Turbo
     config.turbo = ActiveSupport::OrderedOptions.new
 
+    initializer "turbo.assets" do
+      Rails.application.config.assets.precompile += %w( turbo )
+    end
+
     initializer "turbo.helpers" do
       ActiveSupport.on_load(:action_controller_base) do
         include Turbo::Updates::PageUpdateTagBuilder, Turbo::Frames::FrameRequest, Turbo::Links::NativeNavigation
