@@ -1,7 +1,7 @@
 module Turbo::UpdatesHelper
   # Returns a new <tt>Turbo::Updates::TagBuilder</tt> object that accepts update commands and renders them them as
-  # the template tags needed to send across the wire. This object is automatically yielded to page_update.erb templates.
-  def page_update
+  # the template tags needed to send across the wire. This object is automatically yielded to turbo_update.erb templates.
+  def turbo_update
     Turbo::Updates::TagBuilder.new(self)
   end
 
@@ -10,13 +10,13 @@ module Turbo::UpdatesHelper
   # fear of tampering, as it is signed using <tt>Turbo.signed_stream_verifier</tt>. Example:
   #
   #   # app/views/entries/index.html.erb
-  #   <%= subscribe_to_page_updates_from_signed Current.account, :entries %>
+  #   <%= subscribe_to_turbo_updates_from_signed Current.account, :entries %>
   #   <div id="entries">New entries will be appended to this container</div>
   #
   # The example above will process all page updates sent to a stream name like <tt>account:5:entries</tt>
   # (when Current.account.id = 5). Updates to this stream can be sent like
   # <tt>entry.broadcast_append_to entry.account, :entries, contrainer: "entries"</tt>.
-  def subscribe_to_page_updates_from_signed(*streamables)
+  def subscribe_to_turbo_updates_from_signed(*streamables)
     tag.meta data: { controller: "turbo-updates", turbo_updates_channel_value: {
       channel: "Turbo::UpdatesChannel", signed_stream_name: Turbo::UpdatesChannel.signed_stream_name(streamables)
     } }

@@ -1,25 +1,25 @@
-# This tag builder is used both for inline controller commands (see <tt>Turbo::Updates::PageUpdateTagBuilder</tt>) and for
+# This tag builder is used both for inline controller commands (see <tt>Turbo::Updates::TurboUpdatesTagBuilder</tt>) and for
 # page update templates. This object plays together with any normal Ruby you'd run in an ERB template, so you can iterate, like:
 #
-#   <% # app/views/postings/destroy.page_update.erb %>
+#   <% # app/views/postings/destroy.turbo_update.erb %>
 #   <% @postings.each do |posting| %>
-#     <%= page_update.remove posting %>
+#     <%= turbo_update.remove posting %>
 #   <% end %>
 #
 # Or string several separate updates together:
 #
-#   <% # app/views/entries/_entry.page_update.erb %>
-#   <%= page_update.remove entry %>
+#   <% # app/views/entries/_entry.turbo_update.erb %>
+#   <%= turbo_update.remove entry %>
 #
-#   <%= page_update.append "entries" do %>
-#     <% # format ensures that the _entry.html.erb partial is rendered, not _entry.page_update.erb %>
+#   <%= turbo_update.append "entries" do %>
+#     <% # format ensures that the _entry.html.erb partial is rendered, not _entry.turbo_update.erb %>
 #     <%= render partial: "entries/entry", locals: { entry: entry }, formats: [ :html ] %>
 #   <%= end %>
 #
 # Or you can render the HTML that should be part of the update inline:
 #
-#   <% # app/views/topics/merges/_merge.page_update.erb %>
-#   <%= page_update.append dom_id(topic_merge) do %>
+#   <% # app/views/topics/merges/_merge.turbo_update.erb %>
+#   <%= turbo_update.append dom_id(topic_merge) do %>
 #     <%= link_to topic_merge.topic.name, topic_path(topic_merge.topic) %>
 #   <% end %>
 class Turbo::Updates::TagBuilder
@@ -31,8 +31,8 @@ class Turbo::Updates::TagBuilder
   # <tt>to_key</tt>, which is then called and passed through <tt>ActionView::RecordIdentifier.dom_id</tt> (all Active Records
   # do). Examples:
   #
-  #   <%= page_update.remove "clearance_5" %>
-  #   <%= page_update.remove clearance %>
+  #   <%= turbo_update.remove "clearance_5" %>
+  #   <%= turbo_update.remove clearance %>
   def remove(element)
     command :remove, element
   end
@@ -40,9 +40,9 @@ class Turbo::Updates::TagBuilder
   # Replace the <tt>element</tt> in the dom with the either the <tt>content</tt> passed in or a rendering result determined
   # by the <tt>rendering</tt> keyword arguments or the content in the block. Examples:
   #
-  #   <%= page_update.replace "clearance_5", "<div id='clearance_5'>Replace the dom element identified by clearance_5</div>" %>
-  #   <%= page_update.replace clearance, partial: "clearances/clearance", locals: { title: "Hello" } %>
-  #   <%= page_update.replace "clearance_5" do %>
+  #   <%= turbo_update.replace "clearance_5", "<div id='clearance_5'>Replace the dom element identified by clearance_5</div>" %>
+  #   <%= turbo_update.replace clearance, partial: "clearances/clearance", locals: { title: "Hello" } %>
+  #   <%= turbo_update.replace "clearance_5" do %>
   #     <div id='clearance_5'>Replace the dom element identified by clearance_5</div>
   #   <% end %>
   def replace(element, content = nil, **rendering, &block)
@@ -52,9 +52,9 @@ class Turbo::Updates::TagBuilder
   # Update the <tt>element</tt> in the dom with the either the <tt>content</tt> passed in or a rendering result determined
   # by the <tt>rendering</tt> keyword arguments or the content in the block. Examples:
   #
-  #   <%= page_update.update "clearance_5", "Update the content of the dom element identified by clearance_5" %>
-  #   <%= page_update.update clearance, partial: "clearances/clearance", locals: { title: "Hello" } %>
-  #   <%= page_update.update "clearance_5" do %>
+  #   <%= turbo_update.update "clearance_5", "Update the content of the dom element identified by clearance_5" %>
+  #   <%= turbo_update.update clearance, partial: "clearances/clearance", locals: { title: "Hello" } %>
+  #   <%= turbo_update.update "clearance_5" do %>
   #     Update the content of the dom element identified by clearance_5
   #   <% end %>
   def update(container, content = nil, **rendering, &block)
@@ -64,9 +64,9 @@ class Turbo::Updates::TagBuilder
   # Append to the container in the dom identified with <tt>container</tt> either the <tt>content</tt> passed in or a
   # rendering result determined by the <tt>rendering</tt> keyword arguments or the content in the block. Examples:
   #
-  #   <%= page_update.append "clearances", "<div id='clearance_5'>Append this to .clearances</div>" %>
-  #   <%= page_update.append "clearances", partial: "clearances/clearance", locals: { clearance: clearance } %>
-  #   <%= page_update.append "clearances" do %>
+  #   <%= turbo_update.append "clearances", "<div id='clearance_5'>Append this to .clearances</div>" %>
+  #   <%= turbo_update.append "clearances", partial: "clearances/clearance", locals: { clearance: clearance } %>
+  #   <%= turbo_update.append "clearances" do %>
   #     <div id='clearance_5'>Append this to .clearances</div>
   #   <% end %>
   def append(container, content = nil, **rendering, &block)
@@ -76,9 +76,9 @@ class Turbo::Updates::TagBuilder
   # Prepend to the container in the dom identified with <tt>container</tt> either the <tt>content</tt> passed in or a
   # rendering result determined by the <tt>rendering</tt> keyword arguments or the content in the block. Examples:
   #
-  #   <%= page_update.prepend "clearances", "<div id='clearance_5'>Prepend this to .clearances</div>" %>
-  #   <%= page_update.prepend "clearances", partial: "clearances/clearance", locals: { clearance: clearance } %>
-  #   <%= page_update.prepend "clearances" do %>
+  #   <%= turbo_update.prepend "clearances", "<div id='clearance_5'>Prepend this to .clearances</div>" %>
+  #   <%= turbo_update.prepend "clearances", partial: "clearances/clearance", locals: { clearance: clearance } %>
+  #   <%= turbo_update.prepend "clearances" do %>
   #     <div id='clearance_5'>Prepend this to .clearances</div>
   #   <% end %>
   def prepend(container, content = nil, **rendering, &block)

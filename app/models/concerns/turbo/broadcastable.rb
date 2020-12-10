@@ -22,7 +22,7 @@
 # That method enqueues a <tt>Turbo::Updates::BroadcastJob</tt>, which will render the partial for clearance (it knows which
 # by calling Clearance#to_partial_path, which in this case returns <tt>clearances/_clearance.html.erb</tt>), send that to
 # all users that have subscribed to updates (using
-# <tt>subscribe_to_page_updates_from_signed(examiner.identity, :clearances)</tt> in a view) using the
+# <tt>subscribe_to_turbo_updates_from_signed(examiner.identity, :clearances)</tt> in a view) using the
 # <tt>Turbo::UpdatesChannel</tt> under the stream name derived from <tt>[ examiner.identity, :clearances ]</tt>,
 # and finally prepend the result of that partial rendering to the container identified with the dom id "clearances"
 # (which is derived by default from the plural model name of the model, but can be overwritten).
@@ -142,10 +142,10 @@ module Turbo::Broadcastable
   # Render a page update template asynchronously with this broadcastable model passed as the local variable using a
   # <tt>Turbo::Updates::BroadcastJob</tt>. Example:
   #
-  #   # Template: entries/_entry.page_update.erb
-  #   <%= page_update.remove entry %>
+  #   # Template: entries/_entry.turbo_update.erb
+  #   <%= turbo_update.remove entry %>
   #
-  #   <%= page_update.append "entries" do %>
+  #   <%= turbo_update.append "entries" do %>
   #     <%= render partial: "entries/entry", locals: { entry: entry }, formats: [ :html ] %>
   #   <% end if entry.active? %>
   #
