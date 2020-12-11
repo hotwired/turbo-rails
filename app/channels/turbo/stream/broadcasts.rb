@@ -1,9 +1,9 @@
-# Provides the broadcast commands in synchronous and asynchrous form for the <tt>Turbo::UpdatesChannel</tt>.
+# Provides the broadcast commands in synchronous and asynchrous form for the <tt>Turbo::StreamChannel</tt>.
 # This is not meant to be used directly. See <tt>Turbo::Broadcastable</tt> for the user-facing API that invokes
 # these methods with most of the paperwork filled out already.
 #
-# It is however possible to use it directly like <tt>Turbo::UpdatesChannel.broadcast_remove_to :entries, element: 1</tt>.
-module Turbo::Updates::Broadcasts
+# It is however possible to use it directly like <tt>Turbo::StreamChannel.broadcast_remove_to :entries, element: 1</tt>.
+module Turbo::Stream::Broadcasts
   def broadcast_remove_to(*streamables, element:)
     broadcast_command_to *streamables, command: :remove, dom_id: element
   end
@@ -21,7 +21,7 @@ module Turbo::Updates::Broadcasts
   end
 
   def broadcast_command_to(*streamables, command:, dom_id:, **rendering)
-    broadcast_update_to *streamables, content: turbo_update_command(command, dom_id, content:
+    broadcast_update_to *streamables, content: turbo_stream_command(command, dom_id, content:
       rendering.delete(:content) || (rendering.any? ? render_format(:html, **rendering) : nil)
     )
   end
@@ -40,17 +40,17 @@ module Turbo::Updates::Broadcasts
   end
 
   def broadcast_command_later_to(*streamables, command:, dom_id:, **rendering)
-    Turbo::Updates::CommandBroadcastJob.perform_later \
+    Turbo::Stream::CommandBroadcastJob.perform_later \
       stream_name_from(streamables), command: command, dom_id: dom_id, **rendering
   end
 
 
   def broadcast_render_to(*streamables, **rendering)
-    broadcast_update_to *streamables, content: render_format(:turbo_update, **rendering)
+    broadcast_update_to *streamables, content: render_format(:turbo_stream, **rendering)
   end
 
   def broadcast_render_later_to(*streamables, **rendering)
-    Turbo::Updates::BroadcastJob.perform_later stream_name_from(streamables), **rendering
+    Turbo::Stream::BroadcastJob.perform_later stream_name_from(streamables), **rendering
   end
 
   def broadcast_update_to(*streamables, content:)
@@ -59,7 +59,7 @@ module Turbo::Updates::Broadcasts
 
 
   private
-    def turbo_update_command(command, element_or_dom_id, content: nil)
+    def turbo_stream_command(command, element_or_dom_id, content: nil)
       %(<template data-page-update="#{command}##{convert_to_dom_id(element_or_dom_id)}">#{content}</template>)
     end
 
