@@ -60,7 +60,7 @@ module Turbo::Stream::Broadcasts
 
   private
     def turbo_stream_command(command, element_or_dom_id, content: nil)
-      %(<turbo-stream action="#{command}" target="#{convert_to_dom_id(element_or_dom_id)}">#{content}</turbo-stream>)
+      %(<turbo-stream action="#{command}" target="#{convert_to_dom_id(element_or_dom_id)}"><template>#{content}</template></turbo-stream>)
     end
 
     def convert_to_dom_id(element_or_dom_id)
