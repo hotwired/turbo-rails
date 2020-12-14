@@ -8,7 +8,7 @@ module Turbo::Streams::StreamName
     Turbo.signed_stream_verifier.verified signed_stream_name
   end
 
-  # Used by <tt>Turbo::StreamsHelper#subscribe_to_turbo_updates_from_signed(*streamables)</tt> to generate a signed stream name.
+  # Used by <tt>Turbo::StreamsHelper#turbo_stream_from(*streamables)</tt> to generate a signed stream name.
   def signed_stream_name(streamables)
     Turbo.signed_stream_verifier.generate stream_name_from(streamables)
   end

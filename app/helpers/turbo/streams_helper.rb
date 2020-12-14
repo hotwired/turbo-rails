@@ -1,7 +1,7 @@
 module Turbo::StreamsHelper
   # Returns a new <tt>Turbo::Streams::TagBuilder</tt> object that accepts update commands and renders them them as
-  # the template tags needed to send across the wire. This object is automatically yielded to turbo_update.erb templates.
-  def turbo_update
+  # the template tags needed to send across the wire. This object is automatically yielded to turbo_stream.erb templates.
+  def turbo_stream
     Turbo::Streams::TagBuilder.new(self)
   end
 

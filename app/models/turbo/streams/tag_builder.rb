@@ -1,25 +1,25 @@
 # This tag builder is used both for inline controller commands (see <tt>Turbo::Streams::TurboUpdatesTagBuilder</tt>) and for
 # page update templates. This object plays together with any normal Ruby you'd run in an ERB template, so you can iterate, like:
 #
-#   <% # app/views/postings/destroy.turbo_update.erb %>
+#   <% # app/views/postings/destroy.turbo_stream.erb %>
 #   <% @postings.each do |posting| %>
-#     <%= turbo_update.remove posting %>
+#     <%= turbo_stream.remove posting %>
 #   <% end %>
 #
 # Or string several separate updates together:
 #
-#   <% # app/views/entries/_entry.turbo_update.erb %>
-#   <%= turbo_update.remove entry %>
+#   <% # app/views/entries/_entry.turbo_stream.erb %>
+#   <%= turbo_stream.remove entry %>
 #
-#   <%= turbo_update.append "entries" do %>
-#     <% # format ensures that the _entry.html.erb partial is rendered, not _entry.turbo_update.erb %>
+#   <%= turbo_stream.append "entries" do %>
+#     <% # format ensures that the _entry.html.erb partial is rendered, not _entry.turbo_stream.erb %>
 #     <%= render partial: "entries/entry", locals: { entry: entry }, formats: [ :html ] %>
 #   <%= end %>
 #
 # Or you can render the HTML that should be part of the update inline:
 #
-#   <% # app/views/topics/merges/_merge.turbo_update.erb %>
-#   <%= turbo_update.append dom_id(topic_merge) do %>
+#   <% # app/views/topics/merges/_merge.turbo_stream.erb %>
+#   <%= turbo_stream.append dom_id(topic_merge) do %>
 #     <%= link_to topic_merge.topic.name, topic_path(topic_merge.topic) %>
 #   <% end %>
 class Turbo::Streams::TagBuilder
@@ -31,8 +31,8 @@ class Turbo::Streams::TagBuilder
   # <tt>to_key</tt>, which is then called and passed through <tt>ActionView::RecordIdentifier.dom_id</tt> (all Active Records
   # do). Examples:
   #
-  #   <%= turbo_update.remove "clearance_5" %>
-  #   <%= turbo_update.remove clearance %>
+  #   <%= turbo_stream.remove "clearance_5" %>
+  #   <%= turbo_stream.remove clearance %>
   def remove(element)
     command :remove, element
   end
@@ -40,9 +40,9 @@ class Turbo::Streams::TagBuilder
   # Replace the <tt>element</tt> in the dom with the either the <tt>content</tt> passed in or a rendering result determined
   # by the <tt>rendering</tt> keyword arguments or the content in the block. Examples:
   #
-  #   <%= turbo_update.replace "clearance_5", "<div id='clearance_5'>Replace the dom element identified by clearance_5</div>" %>
-  #   <%= turbo_update.replace clearance, partial: "clearances/clearance", locals: { title: "Hello" } %>
-  #   <%= turbo_update.replace "clearance_5" do %>
+  #   <%= turbo_stream.replace "clearance_5", "<div id='clearance_5'>Replace the dom element identified by clearance_5</div>" %>
+  #   <%= turbo_stream.replace clearance, partial: "clearances/clearance", locals: { title: "Hello" } %>
+  #   <%= turbo_stream.replace "clearance_5" do %>
   #     <div id='clearance_5'>Replace the dom element identified by clearance_5</div>
   #   <% end %>
   def replace(element, content = nil, **rendering, &block)
@@ -52,9 +52,9 @@ class Turbo::Streams::TagBuilder
   # Update the <tt>element</tt> in the dom with the either the <tt>content</tt> passed in or a rendering result determined
   # by the <tt>rendering</tt> keyword arguments or the content in the block. Examples:
   #
-  #   <%= turbo_update.update "clearance_5", "Update the content of the dom element identified by clearance_5" %>
-  #   <%= turbo_update.update clearance, partial: "clearances/clearance", locals: { title: "Hello" } %>
-  #   <%= turbo_update.update "clearance_5" do %>
+  #   <%= turbo_stream.update "clearance_5", "Update the content of the dom element identified by clearance_5" %>
+  #   <%= turbo_stream.update clearance, partial: "clearances/clearance", locals: { title: "Hello" } %>
+  #   <%= turbo_stream.update "clearance_5" do %>
   #     Update the content of the dom element identified by clearance_5
   #   <% end %>
   def update(container, content = nil, **rendering, &block)
@@ -64,9 +64,9 @@ class Turbo::Streams::TagBuilder
   # Append to the container in the dom identified with <tt>container</tt> either the <tt>content</tt> passed in or a
   # rendering result determined by the <tt>rendering</tt> keyword arguments or the content in the block. Examples:
   #
-  #   <%= turbo_update.append "clearances", "<div id='clearance_5'>Append this to .clearances</div>" %>
-  #   <%= turbo_update.append "clearances", partial: "clearances/clearance", locals: { clearance: clearance } %>
-  #   <%= turbo_update.append "clearances" do %>
+  #   <%= turbo_stream.append "clearances", "<div id='clearance_5'>Append this to .clearances</div>" %>
+  #   <%= turbo_stream.append "clearances", partial: "clearances/clearance", locals: { clearance: clearance } %>
+  #   <%= turbo_stream.append "clearances" do %>
   #     <div id='clearance_5'>Append this to .clearances</div>
   #   <% end %>
   def append(container, content = nil, **rendering, &block)
@@ -76,9 +76,9 @@ class Turbo::Streams::TagBuilder
   # Prepend to the container in the dom identified with <tt>container</tt> either the <tt>content</tt> passed in or a
   # rendering result determined by the <tt>rendering</tt> keyword arguments or the content in the block. Examples:
   #
-  #   <%= turbo_update.prepend "clearances", "<div id='clearance_5'>Prepend this to .clearances</div>" %>
-  #   <%= turbo_update.prepend "clearances", partial: "clearances/clearance", locals: { clearance: clearance } %>
-  #   <%= turbo_update.prepend "clearances" do %>
+  #   <%= turbo_stream.prepend "clearances", "<div id='clearance_5'>Prepend this to .clearances</div>" %>
+  #   <%= turbo_stream.prepend "clearances", partial: "clearances/clearance", locals: { clearance: clearance } %>
+  #   <%= turbo_stream.prepend "clearances" do %>
   #     <div id='clearance_5'>Prepend this to .clearances</div>
   #   <% end %>
   def prepend(container, content = nil, **rendering, &block)
