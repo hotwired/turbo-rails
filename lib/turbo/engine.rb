@@ -13,7 +13,7 @@ module Turbo
 
     initializer "turbo.helpers" do
       ActiveSupport.on_load(:action_controller_base) do
-        include Turbo::Streams::TurboUpdatesTagBuilder, Turbo::Frames::FrameRequest, Turbo::Links::NativeNavigation
+        include Turbo::Streams::TurboStreamsTagBuilder, Turbo::Frames::FrameRequest, Turbo::Links::NativeNavigation
         helper Turbo::Engine.helpers
       end
     end
@@ -52,12 +52,12 @@ module Turbo
       ActiveSupport.on_load(:action_dispatch_integration_test) do
         # Support `as: :turbo_stream`. Public `register_encoder` API is a little too strict.
         class ActionDispatch::RequestEncoder
-          class PageUpdateEncoder < IdentityEncoder
+          class TurboStreamEncoder < IdentityEncoder
             header = [ Mime[:turbo_stream], Mime[:html] ].join(",")
             define_method(:accept_header) { header }
           end
 
-          @encoders[:turbo_stream] = PageUpdateEncoder.new
+          @encoders[:turbo_stream] = TurboStreamEncoder.new
         end
       end
     end

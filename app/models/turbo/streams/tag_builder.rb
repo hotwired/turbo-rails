@@ -1,4 +1,4 @@
-# This tag builder is used both for inline controller commands (see <tt>Turbo::Streams::TurboUpdatesTagBuilder</tt>) and for
+# This tag builder is used both for inline controller commands (see <tt>Turbo::Streams::TurboStreamsTagBuilder</tt>) and for
 # page update templates. This object plays together with any normal Ruby you'd run in an ERB template, so you can iterate, like:
 #
 #   <% # app/views/postings/destroy.turbo_stream.erb %>
