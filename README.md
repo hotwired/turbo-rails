@@ -6,32 +6,38 @@ On top of accelerating web applications, Turbo was built from the ground-up to f
 
 Turbo is a language-agnostic framework written in TypeScript, but this gem builds on top of those basics to make the integration with Rails as smooth as possible. You can deliver turbo updates via model callbacks over Action Cable, respond to controller actions with native navigation or standard redirects, and render turbo frames with helpers and layout-free responses.
 
-## Turbo::Links
+## Turbo Drive
 
-Turbo is a continuation of the ideas from the previous Turbolinks framework, and the heart of that past approach lives on as Turbo::Links. When installed, Turbo automatically intercepts all clicks on `<a href>` links to the same domain. When you click an eligible link, Turbo prevents the browser from following it. Instead, Turbo changes the browser’s URL using the History API, requests the new page using `XMLHttpRequest`, and then renders the HTML response.
+Turbo is a continuation of the ideas from the previous Turbolinks framework, and the heart of that past approach lives on as Turbo Drive. When installed, Turbo automatically intercepts all clicks on `<a href>` links to the same domain. When you click an eligible link, Turbo prevents the browser from following it. Instead, Turbo changes the browser’s URL using the History API, requests the new page using `fetch`, and then renders the HTML response.
 
 During rendering, Turbo replaces the current `<body>` element outright and merges the contents of the `<head>` element. The JavaScript window and document objects, and the HTML `<html>` element, persist from one rendering to the next.
 
 Whereas Turbolinks previously just dealt with links, Turbo can now also process form submissions and responses. This means the entire flow in the web application is wrapped into Turbo, making all the parts fast. No more need for `data-remote=true`.
 
-## Turbo::Frames
+## Turbo Frames
 
-Turbo reinvents the old HTML technique of frames without any of the drawbacks that lead to developers abandoning it. With Turbo::Frames, you can treat a subset of the page as its own component, where links and form submissions replace only that part. This removes an entire class of problems around partial interactivity that before would have required custom JavaScript.
+Turbo reinvents the old HTML technique of frames without any of the drawbacks that lead to developers abandoning it. With Turbo Frames, you can treat a subset of the page as its own component, where links and form submissions replace only that part. This removes an entire class of problems around partial interactivity that before would have required custom JavaScript.
 
 It also makes it dead easy to carve a single page into smaller pieces that can all live on their own cache timeline. While the bulk of the page might easily be cached between users, a small personalized toolbar perhaps cannot. With Turbo::Frames, you can designate the toolbar as a frame, which will be lazy-loaded automatically by the publicly-cached root page. This means simpler pages, easier caching schemes with fewer dependent keys, and all without needing to write a lick of custom JavaScript.
 
-## Turbo::Updates
+## Turbo Streams
 
-Partial page updates that are delivered asynchronously over a web socket connection is the hallmark of modern, reactive web applications. With Turbo::Updates, you can get all of that modern goodness using the existing server-side HTML you're already rendering to deliver the first page load. With a set of simple CRUD container tags, you can send HTML fragments over the web socket (or in response to direct interactions), and see the page change in response to new data. Again, no need to construct an entirely separate API, no need to wrangle JSON, no need to reimplement the HTML construction in JavaScript. Take the HTML you're already making, wrap it in an update tag, and, voila, your page comes alive.
+Partial page updates that are delivered asynchronously over a web socket connection is the hallmark of modern, reactive web applications. With Turbo Streams, you can get all of that modern goodness using the existing server-side HTML you're already rendering to deliver the first page load. With a set of simple CRUD container tags, you can send HTML fragments over the web socket (or in response to direct interactions), and see the page change in response to new data. Again, no need to construct an entirely separate API, no need to wrangle JSON, no need to reimplement the HTML construction in JavaScript. Take the HTML you're already making, wrap it in an update tag, and, voila, your page comes alive.
 
 With this Rails integration, you can create these asynchronous updates directly in response to your model changes. Turbo uses Active Jobs to provide asynchronous partial rendering and Action Cable to deliver those updates to subscribers.
 
 ## Installation
 
-Turbo consists of two elements: The Rails integration that lives in the gem, and the JavaScript package that lives on NPM. You need to install both to get going:
+The JavaScript for Turbo can either be run through the asset pipeline, which is included with this gem, or through the package that lives on NPM, through Webpacker. If you use the asset pipeline, installation is as follows:
 
 1. Add the `turbo` gem to your Gemfile: `gem 'turbo'
-2. Run `bundle install`.
+2. Run `./bin/bundle install`.
+3. Run `./bin/rails turbo:install`
+
+If you run it through Webpacker, it's:
+
+1. Add the `turbo` gem to your Gemfile: `gem 'turbo'
+2. Run `./bin/bundle install`.
 3. Run `./bin/yarn add @htmloverthewire/turbo`
 4. Add Turbo to your pack:
 
@@ -39,8 +45,6 @@ Turbo consists of two elements: The Rails integration that lives in the gem, and
 import Turbo from "turbo"
 Turbo.start()
 ```
-
-Likewise, you need to ensure that you're keeping both dependencies updated together.
 
 ## License
 
