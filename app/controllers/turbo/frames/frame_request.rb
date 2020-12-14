@@ -16,6 +16,6 @@ module Turbo::Frames::FrameRequest
 
   private
     def turbo_frame_request?
-      request.headers["X-Turbo-Frame"].present?
+      request.headers["Turbo-Frame"].present?
     end
 end
