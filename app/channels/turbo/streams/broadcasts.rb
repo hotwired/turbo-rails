@@ -1,9 +1,9 @@
-# Provides the broadcast commands in synchronous and asynchrous form for the <tt>Turbo::UpdatesChannel</tt>.
+# Provides the broadcast commands in synchronous and asynchrous form for the <tt>Turbo::StreamsChannel</tt>.
 # This is not meant to be used directly. See <tt>Turbo::Broadcastable</tt> for the user-facing API that invokes
 # these methods with most of the paperwork filled out already.
 #
-# It is however possible to use it directly like <tt>Turbo::UpdatesChannel.broadcast_remove_to :entries, element: 1</tt>.
-module Turbo::Updates::Broadcasts
+# It is however possible to use it directly like <tt>Turbo::StreamsChannel.broadcast_remove_to :entries, element: 1</tt>.
+module Turbo::Streams::Broadcasts
   def broadcast_remove_to(*streamables, element:)
     broadcast_command_to *streamables, command: :remove, dom_id: element
   end
@@ -40,7 +40,7 @@ module Turbo::Updates::Broadcasts
   end
 
   def broadcast_command_later_to(*streamables, command:, dom_id:, **rendering)
-    Turbo::Updates::CommandBroadcastJob.perform_later \
+    Turbo::Streams::CommandBroadcastJob.perform_later \
       stream_name_from(streamables), command: command, dom_id: dom_id, **rendering
   end
 
@@ -50,7 +50,7 @@ module Turbo::Updates::Broadcasts
   end
 
   def broadcast_render_later_to(*streamables, **rendering)
-    Turbo::Updates::BroadcastJob.perform_later stream_name_from(streamables), **rendering
+    Turbo::Streams::BroadcastJob.perform_later stream_name_from(streamables), **rendering
   end
 
   def broadcast_update_to(*streamables, content:)

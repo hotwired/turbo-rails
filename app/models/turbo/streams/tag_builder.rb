@@ -1,4 +1,4 @@
-# This tag builder is used both for inline controller commands (see <tt>Turbo::Updates::TurboUpdatesTagBuilder</tt>) and for
+# This tag builder is used both for inline controller commands (see <tt>Turbo::Streams::TurboUpdatesTagBuilder</tt>) and for
 # page update templates. This object plays together with any normal Ruby you'd run in an ERB template, so you can iterate, like:
 #
 #   <% # app/views/postings/destroy.turbo_update.erb %>
@@ -22,7 +22,7 @@
 #   <%= turbo_update.append dom_id(topic_merge) do %>
 #     <%= link_to topic_merge.topic.name, topic_path(topic_merge.topic) %>
 #   <% end %>
-class Turbo::Updates::TagBuilder
+class Turbo::Streams::TagBuilder
   def initialize(view_context)
     @view_context = view_context
   end

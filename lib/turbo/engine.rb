@@ -13,7 +13,7 @@ module Turbo
 
     initializer "turbo.helpers" do
       ActiveSupport.on_load(:action_controller_base) do
-        include Turbo::Updates::TurboUpdatesTagBuilder, Turbo::Frames::FrameRequest, Turbo::Links::NativeNavigation
+        include Turbo::Streams::TurboUpdatesTagBuilder, Turbo::Frames::FrameRequest, Turbo::Links::NativeNavigation
         helper Turbo::Engine.helpers
       end
     end

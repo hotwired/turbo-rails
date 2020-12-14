@@ -1,6 +1,6 @@
 require "turbo_test"
 
-class Turbo::UpdatesControllerTest < ActionDispatch::IntegrationTest
+class Turbo::StreamsControllerTest < ActionDispatch::IntegrationTest
   test "inline page update" do
     get message_path(id: 1), as: :turbo_update
     assert_turbo_update command: :remove, container: "message_1"

@@ -19,11 +19,11 @@
 # access to their attention (as the examiner). When a new clearance is created upon receipt of an email from a first-time
 # sender, that'll trigger the call to broadcast_later, which in turn invokes <tt>broadcast_prepend_later_to</tt>.
 #
-# That method enqueues a <tt>Turbo::Updates::BroadcastJob</tt>, which will render the partial for clearance (it knows which
+# That method enqueues a <tt>Turbo::Streams::BroadcastJob</tt>, which will render the partial for clearance (it knows which
 # by calling Clearance#to_partial_path, which in this case returns <tt>clearances/_clearance.html.erb</tt>), send that to
 # all users that have subscribed to updates (using
 # <tt>subscribe_to_turbo_updates_from_signed(examiner.identity, :clearances)</tt> in a view) using the
-# <tt>Turbo::UpdatesChannel</tt> under the stream name derived from <tt>[ examiner.identity, :clearances ]</tt>,
+# <tt>Turbo::StreamsChannel</tt> under the stream name derived from <tt>[ examiner.identity, :clearances ]</tt>,
 # and finally prepend the result of that partial rendering to the container identified with the dom id "clearances"
 # (which is derived by default from the plural model name of the model, but can be overwritten).
 #
@@ -66,7 +66,7 @@ module Turbo::Broadcastable
   #   # Sends <template data-page-update="remove#clearance_5"></template> to the stream named "identity:2:clearances"
   #   clearance.broadcast_remove_to examiner.identity, :clearances
   def broadcast_remove_to(*streamables)
-    Turbo::UpdatesChannel.broadcast_remove_to *streamables, element: self
+    Turbo::StreamsChannel.broadcast_remove_to *streamables, element: self
   end
 
   # Replace this broadcastable model in the dom for subscribers of the stream name identified by the passed
@@ -80,7 +80,7 @@ module Turbo::Broadcastable
   #   # to the stream named "identity:2:clearances"
   #   clearance.broadcast_replace_to examiner.identity, :clearances, partial: "clearances/other_partial", locals: { a: 1 }
   def broadcast_replace_to(*streamables, **rendering)
-    Turbo::UpdatesChannel.broadcast_replace_to *streamables, element: self, **broadcast_rendering_with_defaults(rendering)
+    Turbo::StreamsChannel.broadcast_replace_to *streamables, element: self, **broadcast_rendering_with_defaults(rendering)
   end
 
   # Append a rendering of this broadcastable model to the container identified by it's dom id passed as <tt>container</tt>
@@ -96,7 +96,7 @@ module Turbo::Broadcastable
   #   clearance.broadcast_append_to examiner.identity, :clearances, container: "clearances",
   #     partial: "clearances/other_partial", locals: { a: 1 }
   def broadcast_append_to(*streamables, container: broadcast_container_default, **rendering)
-    Turbo::UpdatesChannel.broadcast_append_to *streamables, container: container, **broadcast_rendering_with_defaults(rendering)
+    Turbo::StreamsChannel.broadcast_append_to *streamables, container: container, **broadcast_rendering_with_defaults(rendering)
   end
 
   # Prepend a rendering of this broadcastable model to the container identified by it's dom id passed as <tt>container</tt>
@@ -112,35 +112,35 @@ module Turbo::Broadcastable
   #   clearance.broadcast_prepend_to examiner.identity, :clearances, container: "clearances",
   #     partial: "clearances/other_partial", locals: { a: 1 }
   def broadcast_prepend_to(*streamables, container: broadcast_container_default, **rendering)
-    Turbo::UpdatesChannel.broadcast_prepend_to *streamables, container: container, **broadcast_rendering_with_defaults(rendering)
+    Turbo::StreamsChannel.broadcast_prepend_to *streamables, container: container, **broadcast_rendering_with_defaults(rendering)
   end
 
   def broadcast_command_to(*streamables, command:, dom_id: broadcast_container_default, **rendering)
-    Turbo::UpdatesChannel.broadcast_command_to(*streamables, command: command, dom_id: dom_id, **broadcast_rendering_with_defaults(rendering))
+    Turbo::StreamsChannel.broadcast_command_to(*streamables, command: command, dom_id: dom_id, **broadcast_rendering_with_defaults(rendering))
   end
 
-  # Same as <tt>broadcast_replace_to</tt> but run asynchronously via a <tt>Turbo::Updates::BroadcastJob</tt>.
+  # Same as <tt>broadcast_replace_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
   def broadcast_replace_later_to(*streamables, **rendering)
-    Turbo::UpdatesChannel.broadcast_replace_later_to *streamables, element: self, **broadcast_rendering_with_defaults(rendering)
+    Turbo::StreamsChannel.broadcast_replace_later_to *streamables, element: self, **broadcast_rendering_with_defaults(rendering)
   end
 
-  # Same as <tt>broadcast_append_to</tt> but run asynchronously via a <tt>Turbo::Updates::BroadcastJob</tt>.
+  # Same as <tt>broadcast_append_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
   def broadcast_append_later_to(*streamables, container: broadcast_container_default, **rendering)
-    Turbo::UpdatesChannel.broadcast_append_later_to *streamables, container: container, **broadcast_rendering_with_defaults(rendering)
+    Turbo::StreamsChannel.broadcast_append_later_to *streamables, container: container, **broadcast_rendering_with_defaults(rendering)
   end
 
-  # Same as <tt>broadcast_prepend_to</tt> but run asynchronously via a <tt>Turbo::Updates::BroadcastJob</tt>.
+  # Same as <tt>broadcast_prepend_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
   def broadcast_prepend_later_to(*streamables, container: broadcast_container_default, **rendering)
-    Turbo::UpdatesChannel.broadcast_prepend_later_to *streamables, container: container, **broadcast_rendering_with_defaults(rendering)
+    Turbo::StreamsChannel.broadcast_prepend_later_to *streamables, container: container, **broadcast_rendering_with_defaults(rendering)
   end
 
   def broadcast_command_later_to(*streamables, command:, dom_id: broadcast_container_default, **rendering)
-    Turbo::UpdatesChannel.broadcast_command_later_to(*streamables, command: command, dom_id: dom_id, **broadcast_rendering_with_defaults(rendering))
+    Turbo::StreamsChannel.broadcast_command_later_to(*streamables, command: command, dom_id: dom_id, **broadcast_rendering_with_defaults(rendering))
   end
 
 
   # Render a page update template asynchronously with this broadcastable model passed as the local variable using a
-  # <tt>Turbo::Updates::BroadcastJob</tt>. Example:
+  # <tt>Turbo::Streams::BroadcastJob</tt>. Example:
   #
   #   # Template: entries/_entry.turbo_update.erb
   #   <%= turbo_update.remove entry %>
@@ -161,7 +161,7 @@ module Turbo::Broadcastable
   # Same as <tt>broadcast_prepend_to</tt> but run with the added option of naming the stream using the passed
   # <tt>streamables</tt>.
   def broadcast_render_later_to(*streamables, **rendering)
-    Turbo::UpdatesChannel.broadcast_render_later_to *streamables, **broadcast_rendering_with_defaults(rendering)
+    Turbo::StreamsChannel.broadcast_render_later_to *streamables, **broadcast_rendering_with_defaults(rendering)
   end
 
 

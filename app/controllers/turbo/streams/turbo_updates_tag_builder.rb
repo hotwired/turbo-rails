@@ -1,4 +1,4 @@
-# Most page updates are rendered either asynchronously via <tt>Turbo::Broadcastable</tt>/<tt>Turbo::UpdatesChannel</tt> or
+# Most page updates are rendered either asynchronously via <tt>Turbo::Broadcastable</tt>/<tt>Turbo::StreamsChannel</tt> or
 # rendered in templates with the <tt>turbo_update.erb</tt> extension. But it's also possible to render updates inline
 # in controllers, like so:
 #
@@ -11,12 +11,12 @@
 #     end
 #   end
 #
-# This module adds that turbo_update object to all controllers. It's an instance of <tt>Turbo::Updates::TagBuilder</tt>
+# This module adds that turbo_update object to all controllers. It's an instance of <tt>Turbo::Streams::TagBuilder</tt>
 # instantiated with the current <tt>view_context</tt>.
-module Turbo::Updates::TurboUpdatesTagBuilder
+module Turbo::Streams::TurboUpdatesTagBuilder
   private
 
   def turbo_update
-    Turbo::Updates::TagBuilder.new(view_context)
+    Turbo::Streams::TagBuilder.new(view_context)
   end
 end

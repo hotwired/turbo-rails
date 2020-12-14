@@ -1,2 +1,2 @@
-//= link ./updates_channel
+//= link ./streams_channel
 //= require ./turbo@7
