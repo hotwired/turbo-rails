@@ -25,7 +25,7 @@ module Turbo
     end
 
     initializer "turbo.mimetype" do
-      Mime::Type.register "text/html; page-update", :turbo_stream
+      Mime::Type.register "text/html; turbo-stream", :turbo_stream
     end
 
     initializer "turbo.renderer" do
