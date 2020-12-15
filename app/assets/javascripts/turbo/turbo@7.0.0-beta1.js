@@ -1306,8 +1306,8 @@ class FrameController {
         return false;
     }
     shouldInterceptNavigation(element) {
-        const id = element.getAttribute("data-turbo-frame") || this.element.getAttribute("links-target");
-        if (!this.enabled || id == "top") {
+        const id = element.getAttribute("data-turbo-frame") || this.element.getAttribute("target");
+        if (!this.enabled || id == "_top") {
             return false;
         }
         if (id) {
@@ -1465,7 +1465,7 @@ class FrameRedirector {
     }
     findFrameElement(element) {
         const id = element.getAttribute("data-turbo-frame");
-        if (id && id != "top") {
+        if (id && id != "_top") {
             const frame = this.element.querySelector(`#${id}:not([disabled])`);
             if (frame instanceof FrameElement) {
                 return frame;
