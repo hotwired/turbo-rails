@@ -13,7 +13,7 @@ class Turbo::StreamsControllerTest < ActionDispatch::IntegrationTest
     post messages_path, as: :turbo_stream
     assert_response :ok
     assert_turbo_stream action: :append, container: "messages" do |selected|
-      assert_equal "message_1", selected.children.to_html
+      assert_equal "<template>message_1</template>", selected.children.to_html
     end
   end
 end
