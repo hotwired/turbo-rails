@@ -89,17 +89,24 @@ class Turbo::Streams::TagBuilder
   def command(name, element, content = nil, **rendering, &block)
     case
     when content
-      tag(name, convert_to_dom_id(element), content)
+      turbo_stream_action(name, element, content)
     when block_given?
-      tag(name, convert_to_dom_id(element), &block)
+      turbo_stream_action(name, element, &block)
     when rendering.any?
-      tag(name, convert_to_dom_id(element)) { @view_context.render(**rendering) }
+      turbo_stream_action(name, element) { @view_context.render(formats: [ :html ], **rendering) }
     else
-      tag(name, convert_to_dom_id(element))
+      turbo_stream_action(name, element)
     end
   end
 
   private
+    def turbo_stream_action(command, element_or_dom_id, content: nil, &block)
+      target   = convert_to_dom_id(element_or_dom_id)
+      template = @view_context.tag.template(content, &block)
+
+      %(<turbo-stream action="#{command}" target="#{target}">#{template}</turbo-stream>).html_safe
+    end
+
     def convert_to_dom_id(element_or_dom_id)
       if element_or_dom_id.respond_to?(:to_key)
         element = element_or_dom_id
@@ -107,10 +114,5 @@ class Turbo::Streams::TagBuilder
       else
         dom_id = element_or_dom_id
       end
-    end
-
-    def tag(command, dom_id, *args, **options, &block)
-      options[:"data-page-update"] = [ command, dom_id ].join("#")
-      @view_context.tag.template *args, **options, &block
     end
 end
