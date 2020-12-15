@@ -21,7 +21,7 @@ module Turbo::Streams::Broadcasts
   end
 
   def broadcast_command_to(*streamables, command:, dom_id:, **rendering)
-    broadcast_update_to *streamables, content: turbo_stream_command(command, dom_id, content:
+    broadcast_update_to *streamables, content: turbo_stream_action(command, dom_id, content:
       rendering.delete(:content) || (rendering.any? ? render_format(:html, **rendering) : nil)
     )
   end
@@ -59,8 +59,8 @@ module Turbo::Streams::Broadcasts
 
 
   private
-    def turbo_stream_command(command, element_or_dom_id, content: nil)
-      %(<template data-page-update="#{command}##{convert_to_dom_id(element_or_dom_id)}">#{content}</template>)
+    def turbo_stream_action(command, element_or_dom_id, content: nil)
+      %(<turbo-stream action="#{command}" target="#{convert_to_dom_id(element_or_dom_id)}"><template>#{content}</template></turbo-stream>)
     end
 
     def convert_to_dom_id(element_or_dom_id)
