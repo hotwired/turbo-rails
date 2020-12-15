@@ -89,7 +89,7 @@ class Turbo::Streams::TagBuilder
   def action(name, element, content = nil, **rendering, &block)
     case
     when content
-      action_tag(name, element, content)
+      action_tag(name, element, content: content)
     when block_given?
       action_tag(name, element, &block)
     when rendering.any?
