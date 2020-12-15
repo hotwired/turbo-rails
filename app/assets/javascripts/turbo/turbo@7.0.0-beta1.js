@@ -1798,7 +1798,7 @@ class StreamMessage {
         return Array.from(this.templateElement.content.children);
     }
 }
-StreamMessage.contentType = "text/html; turbo-stream";
+StreamMessage.contentType = "text/html; turbo-stream; charset=utf-8";
 
 class StreamObserver {
     constructor(delegate) {
