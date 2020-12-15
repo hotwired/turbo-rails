@@ -1,4 +1,4 @@
-# Turbo updates can be broadcast directly from models that include this module (this is automatically done for Active Records).
+# Turbo streams can be broadcast directly from models that include this module (this is automatically done for Active Records).
 # This makes it convenient to execute both synchronous and asynchronous updates, and render directly from callbacks in models
 # or from controllers or jobs that act on those models. Here's an example:
 #
@@ -19,20 +19,19 @@
 # access to their attention (as the examiner). When a new clearance is created upon receipt of an email from a first-time
 # sender, that'll trigger the call to broadcast_later, which in turn invokes <tt>broadcast_prepend_later_to</tt>.
 #
-# That method enqueues a <tt>Turbo::Streams::BroadcastJob</tt>, which will render the partial for clearance (it knows which
-# by calling Clearance#to_partial_path, which in this case returns <tt>clearances/_clearance.html.erb</tt>), send that to
-# all users that have subscribed to updates (using
-# <tt>subscribe_to_turbo_streams_from_signed(examiner.identity, :clearances)</tt> in a view) using the
-# <tt>Turbo::StreamsChannel</tt> under the stream name derived from <tt>[ examiner.identity, :clearances ]</tt>,
+# That method enqueues a <tt>Turbo::Streams::ActionBroadcastJob</tt> for the prepend, which will render the partial for clearance
+# (it knows which by calling Clearance#to_partial_path, which in this case returns <tt>clearances/_clearance.html.erb</tt>),
+# send that to all users that have subscribed to updates (using <tt>turbo_stream_from(examiner.identity, :clearances)</tt> in a view)
+# using the <tt>Turbo::StreamsChannel</tt> under the stream name derived from <tt>[ examiner.identity, :clearances ]</tt>,
 # and finally prepend the result of that partial rendering to the container identified with the dom id "clearances"
 # (which is derived by default from the plural model name of the model, but can be overwritten).
 #
-# There are four basic types of updates you can broadcast: <tt>remove</tt>, <tt>replace</tt>, <tt>append</tt>, and
+# There are four basic actions you can broadcast: <tt>remove</tt>, <tt>replace</tt>, <tt>append</tt>, and
 # <tt>prepend</tt>. As a rule, you should use the <tt>_later</tt> versions of everything except for remove when broadcasting
 # within a real-time path, like a controller or model, since all those updates require a rendering step, which can slow down
 # execution. You don't need to do this for remove, since only the dom id for the model is used.
 #
-# In addition to the four basic types of actions, you can also use <tt>broadcast_render_later</tt> or
+# In addition to the four basic actions, you can also use <tt>broadcast_render_later</tt> or
 # <tt>broadcast_render_later_to</tt> to render a turbo stream template with multiple actions.
 module Turbo::Broadcastable
   extend ActiveSupport::Concern
@@ -62,7 +61,7 @@ module Turbo::Broadcastable
   # Remove this broadcastable model from the dom for subscribers of the stream name identified by the passed streamables.
   # Example:
   #
-  #   # Sends <template data-page-update="remove#clearance_5"></template> to the stream named "identity:2:clearances"
+  #   # Sends <turbo-stream action="remove" target="clearance_5"></turbo-stream> to the stream named "identity:2:clearances"
   #   clearance.broadcast_remove_to examiner.identity, :clearances
   def broadcast_remove_to(*streamables)
     Turbo::StreamsChannel.broadcast_remove_to *streamables, element: self
@@ -71,11 +70,11 @@ module Turbo::Broadcastable
   # Replace this broadcastable model in the dom for subscribers of the stream name identified by the passed
   # <tt>streamables</tt>. The rendering parameters can be set by appending named arguments to the call. Examples:
   #
-  #   # Sends <template data-page-update="replace#clearance_5"><div id="clearance_5">My Clearance</div></template>
+  #   # Sends <turbo-stream action="replace" target="clearance_5"><template><div id="clearance_5">My Clearance</div></template></turbo-stream>
   #   # to the stream named "identity:2:clearances"
   #   clearance.broadcast_replace_to examiner.identity, :clearances
   #
-  #   # Sends <template data-page-update="replace#clearance_5"><div id="clearance_5">Other partial</div></template>
+  #   # Sends <turbo-stream action="replace" target="clearance_5"><template><div id="clearance_5">Other partial</div></template></turbo-stream>
   #   # to the stream named "identity:2:clearances"
   #   clearance.broadcast_replace_to examiner.identity, :clearances, partial: "clearances/other_partial", locals: { a: 1 }
   def broadcast_replace_to(*streamables, **rendering)
@@ -86,11 +85,11 @@ module Turbo::Broadcastable
   # for subscribers of the stream name identified by the passed <tt>streamables</tt>. The rendering parameters can be set by
   # appending named arguments to the call. Examples:
   #
-  #   # Sends <template data-page-update="append#clearances"><div id="clearance_5">My Clearance</div></template>
+  #   # Sends <turbo-stream action="append" target="clearances"><template><div id="clearance_5">My Clearance</div></template></turbo-stream>
   #   # to the stream named "identity:2:clearances"
   #   clearance.broadcast_append_to examiner.identity, :clearances, container: "clearances"
   #
-  #   # Sends <template data-page-update="append#clearances"><div id="clearance_5">Other partial</div></template>
+  #   # Sends <turbo-stream action="append" target="clearances"><template><div id="clearance_5">Other partial</div></template></turbo-stream>
   #   # to the stream named "identity:2:clearances"
   #   clearance.broadcast_append_to examiner.identity, :clearances, container: "clearances",
   #     partial: "clearances/other_partial", locals: { a: 1 }
@@ -102,11 +101,11 @@ module Turbo::Broadcastable
   # for subscribers of the stream name identified by the passed <tt>streamables</tt>. The rendering parameters can be set by
   # appending named arguments to the call. Examples:
   #
-  #   # Sends <template data-page-update="prepend#clearances"><div id="clearance_5">My Clearance</div></template>
+  #   # Sends <turbo-stream action="prepend" target="clearances"><template><div id="clearance_5">My Clearance</div></template></turbo-stream>
   #   # to the stream named "identity:2:clearances"
   #   clearance.broadcast_prepend_to examiner.identity, :clearances, container: "clearances"
   #
-  #   # Sends <template data-page-update="prepend#clearances"><div id="clearance_5">Other partial</div></template>
+  #   # Sends <turbo-stream action="prepend" target="clearances"><template><div id="clearance_5">Other partial</div></template></turbo-stream>
   #   # to the stream named "identity:2:clearances"
   #   clearance.broadcast_prepend_to examiner.identity, :clearances, container: "clearances",
   #     partial: "clearances/other_partial", locals: { a: 1 }
@@ -138,7 +137,7 @@ module Turbo::Broadcastable
   end
 
 
-  # Render a page update template asynchronously with this broadcastable model passed as the local variable using a
+  # Render a turbo stream template asynchronously with this broadcastable model passed as the local variable using a
   # <tt>Turbo::Streams::BroadcastJob</tt>. Example:
   #
   #   # Template: entries/_entry.turbo_stream.erb
@@ -149,8 +148,8 @@ module Turbo::Broadcastable
   #   <% end if entry.active? %>
   #
   #   # Sends:
-  #   #   <template data-page-update="remove#entry_5"></template>
-  #   #   <template data-page-update="append#entries"><div id="entry_5">My Entry</div></template>
+  #   #   <turbo-stream action="remove" target="entry_5"></turbo-stream>
+  #   #   <turbo-stream action="append" target="entries"><template><div id="entry_5">My Entry</div></template></turbo-stream>
   #   # to the stream named "entry:5"
   #   entry.broadcast_render_later
   def broadcast_render_later(**rendering)

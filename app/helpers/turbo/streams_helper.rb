@@ -13,7 +13,7 @@ module Turbo::StreamsHelper
   #   <%= turbo_stream_from Current.account, :entries %>
   #   <div id="entries">New entries will be appended to this container</div>
   #
-  # The example above will process all page updates sent to a stream name like <tt>account:5:entries</tt>
+  # The example above will process all turbo streams sent to a stream name like <tt>account:5:entries</tt>
   # (when Current.account.id = 5). Updates to this stream can be sent like
   # <tt>entry.broadcast_append_to entry.account, :entries, contrainer: "entries"</tt>.
   def turbo_stream_from(*streamables)
