@@ -32,9 +32,8 @@
 # within a real-time path, like a controller or model, since all those updates require a rendering step, which can slow down
 # execution. You don't need to do this for remove, since only the dom id for the model is used.
 #
-# In addition to the four basic types of updates that execute a single page update command, you can also use
-# <tt>broadcast_render_later</tt> or <tt>broadcast_render_later_to</tt> to render a page update template with multiple
-# commands.
+# In addition to the four basic types of actions, you can also use <tt>broadcast_render_later</tt> or
+# <tt>broadcast_render_later_to</tt> to render a turbo stream template with multiple actions.
 module Turbo::Broadcastable
   extend ActiveSupport::Concern
 
@@ -54,7 +53,7 @@ module Turbo::Broadcastable
     #     broadcasts_to ->(message) { [ message.board, :messages ] }, inserts_by: :prepend, container: "board_messages"
     #   end
     def broadcasts_to(stream, inserts_by: :append, container: model_name.plural)
-      after_create_commit  -> { broadcast_command_later_to stream.try(:call, self) || send(stream), command: inserts_by, container: container }
+      after_create_commit  -> { broadcast_action_later_to stream.try(:call, self) || send(stream), action: inserts_by, container: container }
       after_update_commit  -> { broadcast_replace_later_to stream.try(:call, self) || send(stream) }
       after_destroy_commit -> { broadcast_remove_to stream.try(:call, self) || send(stream) }
     end
@@ -115,8 +114,8 @@ module Turbo::Broadcastable
     Turbo::StreamsChannel.broadcast_prepend_to *streamables, container: container, **broadcast_rendering_with_defaults(rendering)
   end
 
-  def broadcast_command_to(*streamables, command:, dom_id: broadcast_container_default, **rendering)
-    Turbo::StreamsChannel.broadcast_command_to(*streamables, command: command, dom_id: dom_id, **broadcast_rendering_with_defaults(rendering))
+  def broadcast_action_to(*streamables, action:, dom_id: broadcast_container_default, **rendering)
+    Turbo::StreamsChannel.broadcast_action_to(*streamables, action: action, dom_id: dom_id, **broadcast_rendering_with_defaults(rendering))
   end
 
   # Same as <tt>broadcast_replace_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
@@ -134,8 +133,8 @@ module Turbo::Broadcastable
     Turbo::StreamsChannel.broadcast_prepend_later_to *streamables, container: container, **broadcast_rendering_with_defaults(rendering)
   end
 
-  def broadcast_command_later_to(*streamables, command:, dom_id: broadcast_container_default, **rendering)
-    Turbo::StreamsChannel.broadcast_command_later_to(*streamables, command: command, dom_id: dom_id, **broadcast_rendering_with_defaults(rendering))
+  def broadcast_action_later_to(*streamables, action:, dom_id: broadcast_container_default, **rendering)
+    Turbo::StreamsChannel.broadcast_action_later_to(*streamables, action: action, dom_id: dom_id, **broadcast_rendering_with_defaults(rendering))
   end
 
 
