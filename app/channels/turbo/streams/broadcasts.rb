@@ -1,8 +1,7 @@
 # Provides the broadcast actions in synchronous and asynchrous form for the <tt>Turbo::StreamsChannel</tt>.
-# This is not meant to be used directly. See <tt>Turbo::Broadcastable</tt> for the user-facing API that invokes
-# these methods with most of the paperwork filled out already.
+# See <tt>Turbo::Broadcastable</tt> for the user-facing API that invokes these methods with most of the paperwork filled out already.
 #
-# It is however possible to use it directly like <tt>Turbo::StreamsChannel.broadcast_remove_to :entries, element: 1</tt>.
+# Can be used directly using something like <tt>Turbo::StreamsChannel.broadcast_remove_to :entries, element: 1</tt>.
 module Turbo::Streams::Broadcasts
   def broadcast_remove_to(*streamables, element:)
     broadcast_action_to *streamables, action: :remove, dom_id: element
