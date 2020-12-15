@@ -102,7 +102,7 @@ class Turbo::Streams::TagBuilder
   private
     def turbo_stream_action(command, element_or_dom_id, content: nil, &block)
       target   = convert_to_dom_id(element_or_dom_id)
-      template = @view_context.tag.template(content, &block)
+      template = @view_context.tag.template(content, &block) unless content.nil? && !block_given?
 
       %(<turbo-stream action="#{command}" target="#{target}">#{template}</turbo-stream>).html_safe
     end
