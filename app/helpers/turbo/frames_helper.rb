@@ -4,16 +4,16 @@ module Turbo::FramesHelper
   #
   # === Examples
   #
-  #   # => turbo-frame id="tray" src="http://example.com/trays/1"></turbolinks-frame>
+  #   # => turbo-frame id="tray" src="http://example.com/trays/1"></turbo-frame>
   #   <%= turbo_frame_tag "tray", src: tray_path(tray) %>
   #
-  #   # => turbo-frame id="tray" links-target="top" src="http://example.com/trays/1"></turbolinks-frame>
+  #   # => turbo-frame id="tray" links-target="top" src="http://example.com/trays/1"></turbo-frame>
   #   <%= turbo_frame_tag "tray", src: tray_path(tray), links_target: "top" %>
   #
-  #   # => turbo-frame id="tray" links-target="other_tray"></turbolinks-frame>
+  #   # => turbo-frame id="tray" links-target="other_tray"></turbo-frame>
   #   <%= turbo_frame_tag "tray", links_target: "other_tray" %>
   #
-  #   # => turbo-frame id="tray"><div>My tray frame!</div></turbolinks-frame>
+  #   # => turbo-frame id="tray"><div>My tray frame!</div></turbo-frame>
   #   <%= turbo_frame_tag "tray" do %>
   #     <div>My tray frame!</div>
   #   <% end %>
