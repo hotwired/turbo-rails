@@ -1,4 +1,4 @@
-class Turbo::Links::NativeNavigationController < ApplicationController
+class Turbo::Native::NavigationController < ApplicationController
   def recede
     render html: "Going back…"
   end

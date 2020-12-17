@@ -1,6 +1,6 @@
 require "turbo_test"
 
-class Turbo::Links::NativeNavigationControllerTest < ActionDispatch::IntegrationTest
+class Turbo::Native::NavigationControllerTest < ActionDispatch::IntegrationTest
   test "recede, resume, or refresh when native or redirect when not" do
     %w[ recede resume refresh ].each do |action|
       post trays_path, params: { return_to: "#{action}_or_redirect" }

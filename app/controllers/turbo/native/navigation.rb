@@ -3,7 +3,7 @@
 # requests with three dedicated responses: <tt>recede</tt>, <tt>resume</tt>, <tt>refresh</tt>.
 #
 # FIXME: Supply full description of when we use either.
-module Turbo::Links::NativeNavigation
+module Turbo::Native::Navigation
   private
 
   def recede_or_redirect_to(url, **options)
