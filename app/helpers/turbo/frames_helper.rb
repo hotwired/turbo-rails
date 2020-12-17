@@ -17,7 +17,7 @@ module Turbo::FramesHelper
   #   <%= turbo_frame_tag "tray" do %>
   #     <div>My tray frame!</div>
   #   <% end %>
-  def turbo_frame_tag(id, src: nil, links_target: nil, **attributes, &block)
-    tag.turbo_frame(**attributes.merge(id: id, src: src, "links-target": links_target).compact, &block)
+  def turbo_frame_tag(id, src: nil, target: nil, **attributes, &block)
+    tag.turbo_frame(**attributes.merge(id: id, src: src, target: target).compact, &block)
   end
 end

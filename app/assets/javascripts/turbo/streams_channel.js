@@ -3168,7 +3168,7 @@ class _class extends ApplicationController{async connect(){this.subscription=awa
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var controllers_page_update_subscription_controller__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(8);
-window.TurboUpdatesController = controllers_page_update_subscription_controller__WEBPACK_IMPORTED_MODULE_0__["default"];
+window.TurboStreamsController = controllers_page_update_subscription_controller__WEBPACK_IMPORTED_MODULE_0__["default"];
 
 /***/ })
 

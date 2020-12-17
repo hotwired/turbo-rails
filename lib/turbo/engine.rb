@@ -13,7 +13,7 @@ module Turbo
 
     initializer "turbo.helpers" do
       ActiveSupport.on_load(:action_controller_base) do
-        include Turbo::Updates::TurboUpdatesTagBuilder, Turbo::Frames::FrameRequest, Turbo::Links::NativeNavigation
+        include Turbo::Streams::TurboStreamsTagBuilder, Turbo::Frames::FrameRequest, Turbo::Links::NativeNavigation
         helper Turbo::Engine.helpers
       end
     end
@@ -25,14 +25,14 @@ module Turbo
     end
 
     initializer "turbo.mimetype" do
-      Mime::Type.register "text/html; page-update", :turbo_update
+      Mime::Type.register "text/html; turbo-stream", :turbo_stream
     end
 
     initializer "turbo.renderer" do
       ActiveSupport.on_load(:action_controller) do
-        ActionController::Renderers.add :turbo_update do |turbo_updates_html, options|
-          self.content_type = Mime[:turbo_update] if media_type.nil?
-          turbo_updates_html
+        ActionController::Renderers.add :turbo_stream do |turbo_streams_html, options|
+          self.content_type = Mime[:turbo_stream] if media_type.nil?
+          turbo_streams_html
         end
       end
     end
@@ -50,14 +50,14 @@ module Turbo
 
     initializer "turbo.integration_test_request_encoding" do
       ActiveSupport.on_load(:action_dispatch_integration_test) do
-        # Support `as: :turbo_update`. Public `register_encoder` API is a little too strict.
+        # Support `as: :turbo_stream`. Public `register_encoder` API is a little too strict.
         class ActionDispatch::RequestEncoder
-          class PageUpdateEncoder < IdentityEncoder
-            header = [ Mime[:turbo_update], Mime[:html] ].join(",")
+          class TurboStreamEncoder < IdentityEncoder
+            header = [ Mime[:turbo_stream], Mime[:html] ].join(",")
             define_method(:accept_header) { header }
           end
 
-          @encoders[:turbo_update] = PageUpdateEncoder.new
+          @encoders[:turbo_stream] = TurboStreamEncoder.new
         end
       end
     end

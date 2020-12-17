@@ -1,12 +1,12 @@
 class MessagesController < ApplicationController
   def show
-    render turbo_update: turbo_update.remove("message_1")
+    render turbo_stream: turbo_stream.remove("message_1")
   end
 
   def create
     respond_to do |format|
       format.html { redirect_to message_url(id: 1) }
-      format.turbo_update { render turbo_update: turbo_update.append(:messages, "message_1") }
+      format.turbo_stream { render turbo_stream: turbo_stream.append(:messages, "message_1") }
     end
   end
 end
