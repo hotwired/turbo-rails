@@ -1,0 +1,42 @@
+{
+  "name": "@hotwired/turbo-rails",
+  "version": "0.1.0",
+  "description": "The speed of a single-page web application without having to write any JavaScript",
+  "module": "app/javascript/turbo/index.js",
+  "main": "app/assets/javascripts/turbo.js",
+  "files": [
+    "app/javascript/turbo"
+  ],
+  "scripts": {
+    "build": "rollup -c"
+  },
+  "dependencies": {
+    "@hotwired/turbo": "git+ssh://git@github.com:hotwired/turbo#dev-builds/a5536c3",
+    "@rails/actioncable": "^6.1.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^11.0.1",
+    "rollup": "^2.35.1",
+    "rollup-plugin-terser": "^7.0.2"
+  },
+  "license": "MIT",
+  "author": "Basecamp, LLC",
+  "contributors": [
+    "David Heinemeier Hansson <david@basecamp.com>",
+    "Javan Makhmali <javan@javan.us>",
+    "Sam Stephenson <sstephenson@gmail.com>"
+  ],
+  "keywords": [
+    "hotwire",
+    "turbo",
+    "rails"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hotwired/turbo-rails.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hotwired/turbo-rails/issues"
+  },
+  "homepage": "https://github.com/hotwired/turbo-rails"
+}
