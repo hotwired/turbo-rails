@@ -36,9 +36,9 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
     end
   end
 
-  test "broadcasting append to stream with custom container now" do
+  test "broadcasting append to stream with custom target now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("append", target: "board_messages", template: "<p>Hello!</p>") do
-      @message.broadcast_append_to "stream", container: "board_messages"
+      @message.broadcast_append_to "stream", target: "board_messages"
     end
   end
 
@@ -54,9 +54,9 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
     end
   end
 
-  test "broadcasting prepend to stream with custom container now" do
+  test "broadcasting prepend to stream with custom target now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "board_messages", template: "<p>Hello!</p>") do
-      @message.broadcast_prepend_to "stream", container: "board_messages"
+      @message.broadcast_prepend_to "stream", target: "board_messages"
     end
   end
 

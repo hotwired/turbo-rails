@@ -11,37 +11,37 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
 
   test "broadcasting remove now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("remove", target: "message_1") do
-      Turbo::StreamsChannel.broadcast_remove_to "stream", element: "message_1"
+      Turbo::StreamsChannel.broadcast_remove_to "stream", target: "message_1"
     end
   end
 
   test "broadcasting remove now with record" do
     assert_broadcast_on "stream", turbo_stream_action_tag("remove", target: "message_1") do
-      Turbo::StreamsChannel.broadcast_remove_to "stream", element: Message.new(record_id: 1, content: "hello!")
+      Turbo::StreamsChannel.broadcast_remove_to "stream", target: Message.new(record_id: 1, content: "hello!")
     end
   end
 
   test "broadcasting replace now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("replace", target: "message_1", template: "<p>hello!</p>") do
-      Turbo::StreamsChannel.broadcast_replace_to "stream", element: "message_1", partial: "messages/message", locals: { message: "hello!" }
+      Turbo::StreamsChannel.broadcast_replace_to "stream", target: "message_1", partial: "messages/message", locals: { message: "hello!" }
     end
   end
 
   test "broadcasting append now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("append", target: "messages", template: "<p>hello!</p>") do
-      Turbo::StreamsChannel.broadcast_append_to "stream", container: "messages", partial: "messages/message", locals: { message: "hello!" }
+      Turbo::StreamsChannel.broadcast_append_to "stream", target: "messages", partial: "messages/message", locals: { message: "hello!" }
     end
   end
 
   test "broadcasting prepend now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "messages", template: "<p>hello!</p>") do
-      Turbo::StreamsChannel.broadcast_prepend_to "stream", container: "messages", partial: "messages/message", locals: { message: "hello!" }
+      Turbo::StreamsChannel.broadcast_prepend_to "stream", target: "messages", partial: "messages/message", locals: { message: "hello!" }
     end
   end
 
   test "broadcasting action now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "messages", template: "<p>hello!</p>") do
-      Turbo::StreamsChannel.broadcast_action_to "stream", action: "prepend", dom_id: "messages", partial: "messages/message", locals: { message: "hello!" }
+      Turbo::StreamsChannel.broadcast_action_to "stream", action: "prepend", target: "messages", partial: "messages/message", locals: { message: "hello!" }
     end
   end
 
@@ -50,7 +50,7 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
     assert_broadcast_on "stream", turbo_stream_action_tag("replace", target: "message_1", template: "<p>hello!</p>") do
       perform_enqueued_jobs do
         Turbo::StreamsChannel.broadcast_replace_later_to \
-          "stream", element: "message_1", partial: "messages/message", locals: { message: "hello!" }
+          "stream", target: "message_1", partial: "messages/message", locals: { message: "hello!" }
       end
     end
   end
@@ -59,7 +59,7 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
     assert_broadcast_on "stream", turbo_stream_action_tag("append", target: "messages", template: "<p>hello!</p>") do
       perform_enqueued_jobs do
         Turbo::StreamsChannel.broadcast_append_later_to \
-          "stream", container: "messages", partial: "messages/message", locals: { message: "hello!" }
+          "stream", target: "messages", partial: "messages/message", locals: { message: "hello!" }
       end
     end
   end
@@ -68,7 +68,7 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
     assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "messages", template: "<p>hello!</p>") do
       perform_enqueued_jobs do
         Turbo::StreamsChannel.broadcast_prepend_later_to \
-          "stream", container: "messages", partial: "messages/message", locals: { message: "hello!" }
+          "stream", target: "messages", partial: "messages/message", locals: { message: "hello!" }
       end
     end
   end
@@ -77,7 +77,7 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
     assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "messages", template: "<p>hello!</p>") do
       perform_enqueued_jobs do
         Turbo::StreamsChannel.broadcast_action_later_to \
-          "stream", action: "prepend", dom_id: "messages", partial: "messages/message", locals: { message: "hello!" }
+          "stream", action: "prepend", target: "messages", partial: "messages/message", locals: { message: "hello!" }
       end
     end
   end
