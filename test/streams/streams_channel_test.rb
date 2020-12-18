@@ -2,7 +2,7 @@ require "turbo_test"
 require "action_cable"
 
 class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
-  include ActiveJob::TestHelper
+  include ActiveJob::TestHelper, Turbo::Streams::ActionHelper
 
   test "verified stream name" do
     assert_equal "stream", Turbo::StreamsChannel.verified_stream_name(Turbo::StreamsChannel.signed_stream_name("stream"))

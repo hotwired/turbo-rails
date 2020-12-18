@@ -3,6 +3,8 @@
 #
 # Can be used directly using something like <tt>Turbo::StreamsChannel.broadcast_remove_to :entries, element: 1</tt>.
 module Turbo::Streams::Broadcasts
+  include Turbo::Streams::ActionHelper
+
   def broadcast_remove_to(*streamables, element:)
     broadcast_action_to *streamables, action: :remove, dom_id: element
   end
@@ -20,7 +22,7 @@ module Turbo::Streams::Broadcasts
   end
 
   def broadcast_action_to(*streamables, action:, dom_id:, **rendering)
-    broadcast_update_to *streamables, content: action_tag(action, dom_id, content:
+    broadcast_update_to *streamables, content: turbo_stream_action_tag(action, dom_id, content:
       rendering.delete(:content) || (rendering.any? ? render_format(:html, **rendering) : nil)
     )
   end
@@ -58,22 +60,6 @@ module Turbo::Streams::Broadcasts
 
 
   private
-    def action_tag(action, element_or_dom_id, content: nil)
-      target   = convert_to_dom_id(element_or_dom_id)
-      template = content ? "<template>#{content}</template>" : ""
-
-      %(<turbo-stream action="#{action}" target="#{target}">#{template}</turbo-stream>)
-    end
-
-    def convert_to_dom_id(element_or_dom_id)
-      if element_or_dom_id.respond_to?(:to_key)
-        element = element_or_dom_id
-        ActionView::RecordIdentifier.dom_id(element)
-      else
-        dom_id = element_or_dom_id
-      end
-    end
-
     def render_format(format, **rendering)
       ApplicationController.render(formats: [ format ], **rendering)
     end

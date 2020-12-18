@@ -23,6 +23,8 @@
 #     <%= link_to topic_merge.topic.name, topic_path(topic_merge.topic) %>
 #   <% end %>
 class Turbo::Streams::TagBuilder
+  include Turbo::Streams::ActionHelper
+
   def initialize(view_context)
     @view_context = view_context
   end
@@ -89,30 +91,13 @@ class Turbo::Streams::TagBuilder
   def action(name, element, content = nil, **rendering, &block)
     case
     when content
-      action_tag(name, element, content: content)
+      turbo_stream_action_tag name, element, content: content
     when block_given?
-      action_tag(name, element, &block)
+      turbo_stream_action_tag name, element, content: @view_context.capture(&block)
     when rendering.any?
-      action_tag(name, element) { @view_context.render(formats: [ :html ], **rendering) }
+      turbo_stream_action_tag name, element, content: @view_context.render(formats: [ :html ], **rendering)
     else
-      action_tag(name, element)
+      turbo_stream_action_tag name, element
     end
   end
-
-  private
-    def action_tag(action, element_or_dom_id, content: nil, &block)
-      target   = convert_to_dom_id(element_or_dom_id)
-      template = @view_context.tag.template(content, &block) unless content.nil? && !block_given?
-
-      %(<turbo-stream action="#{action}" target="#{target}">#{template}</turbo-stream>).html_safe
-    end
-
-    def convert_to_dom_id(element_or_dom_id)
-      if element_or_dom_id.respond_to?(:to_key)
-        element = element_or_dom_id
-        ActionView::RecordIdentifier.dom_id(element)
-      else
-        dom_id = element_or_dom_id
-      end
-    end
 end
