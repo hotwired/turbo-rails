@@ -137,6 +137,12 @@ module Turbo::Broadcastable
   def broadcast_prepend(container: broadcast_container_default, **rendering)
     broadcast_prepend_to self, container: container, **rendering
   end
+
+  # Broadcast a named <tt>action</tt>, allowing for dynamic dispatch, instead of using the concrete action methods. Examples:
+  #
+  #   # Sends <turbo-stream action="prepend" target="clearances"><template><div id="clearance_5">My Clearance</div></template></turbo-stream>
+  #   # to the stream named "identity:2:clearances"
+  #   clearance.broadcast_action_to examiner.identity, :clearances, action: :prepend, container: "clearances"
   def broadcast_action_to(*streamables, action:, dom_id: broadcast_container_default, **rendering)
     Turbo::StreamsChannel.broadcast_action_to(*streamables, action: action, dom_id: dom_id, **broadcast_rendering_with_defaults(rendering))
   end
