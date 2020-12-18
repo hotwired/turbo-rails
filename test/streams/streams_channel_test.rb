@@ -17,7 +17,7 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
 
   test "broadcasting remove now with record" do
     assert_broadcast_on "stream", turbo_stream_action_tag("remove", target: "message_1") do
-      Turbo::StreamsChannel.broadcast_remove_to "stream", element: Message.new(1)
+      Turbo::StreamsChannel.broadcast_remove_to "stream", element: Message.new(record_id: 1, content: "hello!")
     end
   end
 

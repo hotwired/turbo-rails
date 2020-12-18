@@ -1,16 +1,26 @@
 class Message
   include Turbo::Broadcastable
 
-  def initialize(record_id)
-    @record_id = record_id
+  attr_reader :record_id, :content
+
+  def initialize(record_id:, content:)
+    @record_id, @content = record_id, content
   end
 
   def to_key
-    [ @record_id ]
+    [ record_id ]
   end
 
   def to_param
-    "message:#{@record_id}"
+    "message:#{record_id}"
+  end
+
+  def to_partial_path
+    "messages/message"
+  end
+
+  def to_s
+    content
   end
 
   def model_name
