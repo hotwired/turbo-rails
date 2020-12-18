@@ -11,7 +11,7 @@
     "build": "rollup -c"
   },
   "dependencies": {
-    "@hotwired/turbo": "git+ssh://git@github.com:hotwired/turbo#dev-builds/a5536c3",
+    "@hotwired/turbo": "git+ssh://git@github.com:hotwired/turbo#dev-builds/latest",
     "@rails/actioncable": "^6.1.0"
   },
   "devDependencies": {
