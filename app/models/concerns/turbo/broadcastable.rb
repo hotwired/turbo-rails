@@ -148,7 +148,7 @@ module Turbo::Broadcastable
   end
 
   # Same as <tt>#broadcast_action_to</tt>, but the designated stream is automatically set to the current model.
-  def broadcast_action(action:, dom_id: broadcast_container_default, **rendering)
+  def broadcast_action(action, dom_id: broadcast_container_default, **rendering)
     broadcast_action_to self, action: action, dom_id: dom_id, **rendering
   end
 
