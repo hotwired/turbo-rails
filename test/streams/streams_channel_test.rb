@@ -1,8 +1,6 @@
 require "turbo_test"
 require "action_cable"
 
-ActionCable.server.config.logger = Logger.new(STDOUT) if ENV["VERBOSE"]
-
 class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
   include ActiveJob::TestHelper
 
