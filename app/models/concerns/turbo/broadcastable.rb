@@ -73,7 +73,7 @@ module Turbo::Broadcastable
   end
 
   # Same as <tt>#broadcast_remove_to</tt>, but the designated stream is automatically set to the current model.
-  def broadcasts_remove
+  def broadcast_remove
     broadcast_remove_to self
   end
 
