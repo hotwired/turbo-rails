@@ -190,7 +190,7 @@ module Turbo::Broadcastable
 
   # Same as <tt>#broadcast_action_later_to</tt>, but the designated stream is automatically set to the current model.
   def broadcast_action_later(action:, dom_id: broadcast_container_default, **rendering)
-    broadcast_action_later_to self, action:, dom_id: dom_id, **rendering
+    broadcast_action_later_to self, action: action, dom_id: dom_id, **rendering
   end
 
 
