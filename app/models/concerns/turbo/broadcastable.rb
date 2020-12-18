@@ -56,6 +56,11 @@ module Turbo::Broadcastable
       after_update_commit  -> { broadcast_replace_later_to stream.try(:call, self) || send(stream) }
       after_destroy_commit -> { broadcast_remove_to stream.try(:call, self) || send(stream) }
     end
+
+    # Same as <tt>#broadcasts_to</tt>, but the designated stream is automatically set to the current model.
+    def broadcasts(inserts_by: :append, container: model_name.plural)
+      broadcasts_to self, inserts_by: inserts_by, container: container
+    end
   end
 
   # Remove this broadcastable model from the dom for subscribers of the stream name identified by the passed streamables.
@@ -65,6 +70,11 @@ module Turbo::Broadcastable
   #   clearance.broadcast_remove_to examiner.identity, :clearances
   def broadcast_remove_to(*streamables)
     Turbo::StreamsChannel.broadcast_remove_to *streamables, element: self
+  end
+
+  # Same as <tt>#broadcast_remove_to</tt>, but the designated stream is automatically set to the current model.
+  def broadcasts_remove
+    broadcast_remove_to self
   end
 
   # Replace this broadcastable model in the dom for subscribers of the stream name identified by the passed
@@ -79,6 +89,11 @@ module Turbo::Broadcastable
   #   clearance.broadcast_replace_to examiner.identity, :clearances, partial: "clearances/other_partial", locals: { a: 1 }
   def broadcast_replace_to(*streamables, **rendering)
     Turbo::StreamsChannel.broadcast_replace_to *streamables, element: self, **broadcast_rendering_with_defaults(rendering)
+  end
+
+  # Same as <tt>#broadcast_replace_to</tt>, but the designated stream is automatically set to the current model.
+  def broadcast_replace(**rendering)
+    broadcast_replace_to self, **rendering
   end
 
   # Append a rendering of this broadcastable model to the container identified by it's dom id passed as <tt>container</tt>
@@ -97,6 +112,11 @@ module Turbo::Broadcastable
     Turbo::StreamsChannel.broadcast_append_to *streamables, container: container, **broadcast_rendering_with_defaults(rendering)
   end
 
+  # Same as <tt>#broadcast_append_to</tt>, but the designated stream is automatically set to the current model.
+  def broadcast_append(container: broadcast_container_default, **rendering)
+    broadcast_append_to self, container: container, **rendering
+  end
+
   # Prepend a rendering of this broadcastable model to the container identified by it's dom id passed as <tt>container</tt>
   # for subscribers of the stream name identified by the passed <tt>streamables</tt>. The rendering parameters can be set by
   # appending named arguments to the call. Examples:
@@ -113,13 +133,28 @@ module Turbo::Broadcastable
     Turbo::StreamsChannel.broadcast_prepend_to *streamables, container: container, **broadcast_rendering_with_defaults(rendering)
   end
 
+  # Same as <tt>#broadcast_append_to</tt>, but the designated stream is automatically set to the current model.
+  def broadcast_prepend(container: broadcast_container_default, **rendering)
+    broadcast_prepend_to self, container: container, **rendering
+  end
   def broadcast_action_to(*streamables, action:, dom_id: broadcast_container_default, **rendering)
     Turbo::StreamsChannel.broadcast_action_to(*streamables, action: action, dom_id: dom_id, **broadcast_rendering_with_defaults(rendering))
   end
 
+  # Same as <tt>#broadcast_action_to</tt>, but the designated stream is automatically set to the current model.
+  def broadcast_action(action:, dom_id: broadcast_container_default, **rendering)
+    broadcast_action_to self, action: action, dom_id: dom_id, **rendering
+  end
+
+
   # Same as <tt>broadcast_replace_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
   def broadcast_replace_later_to(*streamables, **rendering)
     Turbo::StreamsChannel.broadcast_replace_later_to *streamables, element: self, **broadcast_rendering_with_defaults(rendering)
+  end
+
+  # Same as <tt>#broadcast_replace_later_to</tt>, but the designated stream is automatically set to the current model.
+  def broadcast_replace_later(**rendering)
+    broadcast_replace_later_to self, **rendering
   end
 
   # Same as <tt>broadcast_append_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
@@ -127,13 +162,29 @@ module Turbo::Broadcastable
     Turbo::StreamsChannel.broadcast_append_later_to *streamables, container: container, **broadcast_rendering_with_defaults(rendering)
   end
 
+  # Same as <tt>#broadcast_append_later_to</tt>, but the designated stream is automatically set to the current model.
+  def broadcast_append_later(container: broadcast_container_default, **rendering)
+    broadcast_append_later_to self, container: container, **rendering
+  end
+
   # Same as <tt>broadcast_prepend_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
   def broadcast_prepend_later_to(*streamables, container: broadcast_container_default, **rendering)
     Turbo::StreamsChannel.broadcast_prepend_later_to *streamables, container: container, **broadcast_rendering_with_defaults(rendering)
   end
 
+  # Same as <tt>#broadcast_prepend_later_to</tt>, but the designated stream is automatically set to the current model.
+  def broadcast_prepend_later(container: broadcast_container_default, **rendering)
+    broadcast_prepend_later_to self, container: container, **rendering
+  end
+
+  # Same as <tt>broadcast_action_later_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
   def broadcast_action_later_to(*streamables, action:, dom_id: broadcast_container_default, **rendering)
     Turbo::StreamsChannel.broadcast_action_later_to(*streamables, action: action, dom_id: dom_id, **broadcast_rendering_with_defaults(rendering))
+  end
+
+  # Same as <tt>#broadcast_action_later_to</tt>, but the designated stream is automatically set to the current model.
+  def broadcast_action_later(action:, dom_id: broadcast_container_default, **rendering)
+    broadcast_action_later_to self, action:, dom_id: dom_id, **rendering
   end
 
 
