@@ -22,7 +22,7 @@ module Turbo::Streams::Broadcasts
   end
 
   def broadcast_action_to(*streamables, action:, dom_id:, **rendering)
-    broadcast_update_to *streamables, content: turbo_stream_action_tag(action, target: dom_id, template:
+    broadcast_stream_to *streamables, content: turbo_stream_action_tag(action, target: dom_id, template:
       rendering.delete(:content) || (rendering.any? ? render_format(:html, **rendering) : nil)
     )
   end
@@ -47,14 +47,14 @@ module Turbo::Streams::Broadcasts
 
 
   def broadcast_render_to(*streamables, **rendering)
-    broadcast_update_to *streamables, content: render_format(:turbo_stream, **rendering)
+    broadcast_stream_to *streamables, content: render_format(:turbo_stream, **rendering)
   end
 
   def broadcast_render_later_to(*streamables, **rendering)
     Turbo::Streams::BroadcastJob.perform_later stream_name_from(streamables), **rendering
   end
 
-  def broadcast_update_to(*streamables, content:)
+  def broadcast_stream_to(*streamables, content:)
     ActionCable.server.broadcast stream_name_from(streamables), content
   end
 
