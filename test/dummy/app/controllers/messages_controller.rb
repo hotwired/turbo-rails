@@ -1,6 +1,6 @@
 class MessagesController < ApplicationController
   def show
-    render turbo_stream: turbo_stream.remove("message_1")
+    @message = Message.new(record_id: 1, content: "My message")
   end
 
   def create
