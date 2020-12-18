@@ -59,7 +59,9 @@ module Turbo::Broadcastable
 
     # Same as <tt>#broadcasts_to</tt>, but the designated stream is automatically set to the current model.
     def broadcasts(inserts_by: :append, target: model_name.plural)
-      broadcasts_to self, inserts_by: inserts_by, target: target
+      after_create_commit  -> { broadcast_action_later action: inserts_by, target: target }
+      after_update_commit  -> { broadcast_replace_later }
+      after_destroy_commit -> { broadcast_remove }
     end
   end
 
