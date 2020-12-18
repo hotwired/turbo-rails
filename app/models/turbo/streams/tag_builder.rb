@@ -91,13 +91,13 @@ class Turbo::Streams::TagBuilder
   def action(name, element, content = nil, **rendering, &block)
     case
     when content
-      turbo_stream_action_tag name, element, content: content
+      turbo_stream_action_tag name, target: element, content: content
     when block_given?
-      turbo_stream_action_tag name, element, content: @view_context.capture(&block)
+      turbo_stream_action_tag name, target: element, content: @view_context.capture(&block)
     when rendering.any?
-      turbo_stream_action_tag name, element, content: @view_context.render(formats: [ :html ], **rendering)
+      turbo_stream_action_tag name, target: element, content: @view_context.render(formats: [ :html ], **rendering)
     else
-      turbo_stream_action_tag name, element
+      turbo_stream_action_tag name, target: element
     end
   end
 end
