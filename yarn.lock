@@ -25,7 +25,7 @@
 
 "@hotwired/turbo@git+ssh://git@github.com:hotwired/turbo#dev-builds/latest":
   version "7.0.0-beta.1"
-  resolved "git+ssh://git@github.com:hotwired/turbo#d60c034e760a044b3fab8bf29e07ff86adfcab8b"
+  resolved "git+ssh://git@github.com:hotwired/turbo#5866ba5c08d3709401b0e80a3fe5f4eaf5a3a49d"
 
 "@rails/actioncable@^6.1.0":
   version "6.1.0"
