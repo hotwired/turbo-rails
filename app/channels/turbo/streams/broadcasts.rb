@@ -22,7 +22,7 @@ module Turbo::Streams::Broadcasts
   end
 
   def broadcast_action_to(*streamables, action:, dom_id:, **rendering)
-    broadcast_update_to *streamables, content: turbo_stream_action_tag(action, target: dom_id, content:
+    broadcast_update_to *streamables, content: turbo_stream_action_tag(action, target: dom_id, template:
       rendering.delete(:content) || (rendering.any? ? render_format(:html, **rendering) : nil)
     )
   end

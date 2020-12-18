@@ -10,19 +10,19 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
 
 
   test "broadcasting remove now" do
-    assert_broadcast_on "stream", %(<turbo-stream action="remove" target="message_1"></turbo-stream>) do
+    assert_broadcast_on "stream", turbo_stream_action_tag("remove", target: "message_1") do
       Turbo::StreamsChannel.broadcast_remove_to "stream", element: "message_1"
     end
   end
 
   test "broadcasting remove now with record" do
-    assert_broadcast_on "stream", %(<turbo-stream action="remove" target="message_1"></turbo-stream>) do
+    assert_broadcast_on "stream", turbo_stream_action_tag("remove", target: "message_1") do
       Turbo::StreamsChannel.broadcast_remove_to "stream", element: Message.new(1)
     end
   end
 
   test "broadcasting replace now" do
-    assert_broadcast_on "stream", %(<turbo-stream action="replace" target="message_1"><template><p>hello!</p></template></turbo-stream>) do
+    assert_broadcast_on "stream", turbo_stream_action_tag("replace", target: "message_1", template: "<p>hello!</p>") do
       Turbo::StreamsChannel.broadcast_replace_to "stream", element: "message_1", partial: "messages/message", locals: { message: "hello!" }
     end
   end

@@ -1,7 +1,7 @@
 module Turbo::Streams::ActionHelper
-  def turbo_stream_action_tag(action, target:, content: nil)
+  def turbo_stream_action_tag(action, target:, template: nil)
     target   = convert_to_turbo_stream_dom_id(target)
-    template = content ? "<template>#{content}</template>" : ""
+    template = template ? "<template>#{template}</template>" : ""
 
     %(<turbo-stream action="#{action}" target="#{target}">#{template}</turbo-stream>).html_safe
   end
