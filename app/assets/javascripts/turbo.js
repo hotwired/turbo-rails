@@ -14,6 +14,33 @@
   Object.setPrototypeOf(HTMLElement, BuiltInHTMLElement);
 })();
 
+const submittersByForm = new WeakMap;
+
+function findSubmitterFromClickTarget(target) {
+  const element = target instanceof Element ? target : target instanceof Node ? target.parentElement : null;
+  const candidate = element ? element.closest("input, button") : null;
+  return (candidate === null || candidate === void 0 ? void 0 : candidate.getAttribute("type")) == "submit" ? candidate : null;
+}
+
+function clickCaptured(event) {
+  const submitter = findSubmitterFromClickTarget(event.target);
+  if (submitter && submitter.form) {
+    submittersByForm.set(submitter.form, submitter);
+  }
+}
+
+(function() {
+  if ("SubmitEvent" in window) return;
+  addEventListener("click", clickCaptured, true);
+  Object.defineProperty(Event.prototype, "submitter", {
+    get() {
+      if (this.type == "submit" && this.target instanceof HTMLFormElement) {
+        return submittersByForm.get(this.target);
+      }
+    }
+  });
+})();
+
 class Location {
   constructor(url) {
     const linkWithAnchor = document.createElement("a");
@@ -308,10 +335,11 @@ class FormInterceptor {
     this.submitBubbled = event => {
       if (event.target instanceof HTMLFormElement) {
         const form = event.target;
-        if (this.delegate.shouldInterceptFormSubmission(form)) {
+        const submitter = event.submitter || undefined;
+        if (this.delegate.shouldInterceptFormSubmission(form, submitter)) {
           event.preventDefault();
           event.stopImmediatePropagation();
-          this.delegate.formSubmissionIntercepted(form);
+          this.delegate.formSubmissionIntercepted(form, submitter);
         }
       }
     };
@@ -338,20 +366,26 @@ var FormSubmissionState;
 })(FormSubmissionState || (FormSubmissionState = {}));
 
 class FormSubmission {
-  constructor(delegate, formElement, mustRedirect = false) {
+  constructor(delegate, formElement, submitter, mustRedirect = false) {
     this.state = FormSubmissionState.initialized;
     this.delegate = delegate;
     this.formElement = formElement;
-    this.formData = new FormData(formElement);
+    this.formData = buildFormData(formElement, submitter);
+    this.submitter = submitter;
     this.fetchRequest = new FetchRequest(this, this.method, this.location, this.formData);
     this.mustRedirect = mustRedirect;
   }
   get method() {
-    const method = this.formElement.getAttribute("method") || "";
+    var _a;
+    const method = ((_a = this.submitter) === null || _a === void 0 ? void 0 : _a.getAttribute("formmethod")) || this.formElement.method;
     return fetchMethodFromString(method.toLowerCase()) || FetchMethod.get;
   }
+  get action() {
+    var _a;
+    return ((_a = this.submitter) === null || _a === void 0 ? void 0 : _a.getAttribute("formaction")) || this.formElement.action;
+  }
   get location() {
-    return Location.wrap(this.formElement.action);
+    return Location.wrap(this.action);
   }
   async start() {
     const {initialized: initialized, requesting: requesting} = FormSubmissionState;
@@ -436,6 +470,16 @@ class FormSubmission {
   }
 }
 
+function buildFormData(formElement, submitter) {
+  const formData = new FormData(formElement);
+  const name = submitter === null || submitter === void 0 ? void 0 : submitter.getAttribute("name");
+  const value = submitter === null || submitter === void 0 ? void 0 : submitter.getAttribute("value");
+  if (name && formData.get(name) != value) {
+    formData.append(name, value || "");
+  }
+  return formData;
+}
+
 function getCookieValue(cookieName) {
   if (cookieName != null) {
     const cookies = document.cookie ? document.cookie.split("; ") : [];
@@ -462,11 +506,11 @@ class LinkInterceptor {
       }
     };
     this.linkClicked = event => {
-      if (this.clickEvent && this.respondsToEventTarget(event.target)) {
-        if (this.delegate.shouldInterceptLinkClick(event.target, event.data.url)) {
+      if (this.clickEvent && this.respondsToEventTarget(event.target) && event.target instanceof Element) {
+        if (this.delegate.shouldInterceptLinkClick(event.target, event.detail.url)) {
           this.clickEvent.preventDefault();
           event.preventDefault();
-          this.delegate.linkClickIntercepted(event.target, event.data.url);
+          this.delegate.linkClickIntercepted(event.target, event.detail.url);
         }
       }
       delete this.clickEvent;
@@ -512,18 +556,21 @@ class FrameController {
     return this.shouldInterceptNavigation(element);
   }
   linkClickIntercepted(element, url) {
-    const frame = this.findFrameElement(element);
-    frame.src = url;
+    this.navigateFrame(element, url);
   }
   shouldInterceptFormSubmission(element) {
     return this.shouldInterceptNavigation(element);
   }
-  formSubmissionIntercepted(element) {
+  formSubmissionIntercepted(element, submitter) {
     if (this.formSubmission) {
       this.formSubmission.stop();
     }
-    this.formSubmission = new FormSubmission(this, element);
-    this.formSubmission.start();
+    this.formSubmission = new FormSubmission(this, element, submitter);
+    if (this.formSubmission.fetchRequest.isIdempotent) {
+      this.navigateFrame(element, this.formSubmission.fetchRequest.url);
+    } else {
+      this.formSubmission.start();
+    }
   }
   async visit(url) {
     const location = Location.wrap(url);
@@ -570,6 +617,10 @@ class FrameController {
   formSubmissionFailedWithResponse(formSubmission, fetchResponse) {}
   formSubmissionErrored(formSubmission, error) {}
   formSubmissionFinished(formSubmission) {}
+  navigateFrame(element, url) {
+    const frame = this.findFrameElement(element);
+    frame.src = url;
+  }
   findFrameElement(element) {
     var _a;
     const id = element.getAttribute("data-turbo-frame");
@@ -708,8 +759,8 @@ class FrameElement extends HTMLElement {
       });
     }
   }
-  formSubmissionIntercepted(element) {
-    this.controller.formSubmissionIntercepted(element);
+  formSubmissionIntercepted(element, submitter) {
+    this.controller.formSubmissionIntercepted(element, submitter);
   }
   get src() {
     return this.getAttribute("src");
@@ -1448,8 +1499,7 @@ class BrowserAdapter {
     this.session = session;
   }
   visitProposedToLocation(location, options) {
-    const restorationIdentifier = uuid();
-    this.session.startVisitToLocation(location, restorationIdentifier, options);
+    this.navigator.startVisit(location, uuid(), options);
   }
   visitStarted(visit) {
     visit.issueRequest();
@@ -1503,6 +1553,9 @@ class BrowserAdapter {
   reload() {
     window.location.reload();
   }
+  get navigator() {
+    return this.session.navigator;
+  }
 }
 
 class FormSubmitObserver {
@@ -1515,10 +1568,11 @@ class FormSubmitObserver {
     this.submitBubbled = event => {
       if (!event.defaultPrevented) {
         const form = event.target instanceof HTMLFormElement ? event.target : undefined;
+        const submitter = event.submitter || undefined;
         if (form) {
-          if (this.delegate.willSubmitForm(form)) {
+          if (this.delegate.willSubmitForm(form, submitter)) {
             event.preventDefault();
-            this.delegate.formSubmitted(form);
+            this.delegate.formSubmitted(form, submitter);
           }
         }
       }
@@ -1562,16 +1616,16 @@ class FrameRedirector {
       frame.src = url;
     }
   }
-  shouldInterceptFormSubmission(element) {
-    return this.shouldRedirect(element);
+  shouldInterceptFormSubmission(element, submitter) {
+    return this.shouldRedirect(element, submitter);
   }
-  formSubmissionIntercepted(element) {
+  formSubmissionIntercepted(element, submitter) {
     const frame = this.findFrameElement(element);
     if (frame) {
-      frame.formSubmissionIntercepted(element);
+      frame.formSubmissionIntercepted(element, submitter);
     }
   }
-  shouldRedirect(element) {
+  shouldRedirect(element, submitter) {
     const frame = this.findFrameElement(element);
     return frame ? frame != element.closest("turbo-frame") : false;
   }
@@ -1588,6 +1642,7 @@ class FrameRedirector {
 
 class History {
   constructor(delegate) {
+    this.restorationIdentifier = uuid();
     this.restorationData = {};
     this.started = false;
     this.pageLoaded = false;
@@ -1717,14 +1772,14 @@ class Navigator {
   }
   startVisit(location, restorationIdentifier, options = {}) {
     this.stop();
-    this.currentVisit = new Visit(this, location, restorationIdentifier, Object.assign({
+    this.currentVisit = new Visit(this, Location.wrap(location), restorationIdentifier, Object.assign({
       referrer: this.location
     }, options));
     this.currentVisit.start();
   }
-  submitForm(form) {
+  submitForm(form, submitter) {
     this.stop();
-    this.formSubmission = new FormSubmission(this, form, true);
+    this.formSubmission = new FormSubmission(this, form, submitter, true);
     this.formSubmission.start();
   }
   stop() {
@@ -1783,6 +1838,9 @@ class Navigator {
   }
   get location() {
     return this.history.location;
+  }
+  get restorationIdentifier() {
+    return this.history.restorationIdentifier;
   }
 }
 
@@ -2327,10 +2385,10 @@ class View {
 
 class Session {
   constructor() {
-    this.adapter = new BrowserAdapter(this);
     this.navigator = new Navigator(this);
     this.history = new History(this);
     this.view = new View(this);
+    this.adapter = new BrowserAdapter(this);
     this.pageObserver = new PageObserver(this);
     this.linkClickObserver = new LinkClickObserver(this);
     this.formSubmitObserver = new FormSubmitObserver(this);
@@ -2374,9 +2432,6 @@ class Session {
   }
   visit(location, options = {}) {
     this.navigator.proposeVisit(Location.wrap(location), options);
-  }
-  startVisitToLocation(location, restorationIdentifier, options) {
-    this.navigator.startVisit(Location.wrap(location), restorationIdentifier, options);
   }
   connectStreamSource(source) {
     this.streamObserver.connectStreamSource(source);
@@ -2435,11 +2490,11 @@ class Session {
   visitCompleted(visit) {
     this.notifyApplicationAfterPageLoad(visit.getTimingMetrics());
   }
-  willSubmitForm(form) {
+  willSubmitForm(form, submitter) {
     return true;
   }
-  formSubmitted(form) {
-    this.navigator.submitForm(form);
+  formSubmitted(form, submitter) {
+    this.navigator.submitForm(form, submitter);
   }
   pageBecameInteractive() {
     this.view.lastRenderedLocation = this.location;

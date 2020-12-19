@@ -23,9 +23,9 @@
     chalk "^2.0.0"
     js-tokens "^4.0.0"
 
-"@hotwired/turbo@git+ssh://git@github.com:hotwired/turbo#dev-builds/latest":
+"@hotwired/turbo@git+ssh://git@github.com:hotwired/turbo#dev-builds/1dd7a80":
   version "7.0.0-beta.1"
-  resolved "git+ssh://git@github.com:hotwired/turbo#5866ba5c08d3709401b0e80a3fe5f4eaf5a3a49d"
+  resolved "git+ssh://git@github.com:hotwired/turbo#ae2d386740843726cfc29e4773aaf48d3bc25557"
 
 "@rails/actioncable@^6.1.0":
   version "6.1.0"
