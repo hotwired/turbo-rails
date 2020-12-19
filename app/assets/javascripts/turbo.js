@@ -1977,7 +1977,7 @@ class StreamObserver {
     this.started = false;
     this.prepareFetchRequest = event => {
       var _a;
-      const fetchOptions = (_a = event.data) === null || _a === void 0 ? void 0 : _a.fetchOptions;
+      const fetchOptions = (_a = event.detail) === null || _a === void 0 ? void 0 : _a.fetchOptions;
       if (fetchOptions) {
         const {headers: headers} = fetchOptions;
         headers.Accept = [ StreamMessage.contentType, headers.Accept ].join(", ");
@@ -2039,8 +2039,8 @@ class StreamObserver {
 
 function fetchResponseFromEvent(event) {
   var _a;
-  if (((_a = event.data) === null || _a === void 0 ? void 0 : _a.fetchResponse) instanceof FetchResponse) {
-    return event.data.fetchResponse;
+  if (((_a = event.detail) === null || _a === void 0 ? void 0 : _a.fetchResponse) instanceof FetchResponse) {
+    return event.detail.fetchResponse;
   }
 }
 
