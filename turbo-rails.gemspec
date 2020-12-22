@@ -5,7 +5,7 @@ Gem::Specification.new do |s|
   s.version  = Turbo::VERSION
   s.authors  = [ "Sam Stephenson", "Javan Mahkmali", "David Heinemeier Hansson" ]
   s.email    = "david@loudthinking.com"
-  s.summary  = "The speed of a single-page web application without having to write any JavaScript"
+  s.summary  = "The speed of a single-page web application without having to write any JavaScript."
   s.homepage = "https://github.com/hotwired/turbo-rails"
   s.license  = "MIT"
 
