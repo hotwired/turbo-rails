@@ -43,7 +43,6 @@ If you run it through Webpacker, it's:
 
 ```ruby
 import Turbo from "turbo"
-Turbo.start()
 ```
 
 ## License
