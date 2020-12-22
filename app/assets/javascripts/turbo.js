@@ -1969,8 +1969,6 @@ class StreamMessage {
   }
 }
 
-StreamMessage.contentType = "text/html; turbo-stream";
-
 class StreamObserver {
   constructor(delegate) {
     this.sources = new Set;
@@ -1980,14 +1978,14 @@ class StreamObserver {
       const fetchOptions = (_a = event.detail) === null || _a === void 0 ? void 0 : _a.fetchOptions;
       if (fetchOptions) {
         const {headers: headers} = fetchOptions;
-        headers.Accept = [ StreamMessage.contentType, headers.Accept ].join(", ");
+        headers.Accept = [ "text/html; turbo-stream", headers.Accept ].join(", ");
       }
     };
     this.inspectFetchResponse = event => {
-      const fetchResponse = fetchResponseFromEvent(event);
-      if ((fetchResponse === null || fetchResponse === void 0 ? void 0 : fetchResponse.contentType) == StreamMessage.contentType + "; charset=utf-8") {
+      const response = fetchResponseFromEvent(event);
+      if (response && fetchResponseIsStream(response)) {
         event.preventDefault();
-        this.receiveMessageResponse(fetchResponse);
+        this.receiveMessageResponse(response);
       }
     };
     this.receiveMessageEvent = event => {
@@ -2039,9 +2037,16 @@ class StreamObserver {
 
 function fetchResponseFromEvent(event) {
   var _a;
-  if (((_a = event.detail) === null || _a === void 0 ? void 0 : _a.fetchResponse) instanceof FetchResponse) {
-    return event.detail.fetchResponse;
+  const fetchResponse = (_a = event.detail) === null || _a === void 0 ? void 0 : _a.fetchResponse;
+  if (fetchResponse instanceof FetchResponse) {
+    return fetchResponse;
   }
+}
+
+function fetchResponseIsStream(response) {
+  var _a;
+  const contentType = (_a = response.contentType) !== null && _a !== void 0 ? _a : "";
+  return /text\/html;.*\bturbo-stream\b/.test(contentType);
 }
 
 function isAction(action) {
