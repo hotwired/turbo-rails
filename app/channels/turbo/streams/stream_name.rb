@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Stream names are how we identify which updates should go to which users. All streams run over the same
 # <tt>Turbo::StreamsChannel</tt>, but each with their own subscription. Since stream names are exposed directly to the user
 # via the HTML stream subscription tags, we need to ensure that the name isn't tampered with, so the names are signed

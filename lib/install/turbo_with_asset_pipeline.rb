@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 APPLICATION_LAYOUT_PATH = Rails.root.join("app/views/layouts/application.html.erb")
 
 if APPLICATION_LAYOUT_PATH.exist?

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class Turbo::Native::NavigationController < ActionController::Base
   def recede
     render html: "Going back…"

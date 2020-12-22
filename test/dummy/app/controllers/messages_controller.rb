@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class MessagesController < ApplicationController
   def show
     @message = Message.new(record_id: 1, content: "My message")

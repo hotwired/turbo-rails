@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Turbo streams can be broadcast directly from models that include this module (this is automatically done for Active Records).
 # This makes it convenient to execute both synchronous and asynchronous updates, and render directly from callbacks in models
 # or from controllers or jobs that act on those models. Here's an example:

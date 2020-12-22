@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Provides the broadcast actions in synchronous and asynchrous form for the <tt>Turbo::StreamsChannel</tt>.
 # See <tt>Turbo::Broadcastable</tt> for the user-facing API that invokes these methods with most of the paperwork filled out already.
 #

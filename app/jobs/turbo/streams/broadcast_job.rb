@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # The job that powers the <tt>broadcast_render_later_to</tt> available in <tt>Turbo::Streams::Broadcasts</tt> for rendering
 # turbo stream templates.
 class Turbo::Streams::BroadcastJob < ActiveJob::Base

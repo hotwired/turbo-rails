@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Turbo::DriveHelper
   # Pages that are more likely than not to be a cache miss can skip turbo cache to avoid visual jitter.
   # Note: This requires a +yield :head+ provision in the application layout.

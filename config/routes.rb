@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # FIXME: Offer flag to opt out of these native routes
 Rails.application.routes.draw do
   get "recede_historical_location"  => "turbo/native/navigation#recede",  as: :turbo_recede_historical_location

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Turbo::StreamsHelper
   # Returns a new <tt>Turbo::Streams::TagBuilder</tt> object that accepts stream actions and renders them them as
   # the template tags needed to send across the wire. This object is automatically yielded to turbo_stream.erb templates.

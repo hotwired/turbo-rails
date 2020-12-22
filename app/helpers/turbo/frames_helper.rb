@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Turbo::FramesHelper
   # Returns a frame tag that can either be used simply to encapsulate frame content or as a lazy-loading container that starts empty but
   # fetches the URL supplied in the +src+ attribute.

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "turbo_test"
 
 class Turbo::FramesHelperTest < ActionView::TestCase

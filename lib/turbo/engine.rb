@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rails/engine"
 require "turbo/test_assertions"
 

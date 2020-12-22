@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # This tag builder is used both for inline controller turbo actions (see <tt>Turbo::Streams::TurboStreamsTagBuilder</tt>) and for
 # turbo stream templates. This object plays together with any normal Ruby you'd run in an ERB template, so you can iterate, like:
 #

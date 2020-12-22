@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Turbo::Streams::ActionHelper
   # Creates a `turbo-stream` tag according to the passed parameters. Examples:
   #

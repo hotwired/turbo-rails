@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # The job that powers all the <tt>broadcast_$action_later</tt> broadcasts available in <tt>Turbo::Streams::Broadcasts</tt>.
 class Turbo::Streams::ActionBroadcastJob < ActiveJob::Base
   def perform(stream, action:, target:, **rendering)

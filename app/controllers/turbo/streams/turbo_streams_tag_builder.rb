@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Most turbo streams are rendered either asynchronously via <tt>Turbo::Broadcastable</tt>/<tt>Turbo::StreamsChannel</tt> or
 # rendered in templates with the <tt>turbo_stream.erb</tt> extension. But it's also possible to render updates inline
 # in controllers, like so:
