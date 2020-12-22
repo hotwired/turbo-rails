@@ -55,6 +55,12 @@ import Turbo from "turbo"
 You can watch the video introduction to Hotwire, which focuses extensively on demonstration Turbo in a Rails demo. Then you should familiarize yourself with [Turbo handbook](https://turbo.hotwire.dev/handbook/introduction) to understand Drive, Frames, and Streams in-depth. Finally, dive into the code documentation by starting with [`Turbo::FramesHelper`](https://github.com/hotwired/turbo-rails/blob/main/app/helpers/turbo/frames_helper.rb), [`Turbo::StreamsHelper`](https://github.com/hotwired/turbo-rails/blob/main/app/helpers/turbo/streams_helper.rb), [`Turbo::Streams::TagBuilder`](https://github.com/hotwired/turbo-rails/blob/main/app/models/turbo/streams/tag_builder.rb), and [`Turbo::Broadcastable`](https://github.com/hotwired/turbo-rails/blob/main/app/models/concerns/turbo/broadcastable.rb).
 
 
+## Development
+
+* To run the Rails tests: `bundle exec rake`.
+* To compile the JavaScript for the asset pipeline: `yarn build`
+
+
 ## License
 
 Turbo is released under the [MIT License](https://opensource.org/licenses/MIT).
