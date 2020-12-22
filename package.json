@@ -1,6 +1,6 @@
 {
   "name": "@hotwired/turbo-rails",
-  "version": "0.1.0",
+  "version": "7.0.0-beta.1",
   "description": "The speed of a single-page web application without having to write any JavaScript",
   "module": "app/javascript/turbo/index.js",
   "main": "app/assets/javascripts/turbo.js",
@@ -11,7 +11,7 @@
     "build": "rollup -c"
   },
   "dependencies": {
-    "@hotwired/turbo": "git+ssh://git@github.com:hotwired/turbo#dev-builds/99d8a70",
+    "@hotwired/turbo": "^7.0.0-beta.1",
     "@rails/actioncable": "^6.1.0"
   },
   "devDependencies": {

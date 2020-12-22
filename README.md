@@ -35,19 +35,19 @@ With this Rails integration, you can create these asynchronous updates directly 
 The JavaScript for Turbo can either be run through the asset pipeline, which is included with this gem, or through the package that lives on NPM, through Webpacker. If you use the asset pipeline, installation is as follows:
 
 1. Add the `turbo-rails` gem to your Gemfile: `gem 'turbo-rails'`
-2. Run `./bin/bundle install`.
+2. Run `./bin/bundle install`
 3. Run `./bin/rails turbo:install`
 
-If you run it through Webpacker, it's:
+If you use Webpacker, it's:
 
-1. Add the `turbo` gem to your Gemfile: `gem 'turbo'
-2. Run `./bin/bundle install`.
-3. Run `./bin/yarn add @hotwired/turbo`
-4. Add Turbo to your pack:
+1. Add the `turbo-rails` gem to your Gemfile: `gem 'turbo-rails'`
+2. Run `./bin/bundle install`
+3. Run `./bin/yarn add @hotwired/turbo-rails`
+4. Add it to your application's JavaScript pack:
 
-```ruby
-import Turbo from "turbo"
-```
+   ```js
+   import { Turbo, cable } from "@hotwired/turbo-rails"
+   ```
 
 
 ## Usage
