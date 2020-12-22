@@ -9,7 +9,6 @@ Gem::Specification.new do |s|
   s.homepage = "https://github.com/hotwired/turbo-rails"
   s.license  = "MIT"
 
-  s.required_ruby_version = ">= 2.7.0"
   s.add_dependency "rails", ">= 6.0.0"
 
   s.files      = `git ls-files`.split("\n")
