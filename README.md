@@ -47,6 +47,7 @@ If you use Webpacker, it's:
 
    ```js
    import { Turbo, cable } from "@hotwired/turbo-rails"
+   Turbo.start()
    ```
  
 Note, if you were using Turbolinks/Rails UJS in your app previously, you should remove them:
