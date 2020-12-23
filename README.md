@@ -48,7 +48,20 @@ If you use Webpacker, it's:
    ```js
    import { Turbo, cable } from "@hotwired/turbo-rails"
    ```
+ 
+Note, if you were using Turbolinks/Rails UJS in your app previously, you should remove them:
 
+1. Remove the `turbolinks` gem from your Gemfile.
+2. Run `./bin/bundle install`
+3. Run `./bin/yarn remove turbolinks @rails/ujs`
+4. Remove these from your application's JavaScript pack:
+
+   ```js
+   import Rails from "@rails/ujs"
+   import Turbolinks from "turbolinks"
+   Rails.start()
+   Turbolinks.start()
+   ```
 
 ## Usage
 
