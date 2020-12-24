@@ -2675,7 +2675,7 @@ var cable = Object.freeze({
 class TurboCableStreamSourceElement extends HTMLElement {
   async connectedCallback() {
     connectStreamSource(this);
-    this.subscription = subscribeTo(this.channel, {
+    this.subscription = await subscribeTo(this.channel, {
       received: this.dispatchMessageEvent.bind(this)
     });
   }

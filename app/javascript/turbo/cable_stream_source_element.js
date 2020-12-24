@@ -4,7 +4,7 @@ import { subscribeTo } from "./cable"
 class TurboCableStreamSourceElement extends HTMLElement {
   async connectedCallback() {
     connectStreamSource(this)
-    this.subscription = subscribeTo(this.channel, { received: this.dispatchMessageEvent.bind(this) })
+    this.subscription = await subscribeTo(this.channel, { received: this.dispatchMessageEvent.bind(this) })
   }
 
   disconnectedCallback() {
