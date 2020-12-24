@@ -63,10 +63,15 @@ Note, if you were using Turbolinks/Rails UJS in your app previously, you should 
    Turbolinks.start()
    ```
 
+Note, if you have previously **not used** action cable, and have commented it out in `config/application.rb`, you will need to ensure you are loading correctly.
+
+```rb
+require "action_cable/engine"
+```
+
 ## Usage
 
 You can watch [the video introduction to Hotwire](https://hotwire.dev/#screencast), which focuses extensively on demonstration Turbo in a Rails demo. Then you should familiarize yourself with [Turbo handbook](https://turbo.hotwire.dev/handbook/introduction) to understand Drive, Frames, and Streams in-depth. Finally, dive into the code documentation by starting with [`Turbo::FramesHelper`](https://github.com/hotwired/turbo-rails/blob/main/app/helpers/turbo/frames_helper.rb), [`Turbo::StreamsHelper`](https://github.com/hotwired/turbo-rails/blob/main/app/helpers/turbo/streams_helper.rb), [`Turbo::Streams::TagBuilder`](https://github.com/hotwired/turbo-rails/blob/main/app/models/turbo/streams/tag_builder.rb), and [`Turbo::Broadcastable`](https://github.com/hotwired/turbo-rails/blob/main/app/models/concerns/turbo/broadcastable.rb).
-
 
 ## Development
 
