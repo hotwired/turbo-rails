@@ -202,15 +202,14 @@ module Turbo::Broadcastable
   #   # Template: entries/_entry.turbo_stream.erb
   #   <%= turbo_stream.remove entry %>
   #
-  #   <%= turbo_stream.append "entries" do %>
-  #     <%= render partial: "entries/entry", locals: { entry: entry }, formats: [ :html ] %>
-  #   <% end if entry.active? %>
+  #   <%= turbo_stream.append "entries", entry if entry.active? %>
   #
-  #   # Sends:
-  #   #   <turbo-stream action="remove" target="entry_5"></turbo-stream>
-  #   #   <turbo-stream action="append" target="entries"><template><div id="entry_5">My Entry</div></template></turbo-stream>
-  #   # to the stream named "entry:5"
-  #   entry.broadcast_render_later
+  # Sends:
+  #
+  #   <turbo-stream action="remove" target="entry_5"></turbo-stream>
+  #   <turbo-stream action="append" target="entries"><template><div id="entry_5">My Entry</div></template></turbo-stream>
+  #
+  # ...to the stream named "entry:5"
   def broadcast_render_later(**rendering)
     broadcast_render_later_to self, **rendering
   end
