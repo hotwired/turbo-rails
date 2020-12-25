@@ -12,8 +12,8 @@
 #   <%= turbo_stream.remove entry %>
 #
 #   <%= turbo_stream.append "entries" do %>
-#     <% # format ensures that the _entry.html.erb partial is rendered, not _entry.turbo_stream.erb %>
-#     <%= render partial: "entries/entry", locals: { entry: entry }, formats: [ :html ] %>
+#     <% # format is automatically switched, such that _entry.html.erb partial is rendered, not _entry.turbo_stream.erb %>
+#     <%= render partial: "entries/entry", locals: { entry: entry } %>
 #   <%= end %>
 #
 # Or you can render the HTML that should be part of the update inline:
