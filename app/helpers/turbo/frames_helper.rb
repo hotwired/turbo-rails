@@ -10,11 +10,11 @@ module Turbo::FramesHelper
   #   <%= turbo_frame_tag tray, src: tray_path(tray) %>
   #   # => <turbo-frame id="tray_1" src="http://example.com/trays/1"></turbo-frame>
   #
-  #   <%= turbo_frame_tag "tray", src: tray_path(tray), links_target: "top" %>
-  #   # => <turbo-frame id="tray" links-target="top" src="http://example.com/trays/1"></turbo-frame>
+  #   <%= turbo_frame_tag "tray", src: tray_path(tray), target: "_top" %>
+  #   # => <turbo-frame id="tray" target="_top" src="http://example.com/trays/1"></turbo-frame>
   #
-  #   <%= turbo_frame_tag "tray", links_target: "other_tray" %>
-  #   # => <turbo-frame id="tray" links-target="other_tray"></turbo-frame>
+  #   <%= turbo_frame_tag "tray", target: "other_tray" %>
+  #   # => <turbo-frame id="tray" target="other_tray"></turbo-frame>
   #
   #   <%= turbo_frame_tag "tray" do %>
   #     <div>My tray frame!</div>
