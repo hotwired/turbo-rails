@@ -6,10 +6,15 @@ jobs:
       matrix:
         ruby-version:
           - "2.7"
-          - head
+        continue-on-error: [ false ]
+
+        include:
+          - ruby-version: head
+            continue-on-error: true
 
     name: ${{ format('Tests (Ruby {0})', matrix.ruby-version) }}
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.continue-on-error }}
 
     steps:
       - uses: actions/checkout@v1
