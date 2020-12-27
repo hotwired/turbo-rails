@@ -48,7 +48,7 @@ If you use Webpacker, it's:
    ```js
    import { Turbo, cable } from "@hotwired/turbo-rails"
    ```
- 
+
 Note, if you were using Turbolinks/Rails UJS in your app previously, you should remove them:
 
 1. Remove the `turbolinks` gem from your Gemfile.
@@ -65,7 +65,7 @@ Note, if you were using Turbolinks/Rails UJS in your app previously, you should 
 
 ## Usage
 
-You can watch [the video introduction to Hotwire](https://hotwire.dev/#screencast), which focuses extensively on demonstration Turbo in a Rails demo. Then you should familiarize yourself with [Turbo handbook](https://turbo.hotwire.dev/handbook/introduction) to understand Drive, Frames, and Streams in-depth. Finally, dive into the code documentation by starting with [`Turbo::FramesHelper`](https://github.com/hotwired/turbo-rails/blob/main/app/helpers/turbo/frames_helper.rb), [`Turbo::StreamsHelper`](https://github.com/hotwired/turbo-rails/blob/main/app/helpers/turbo/streams_helper.rb), [`Turbo::Streams::TagBuilder`](https://github.com/hotwired/turbo-rails/blob/main/app/models/turbo/streams/tag_builder.rb), and [`Turbo::Broadcastable`](https://github.com/hotwired/turbo-rails/blob/main/app/models/concerns/turbo/broadcastable.rb).
+You can watch [the video introduction to Hotwire](https://hotwire.dev/#screencast), which focuses extensively on demonstration Turbo in a Rails demo. Then you should familiarize yourself with [Turbo handbook](https://turbo.hotwire.dev/handbook/introduction) to understand Drive, Frames, and Streams in-depth. Finally, dive into the code documentation by starting with [`Turbo::FramesHelper`](https://github.com/hotwired/turbo-rails/blob/main/lib/turbo/helpers/frames_helper.rb), [`Turbo::StreamsHelper`](https://github.com/hotwired/turbo-rails/blob/main/lib/turbo/helpers/streams_helper.rb), [`Turbo::Streams::TagBuilder`](https://github.com/hotwired/turbo-rails/blob/main/app/models/turbo/streams/tag_builder.rb), and [`Turbo::Broadcastable`](https://github.com/hotwired/turbo-rails/blob/main/lib/turbo/models/broadcastable.rb).
 
 
 ## Development

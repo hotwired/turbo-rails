@@ -1,10 +1,8 @@
 require "rails/engine"
-require "turbo/test_assertions"
 
 module Turbo
   class Engine < Rails::Engine
     isolate_namespace Turbo
-    config.eager_load_namespaces << Turbo
     config.turbo = ActiveSupport::OrderedOptions.new
 
     initializer "turbo.assets" do
@@ -16,7 +14,7 @@ module Turbo
     initializer "turbo.helpers" do
       ActiveSupport.on_load(:action_controller_base) do
         include Turbo::Streams::TurboStreamsTagBuilder, Turbo::Frames::FrameRequest, Turbo::Native::Navigation
-        helper Turbo::Engine.helpers
+        helper Turbo::Helpers
       end
     end
 
@@ -46,6 +44,7 @@ module Turbo
 
     initializer "turbo.test_assertions" do
       ActiveSupport.on_load(:active_support_test_case) do
+        require "turbo/test/test_assertions"
         include Turbo::TestAssertions
       end
     end
