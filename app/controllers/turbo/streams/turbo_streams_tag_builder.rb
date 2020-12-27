@@ -11,6 +11,11 @@
 #     end
 #   end
 #
+# Render multiple turbo stream actions by passing an array : 
+#    render turbo_stream: [turbo_stream.append("post_replies", partial: "reply", locals: {reply: @reply}),
+#                          turbo_stream.replace("new_reply", partial: "new_reply", locals: {post_id: @post.id})]
+#
+#
 # This module adds that turbo_stream tag-builder object to all controllers. It's an instance of <tt>Turbo::Streams::TagBuilder</tt>
 # instantiated with the current <tt>view_context</tt>.
 module Turbo::Streams::TurboStreamsTagBuilder
