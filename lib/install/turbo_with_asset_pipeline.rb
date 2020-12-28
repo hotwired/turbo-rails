@@ -17,4 +17,4 @@ uncomment_lines "Gemfile", %(gem 'redis')
 say "Switch development cable to use redis"
 gsub_file "config/cable.yml", /development:\n\s+adapter: async/, "development:\n  adapter: redis\n  url: redis://localhost:6379/1"
 
-say "Turbo successfully installed 🎉 ⚡️", :green
+say "Turbo successfully installed ⚡️", :green
