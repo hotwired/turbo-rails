@@ -6,7 +6,7 @@ module Turbo
     isolate_namespace Turbo
     config.eager_load_namespaces << Turbo
     config.turbo = ActiveSupport::OrderedOptions.new
-    config.autoload_once_paths += %W(
+    config.autoload_once_paths = %W(
       #{root}/app/channels
       #{root}/app/controllers
       #{root}/app/controllers/concerns
