@@ -1,6 +1,29 @@
 module Turbo::StreamsHelper
   # Returns a new <tt>Turbo::Streams::TagBuilder</tt> object that accepts stream actions and renders them them as
   # the template tags needed to send across the wire. This object is automatically yielded to turbo_stream.erb templates.
+  #
+  # When responding to HTTP requests, controllers can declare `turbo_stream` format response templates in that same
+  # style as `html` and `json` response formats. For example, consider a `MessagesController` that responds to both
+  # `text/html` and `text/html; turbo-stream=*; charset=utf-8` requests along with a `.turbo_stream.erb` action template:
+  #
+  #   def create
+  #     @message = Message.create!(params.require(:message).permit(:content))
+  #     respond_to do |format|
+  #       format.turbo_stream
+  #       format.html { redirect_to messages_url }
+  #     end
+  #   end
+  #
+  #   <%# app/views/messages/create.turbo_stream.erb %>
+  #   <%= turbo_stream.append "messages", @message %>
+  #
+  #   <%= turbo_stream.replace "new_message" do %>
+  #     <%= render partial: "new_message", locals: { room_id: @room.id } %>
+  #   <% end %>
+  #
+  # When a `app/views/messages/create.turbo_stream.erb` template exists, the
+  # `MessagesController#create` will respond to `text/html; turbo-stream`
+  # requests by rendering the `messages/create.turbo_stream.erb` view template and transmitting the response
   def turbo_stream
     Turbo::Streams::TagBuilder.new(self)
   end
