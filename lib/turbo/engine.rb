@@ -6,6 +6,15 @@ module Turbo
     isolate_namespace Turbo
     config.eager_load_namespaces << Turbo
     config.turbo = ActiveSupport::OrderedOptions.new
+    config.autoload_once_paths = %W(
+      #{root}/app/channels
+      #{root}/app/controllers
+      #{root}/app/controllers/concerns
+      #{root}/app/helpers
+      #{root}/app/models
+      #{root}/app/models/concerns
+      #{root}/app/jobs
+    )
 
     initializer "turbo.assets" do
       if Rails.application.config.respond_to?(:assets)
