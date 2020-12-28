@@ -18,7 +18,7 @@ module Turbo::StreamsHelper
   #   <%= turbo_stream.append "messages", @message %>
   #
   #   <%= turbo_stream.replace "new_message" do %>
-  #     <%= render partial: "new_message", locals: { room_id: @room.id } %>
+  #     <%= render partial: "new_message", locals: { room: @room } %>
   #   <% end %>
   #
   # When a `app/views/messages/create.turbo_stream.erb` template exists, the
