@@ -1,5 +1,5 @@
 namespace :turbo do
-  desc "Install Turbo into the app. If webpacker is configured delegates to the webpacker, else uses asset pipeline"
+  desc "Install Turbo into the app"
   task :install do
     if defined?(Webpacker::Engine)
       Rake::Task["turbo:install:webpacker"].invoke
