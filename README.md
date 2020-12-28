@@ -38,13 +38,7 @@ The JavaScript for Turbo can either be run through the asset pipeline, which is 
 2. Run `./bin/bundle install`
 3. Run `./bin/rails turbo:install`
 
-`turbo:rails` automatically delegates to the JS pre-processor you use.
-If `webpacker` is configured hooks up through `webpacker`, else uses `asset pipline`.
-
-If you are not happy with automatic delegation you can use
-* `turbo:install:webpacker` - for the webpacker
-* `turbo:install:asset_pipeline` - for the asset pipeline
-
+Running `turbo:install` will install through NPM if Webpacker is installed in the application. Otherwise the asset pipeline version is used.
 
 
 ## Usage
