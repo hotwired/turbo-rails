@@ -15,18 +15,15 @@ module Turbo::StreamsHelper
   #   end
   #
   #   <%# app/views/messages/create.turbo_stream.erb %>
-  #   <%= turbo_stream.append "messages" do %>
-  #     <%= render @message %>
-  #   <% end %>
+  #   <%= turbo_stream.append "messages", @message %>
   #
   #   <%= turbo_stream.replace "new_message" do %>
-  #     <%= render partial: "new_message", locals: {chatroom_id: @chatroom.id} %>
+  #     <%= render partial: "new_message", locals: { room_id: @room.id } %>
   #   <% end %>
   #
   # When a `app/views/messages/create.turbo_stream.erb` template exists, the
-  # `MessagesController#create` will respond to `text/html; turbo-stream=*;
-  # charset=utf-8` requests by rendering the `messages/create.turbo_stream.erb`
-  # view template and transmitting the response
+  # `MessagesController#create` will respond to `text/html; turbo-stream`
+  # requests by rendering the `messages/create.turbo_stream.erb` view template and transmitting the response
   def turbo_stream
     Turbo::Streams::TagBuilder.new(self)
   end
