@@ -16,6 +16,8 @@
 module Turbo::Streams::TurboStreamsTagBuilder
   private
 
+  delegate :dom_id, to: ActionView::RecordIdentifier
+
   def turbo_stream
     Turbo::Streams::TagBuilder.new(view_context)
   end
