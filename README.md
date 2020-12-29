@@ -46,8 +46,9 @@ If you use Webpacker, it's:
 4. Add it to your application's JavaScript pack:
 
    ```js
-   import { Turbo, cable } from "@hotwired/turbo-rails"
+   import "@hotwired/turbo-rails"
    ```
+   Alternatively, you can import [`Turbo`](https://turbo.hotwire.dev/reference/drive) and/or [`cable`](https://github.com/hotwired/turbo-rails/blob/87542edecc4008c46249e5d8ede79b3eda62a5e2/app/javascript/turbo/cable.js) (`import { Turbo, cable } from "@hotwired/turbo-rails"`), but ensure that your application actually *uses* the members it `import`s when using this style (see [turbo-rails#48](https://github.com/hotwired/turbo-rails/issues/48)).
  
 Note, if you were using Turbolinks/Rails UJS in your app previously, you should remove them:
 
