@@ -18,7 +18,7 @@ module Turbo::StreamsHelper
   #   <%= turbo_stream.append "messages", @message %>
   #
   #   <%= turbo_stream.replace "new_message" do %>
-  #     <%= render partial: "new_message", locals: { room_id: @room.id } %>
+  #     <%= render partial: "new_message", locals: { room: @room } %>
   #   <% end %>
   #
   # When a `app/views/messages/create.turbo_stream.erb` template exists, the
@@ -38,7 +38,7 @@ module Turbo::StreamsHelper
   #
   # The example above will process all turbo streams sent to a stream name like <tt>account:5:entries</tt>
   # (when Current.account.id = 5). Updates to this stream can be sent like
-  # <tt>entry.broadcast_append_to entry.account, :entries, contrainer: "entries"</tt>.
+  # <tt>entry.broadcast_append_to entry.account, :entries, container: "entries"</tt>.
   def turbo_stream_from(*streamables)
     tag.turbo_cable_stream_source channel: "Turbo::StreamsChannel", "signed-stream-name": Turbo::StreamsChannel.signed_stream_name(streamables)
   end
