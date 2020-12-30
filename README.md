@@ -32,37 +32,14 @@ With this Rails integration, you can create these asynchronous updates directly 
 
 ## Installation
 
-The JavaScript for Turbo can either be run through the asset pipeline, which is included with this gem, or through the package that lives on NPM, through Webpacker. If you use the asset pipeline, installation is as follows:
+The JavaScript for Turbo can either be run through the asset pipeline, which is included with this gem, or through the package that lives on NPM, through Webpacker.
 
 1. Add the `turbo-rails` gem to your Gemfile: `gem 'turbo-rails'`
 2. Run `./bin/bundle install`
 3. Run `./bin/rails turbo:install`
 
-If you use Webpacker, it's:
+Running `turbo:install` will install through NPM if Webpacker is installed in the application. Otherwise the asset pipeline version is used.
 
-1. Add the `turbo-rails` gem to your Gemfile: `gem 'turbo-rails'`
-2. Run `./bin/bundle install`
-3. Run `./bin/yarn add @hotwired/turbo-rails`
-4. Add it to your application's JavaScript pack:
-
-   ```js
-   import "@hotwired/turbo-rails"
-   ```
-   Alternatively, you can import [`Turbo`](https://turbo.hotwire.dev/reference/drive) and/or [`cable`](https://github.com/hotwired/turbo-rails/blob/87542edecc4008c46249e5d8ede79b3eda62a5e2/app/javascript/turbo/cable.js) (`import { Turbo, cable } from "@hotwired/turbo-rails"`), but ensure that your application actually *uses* the members it `import`s when using this style (see [turbo-rails#48](https://github.com/hotwired/turbo-rails/issues/48)).
- 
-Note, if you were using Turbolinks/Rails UJS in your app previously, you should remove them:
-
-1. Remove the `turbolinks` gem from your Gemfile.
-2. Run `./bin/bundle install`
-3. Run `./bin/yarn remove turbolinks @rails/ujs`
-4. Remove these from your application's JavaScript pack:
-
-   ```js
-   import Rails from "@rails/ujs"
-   import Turbolinks from "turbolinks"
-   Rails.start()
-   Turbolinks.start()
-   ```
 
 ## Usage
 
