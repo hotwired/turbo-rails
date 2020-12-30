@@ -48,6 +48,15 @@ If you're using Webpack and need to use either the cable consumer or the Turbo i
 You can watch [the video introduction to Hotwire](https://hotwire.dev/#screencast), which focuses extensively on demonstration Turbo in a Rails demo. Then you should familiarize yourself with [Turbo handbook](https://turbo.hotwire.dev/handbook/introduction) to understand Drive, Frames, and Streams in-depth. Finally, dive into the code documentation by starting with [`Turbo::FramesHelper`](https://github.com/hotwired/turbo-rails/blob/main/app/helpers/turbo/frames_helper.rb), [`Turbo::StreamsHelper`](https://github.com/hotwired/turbo-rails/blob/main/app/helpers/turbo/streams_helper.rb), [`Turbo::Streams::TagBuilder`](https://github.com/hotwired/turbo-rails/blob/main/app/models/turbo/streams/tag_builder.rb), and [`Turbo::Broadcastable`](https://github.com/hotwired/turbo-rails/blob/main/app/models/concerns/turbo/broadcastable.rb).
 
 
+## Compatibility with Rails UJS
+
+Rails UJS includes helpers for sending links and forms over XMLHttpRequest, so you can respond with Ajax. Turbo supersedes this functionality, so you should ensure that you're either running Rails 6.1 with the defaults that turn this off for forms, or that you add `config.action_view.form_with_generates_remote_forms = false` to your `config/application.rb`.
+
+Note that the helpers that turn `link_to` into remote invocations will _not_ currently work with Turbo. Links that have been made remote will not stick within frames nor will they allow you to respond with turbo stream actions. The recommendation is to replace these links with styled `button_to`, so you'll flow through a regular form, and you'll be better off with a11y compliance.
+
+You can still use the `data-confirm` and `data-disable-with`.
+
+
 ## Development
 
 * To run the Rails tests: `bundle exec rake`.
