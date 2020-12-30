@@ -34,11 +34,11 @@ module Turbo::StreamsHelper
   #
   #   # app/views/entries/index.html.erb
   #   <%= turbo_stream_from Current.account, :entries %>
-  #   <div id="entries">New entries will be appended to this container</div>
+  #   <div id="entries">New entries will be appended to this target</div>
   #
   # The example above will process all turbo streams sent to a stream name like <tt>account:5:entries</tt>
   # (when Current.account.id = 5). Updates to this stream can be sent like
-  # <tt>entry.broadcast_append_to entry.account, :entries, container: "entries"</tt>.
+  # <tt>entry.broadcast_append_to entry.account, :entries, target: "entries"</tt>.
   def turbo_stream_from(*streamables)
     tag.turbo_cable_stream_source channel: "Turbo::StreamsChannel", "signed-stream-name": Turbo::StreamsChannel.signed_stream_name(streamables)
   end
