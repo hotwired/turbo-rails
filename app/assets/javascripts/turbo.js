@@ -19,7 +19,7 @@ const submittersByForm = new WeakMap;
 function findSubmitterFromClickTarget(target) {
   const element = target instanceof Element ? target : target instanceof Node ? target.parentElement : null;
   const candidate = element ? element.closest("input, button") : null;
-  return (candidate === null || candidate === void 0 ? void 0 : candidate.getAttribute("type")) == "submit" ? candidate : null;
+  return (candidate === null || candidate === void 0 ? void 0 : candidate.type) == "submit" ? candidate : null;
 }
 
 function clickCaptured(event) {
@@ -128,6 +128,12 @@ class FetchResponse {
   }
   get failed() {
     return !this.succeeded;
+  }
+  get clientError() {
+    return this.statusCode >= 400 && this.statusCode <= 499;
+  }
+  get serverError() {
+    return this.statusCode >= 500 && this.statusCode <= 599;
   }
   get redirected() {
     return this.response.redirected;
@@ -377,7 +383,7 @@ class FormSubmission {
   }
   get method() {
     var _a;
-    const method = ((_a = this.submitter) === null || _a === void 0 ? void 0 : _a.getAttribute("formmethod")) || this.formElement.method;
+    const method = ((_a = this.submitter) === null || _a === void 0 ? void 0 : _a.getAttribute("formmethod")) || this.formElement.getAttribute("method") || "";
     return fetchMethodFromString(method.toLowerCase()) || FetchMethod.get;
   }
   get action() {
@@ -429,7 +435,9 @@ class FormSubmission {
     };
   }
   requestSucceededWithResponse(request, response) {
-    if (this.requestMustRedirect(request) && !response.redirected) {
+    if (response.clientError || response.serverError) {
+      this.delegate.formSubmissionFailedWithResponse(this, response);
+    } else if (this.requestMustRedirect(request) && !response.redirected) {
       const error = new Error("Form responses must redirect to another location");
       this.delegate.formSubmissionErrored(this, error);
     } else {
@@ -614,7 +622,9 @@ class FrameController {
     const frame = this.findFrameElement(formSubmission.formElement);
     frame.controller.loadResponse(response);
   }
-  formSubmissionFailedWithResponse(formSubmission, fetchResponse) {}
+  formSubmissionFailedWithResponse(formSubmission, fetchResponse) {
+    this.element.controller.loadResponse(fetchResponse);
+  }
   formSubmissionErrored(formSubmission, error) {}
   formSubmissionFinished(formSubmission) {}
   navigateFrame(element, url) {
@@ -1570,7 +1580,8 @@ class FormSubmitObserver {
         const form = event.target instanceof HTMLFormElement ? event.target : undefined;
         const submitter = event.submitter || undefined;
         if (form) {
-          if (this.delegate.willSubmitForm(form, submitter)) {
+          const method = (submitter === null || submitter === void 0 ? void 0 : submitter.getAttribute("formmethod")) || form.method;
+          if (method != "dialog" && this.delegate.willSubmitForm(form, submitter)) {
             event.preventDefault();
             this.delegate.formSubmitted(form, submitter);
           }
@@ -1803,12 +1814,10 @@ class Navigator {
   }
   formSubmissionStarted(formSubmission) {}
   async formSubmissionSucceededWithResponse(formSubmission, fetchResponse) {
-    console.log("Form submission succeeded", formSubmission);
     if (formSubmission == this.formSubmission) {
       const responseHTML = await fetchResponse.responseHTML;
       if (responseHTML) {
         if (formSubmission.method != FetchMethod.get) {
-          console.log("Clearing snapshot cache after successful form submission");
           this.view.clearSnapshotCache();
         }
         const {statusCode: statusCode} = fetchResponse;
@@ -1818,17 +1827,21 @@ class Navigator {
             responseHTML: responseHTML
           }
         };
-        console.log("Visiting", fetchResponse.location, visitOptions);
         this.proposeVisit(fetchResponse.location, visitOptions);
       }
     }
   }
-  formSubmissionFailedWithResponse(formSubmission, fetchResponse) {
-    console.error("Form submission failed", formSubmission, fetchResponse);
+  async formSubmissionFailedWithResponse(formSubmission, fetchResponse) {
+    const responseHTML = await fetchResponse.responseHTML;
+    if (responseHTML) {
+      const snapshot = Snapshot.fromHTMLString(responseHTML);
+      this.view.render({
+        snapshot: snapshot
+      }, (() => {}));
+      this.view.clearSnapshotCache();
+    }
   }
-  formSubmissionErrored(formSubmission, error) {
-    console.error("Form submission failed", formSubmission, error);
-  }
+  formSubmissionErrored(formSubmission, error) {}
   formSubmissionFinished(formSubmission) {}
   visitStarted(visit) {
     this.delegate.visitStarted(visit);
@@ -2475,7 +2488,7 @@ class Session {
     });
   }
   willFollowLinkToLocation(link, location) {
-    return this.linkIsVisitable(link) && this.locationIsVisitable(location) && this.applicationAllowsFollowingLinkToLocation(link, location);
+    return this.elementIsNavigable(link) && this.locationIsVisitable(location) && this.applicationAllowsFollowingLinkToLocation(link, location);
   }
   followedLinkToLocation(link, location) {
     const action = this.getActionForLink(link);
@@ -2496,7 +2509,7 @@ class Session {
     this.notifyApplicationAfterPageLoad(visit.getTimingMetrics());
   }
   willSubmitForm(form, submitter) {
-    return true;
+    return this.elementIsNavigable(form) && this.elementIsNavigable(submitter);
   }
   formSubmitted(form, submitter) {
     this.navigator.submitForm(form, submitter);
@@ -2582,8 +2595,8 @@ class Session {
     const action = link.getAttribute("data-turbo-action");
     return isAction(action) ? action : "advance";
   }
-  linkIsVisitable(link) {
-    const container = link.closest("[data-turbo]");
+  elementIsNavigable(element) {
+    const container = element === null || element === void 0 ? void 0 : element.closest("[data-turbo]");
     if (container) {
       return container.getAttribute("data-turbo") != "false";
     } else {
