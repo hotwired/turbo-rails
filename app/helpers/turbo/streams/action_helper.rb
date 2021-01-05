@@ -8,7 +8,7 @@ module Turbo::Streams::ActionHelper
   #   # => <turbo-stream action="replace" target="message_1"><template><div id="message_1">Hello!</div></template></turbo-stream>
   def turbo_stream_action_tag(action, target:, template: nil)
     target   = convert_to_turbo_stream_dom_id(target)
-    template = template ? "<template>#{template}</template>" : ""
+    template = action.to_sym == :remove ? "" : "<template>#{template}</template>"
 
     %(<turbo-stream action="#{action}" target="#{target}">#{template}</turbo-stream>).html_safe
   end
