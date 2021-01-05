@@ -5,8 +5,7 @@ abort "❌ Webpacker not found. Exiting." unless defined?(Webpacker::Engine)
 
 say "Install Turbo"
 run "yarn add @hotwired/turbo-rails"
-insert_into_file "#{Webpacker.config.source_entry_path}/application.js",
-  "import \"@hotwired/turbo-rails\"\n", before: TURBOLINKS_REGEX
+insert_into_file "#{Webpacker.config.source_entry_path}/application.js", "import \"@hotwired/turbo-rails\"\n", before: /import.*ActiveStorage/
 
 say "Remove Turbolinks"
 gsub_file 'Gemfile', /gem 'turbolinks'.*/, ''
