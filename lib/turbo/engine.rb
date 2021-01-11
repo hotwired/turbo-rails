@@ -36,7 +36,7 @@ module Turbo
     end
 
     initializer "turbo.mimetype" do
-      Mime::Type.register "application/vnd.turbo.stream.html", :turbo_stream
+      Mime::Type.register "text/vnd.turbo-stream.html", :turbo_stream
     end
 
     initializer "turbo.renderer" do

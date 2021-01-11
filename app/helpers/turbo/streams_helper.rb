@@ -4,7 +4,7 @@ module Turbo::StreamsHelper
   #
   # When responding to HTTP requests, controllers can declare `turbo_stream` format response templates in that same
   # style as `html` and `json` response formats. For example, consider a `MessagesController` that responds to both
-  # `text/html` and `application/vnd.turbo.stream.html` requests along with a `.turbo_stream.erb` action template:
+  # `text/html` and `text/vnd.turbo-stream.html` requests along with a `.turbo_stream.erb` action template:
   #
   #   def create
   #     @message = Message.create!(params.require(:message).permit(:content))
@@ -22,7 +22,7 @@ module Turbo::StreamsHelper
   #   <% end %>
   #
   # When a `app/views/messages/create.turbo_stream.erb` template exists, the
-  # `MessagesController#create` will respond to `application/vnd.turbo.stream.html`
+  # `MessagesController#create` will respond to `text/vnd.turbo-stream.html`
   # requests by rendering the `messages/create.turbo_stream.erb` view template and transmitting the response
   def turbo_stream
     Turbo::Streams::TagBuilder.new(self)
