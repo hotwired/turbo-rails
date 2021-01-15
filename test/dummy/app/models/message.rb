@@ -3,6 +3,10 @@ class Message
 
   attr_reader :record_id, :content
 
+  def self.model_name
+    ActiveModel::Name.new(self)
+  end
+
   def initialize(record_id:, content:)
     @record_id, @content = record_id, content
   end
@@ -24,6 +28,6 @@ class Message
   end
 
   def model_name
-    ActiveModel::Name.new(self.class)
+    self.class.model_name
   end
 end
