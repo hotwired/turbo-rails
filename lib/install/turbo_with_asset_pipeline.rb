@@ -4,11 +4,21 @@ if APPLICATION_LAYOUT_PATH.exist?
   say "Yield head in application layout for cache helper"
   insert_into_file APPLICATION_LAYOUT_PATH.to_s, "\n    <%= yield :head %>", before: /\s*<\/head>/
 
-  say "Add Turbo include tags in application layout"
-  insert_into_file APPLICATION_LAYOUT_PATH.to_s, "\n    <%= turbo_include_tags %>", before: /\s*<\/head>/
+  if APPLICATION_LAYOUT_PATH.read =~ /stimulus/
+    say "Add Turbo include tags in application layout"
+    insert_into_file APPLICATION_LAYOUT_PATH.to_s, %(\n    <%= javascript_include_tag "turbo", type: "module-shim" %>), after: /<%= stimulus_include_tags %>/
+  else
+    say "Add Turbo include tags in application layout"
+    insert_into_file APPLICATION_LAYOUT_PATH.to_s, %(\n    <%= javascript_include_tag "turbo", type: "module" %>), before: /\s*<\/head>/
+  end
 else
   say "Default application.html.erb is missing!", :red
-  say "        Add <%= turbo_include_tags %> and <%= yield :head %> within the <head> tag in your custom layout."
+
+  if APPLICATION_LAYOUT_PATH.read =~ /stimulus/
+    say %(        Add <%= javascript_include_tag("turbo", type: "module-shim") %> and <%= yield :head %> within the <head> tag after Stimulus includes in your custom layout.)
+  else
+    say %(        Add <%= javascript_include_tag("turbo", type: "module") %> and <%= yield :head %> within the <head> tag in your custom layout.)
+  end
 end
 
 say "Enable redis in bundle"
