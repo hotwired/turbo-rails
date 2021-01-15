@@ -1,4 +1,5 @@
 APPLICATION_LAYOUT_PATH = Rails.root.join("app/views/layouts/application.html.erb")
+IMPORTMAP_PATH = Rails.root.join("app/assets/javascripts/importmap.json.erb")
 
 if APPLICATION_LAYOUT_PATH.exist?
   say "Yield head in application layout for cache helper"
@@ -7,6 +8,11 @@ if APPLICATION_LAYOUT_PATH.exist?
   if APPLICATION_LAYOUT_PATH.read =~ /stimulus/
     say "Add Turbo include tags in application layout"
     insert_into_file APPLICATION_LAYOUT_PATH.to_s, %(\n    <%= javascript_include_tag "turbo", type: "module-shim" %>), after: /<%= stimulus_include_tags %>/
+
+    if IMPORTMAP_PATH.exist?
+      say "Add Turbo to importmap"
+      insert_into_file IMPORTMAP_PATH, %(    "turbo": "<%= asset_path "turbo" %>",\n), after: /  "imports": {\n/
+    end
   else
     say "Add Turbo include tags in application layout"
     insert_into_file APPLICATION_LAYOUT_PATH.to_s, %(\n    <%= javascript_include_tag "turbo", type: "module" %>), before: /\s*<\/head>/
