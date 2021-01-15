@@ -11,7 +11,7 @@ if APPLICATION_LAYOUT_PATH.exist?
 
     if IMPORTMAP_PATH.exist?
       say "Add Turbo to importmap"
-      insert_into_file IMPORTMAP_PATH, %(    "turbo": "<%= asset_path "turbo" %>",\n), after: /  "imports": {\n/
+      insert_into_file IMPORTMAP_PATH, %(    "turbo": "<%= asset_path "turbo" %>",\n), after: /  "imports": {\s*\n/
     end
   else
     say "Add Turbo include tags in application layout"
