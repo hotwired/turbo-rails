@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    turbo-rails (0.5.4)
+    turbo-rails (0.5.5)
       rails (>= 6.0.0)
 
 GEM
