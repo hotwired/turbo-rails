@@ -51,10 +51,32 @@ module Turbo::Broadcastable
     #     belongs_to :board
     #     broadcasts_to ->(message) { [ message.board, :messages ] }, inserts_by: :prepend, target: "board_messages"
     #   end
-    def broadcasts_to(stream, inserts_by: :append, target: broadcast_target_default)
-      after_create_commit  -> { broadcast_action_later_to stream.try(:call, self) || send(stream), action: inserts_by, target: target }
-      after_update_commit  -> { broadcast_replace_later_to stream.try(:call, self) || send(stream) }
-      after_destroy_commit -> { broadcast_remove_to stream.try(:call, self) || send(stream) }
+    #
+    # To broadcast to multiple unique channels for has_many associations
+    # Below is an example of a Video Call having many to many relationship to User model
+    # If the Video Call is added, updated or deleted we want to notify only users associated
+    # with the Video call and not everyone
+    #
+    #   class VideoCall < ApplicationRecord
+    #     has_and_belongs_to_many :users
+    #     broadcasts_to ->(video_call) { :video_calls }, with: :users
+    #   end
+    def broadcasts_to(stream, with: nil, inserts_by: :append, target: broadcast_target_default)
+      after_create_commit  -> {
+        broadcast_stream_with(stream, with) do |streamables|
+          broadcast_action_later_to streamables, action: inserts_by, target: target
+        end
+      }
+      after_update_commit  -> {
+        broadcast_stream_with(stream, with) do |streamables|
+          broadcast_replace_later_to streamables
+        end
+      }
+      after_destroy_commit -> {
+        broadcast_stream_with(stream, with) do |streamables|
+          broadcast_remove_to streamables
+        end
+      }
     end
 
     # Same as <tt>#broadcasts_to</tt>, but the designated stream is automatically set to the current model.
@@ -235,6 +257,17 @@ module Turbo::Broadcastable
       options.tap do |o|
         o[:locals]    = (o[:locals] || {}).reverse_merge!(model_name.singular.to_sym => self)
         o[:partial] ||= to_partial_path
+      end
+    end
+
+    def broadcast_stream_with(stream, association)
+      streamables = stream.try(:call, self) || send(stream)
+      if association.present?
+        send(association).each do |m|
+          yield [*streamables, m]
+        end
+      else
+        yield streamables
       end
     end
 end
