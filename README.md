@@ -56,11 +56,27 @@ You can watch [the video introduction to Hotwire](https://hotwire.dev/#screencas
 
 ## Compatibility with Rails UJS
 
-Rails UJS includes helpers for sending links and forms over XMLHttpRequest, so you can respond with Ajax. Turbo supersedes this functionality, so you should ensure that you're either running Rails 6.1 with the defaults that turn this off for forms, or that you add `config.action_view.form_with_generates_remote_forms = false` to your `config/application.rb`.
+[Rails UJS](https://github.com/rails/rails/tree/main/actionview/app/assets/javascripts) includes four features that make user interfaces slick. Some work directly with Turbo, while others are superseeded by it.
 
-Note that the helpers that turn `link_to` into remote invocations will _not_ currently work with Turbo. Links that have been made remote will not stick within frames nor will they allow you to respond with turbo stream actions. The recommendation is to replace these links with styled `button_to`, so you'll flow through a regular form, and you'll be better off with a11y compliance.
+#### `data-confirm`
 
-You can still use the `data-confirm` and `data-disable-with`.
+`data-confirm` works perfectly with Turbo.
+
+#### `data-disable-with`
+
+`data-disable-with` works, with a caveat:
+
+- Submit buttons are not automatically re-enabled on a failed submission. You can add a [Stimulus controller](https://github.com/hotwired/turbo/issues/55#issuecomment-757346604) to bring this behavior back.
+
+#### `data-remote`
+
+`data-remote` **is not compatible with Turbo**. Set `config.action_view.form_with_generates_remote_forms = false`  (or use Rails 6.1 defaults) to ensure your forms are not marked as `remote: true`, and avoid setting `remote: true` on links or buttons. If you currently have a `link_to url, remote: true`, the recommendation is to replace this link with a styled `button_to`, so you'll flow through a regular form, and you'll be better off with a11y compliance.
+
+#### `data-method`
+
+`data-method` works, with a caveat:
+
+- You can't disable Turbo on `data-method` links, so `link_to url, method: :delete, data: { turbo: false }` will still run through Turbo. If you need to disable Turbo for a specific `data-method` link, use a styled `button_to` instead.
 
 
 ## Development
