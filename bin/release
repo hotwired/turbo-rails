@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+VERSION=$1
+
+printf "module Turbo\n  VERSION = \"$VERSION\"\nend\n" > ./lib/turbo/version.rb
+bundle
+git add Gemfile.lock lib/turbo/version.rb
+git commit -m "Bump version for $VERSION"
+git push
+git tag v$VERSION
+git push --tags
+gem build turbo-rails.gemspec
+gem push "turbo-rails-$VERSION.gem"
