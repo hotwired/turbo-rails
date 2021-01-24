@@ -1,4 +1,4 @@
-def run_install_template(path) system "#{RbConfig.ruby} ./bin/rails app:template LOCATION=#{File.expand_path("../install/#{path}.rb",  __dir__)}" end
+def run_turbo_install_template(path) system "#{RbConfig.ruby} ./bin/rails app:template LOCATION=#{File.expand_path("../install/#{path}.rb",  __dir__)}" end
 
 namespace :turbo do
   desc "Install Turbo into the app"
@@ -13,12 +13,12 @@ namespace :turbo do
   namespace :install do
     desc "Install Turbo into the app with asset pipeline"
     task :asset_pipeline do
-      run_install_template "turbo_with_asset_pipeline"
+      run_turbo_install_template "turbo_with_asset_pipeline"
     end
 
     desc "Install Turbo into the app with webpacker"
     task :webpacker do
-      run_install_template "turbo_with_webpacker"
+      run_turbo_install_template "turbo_with_webpacker"
     end
   end
 end
