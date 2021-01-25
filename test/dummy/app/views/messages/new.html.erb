@@ -1,0 +1,22 @@
+<%= content_for :head do %>
+  <script type="module">
+    import Rails from "https://cdn.skypack.dev/@rails/ujs"
+
+    const { delegate, disableElement, enableElement } = Rails
+
+    delegate(document, Rails.linkDisableSelector,   "turbo:before-cache", enableElement)
+    delegate(document, Rails.buttonDisableSelector, "turbo:before-cache", enableElement)
+    delegate(document, Rails.buttonDisableSelector, "turbo:submit-end", enableElement)
+
+    delegate(document, Rails.formSubmitSelector, "turbo:submit-start", disableElement)
+    delegate(document, Rails.formSubmitSelector, "turbo:submit-end", enableElement)
+    delegate(document, Rails.formSubmitSelector, "turbo:before-cache", enableElement)
+  </script>
+<% end %>
+
+<a href="<%= new_message_path(sleep: 2) %>" data-remote="true" data-disable-with="Reloading">Reload</a>
+
+<%= form_with url: messages_path(sleep: 2), data: { remote: true } do %>
+  <button data-disable-with="Submitting">Submit</button>
+  <button data-confirm="Are you sure?">Confirm</button>
+<% end %>
