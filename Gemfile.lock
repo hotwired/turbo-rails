@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    turbo-rails (0.5.7)
+    turbo-rails (0.5.8)
       rails (>= 6.0.0)
 
 GEM
@@ -68,7 +68,7 @@ GEM
       zeitwerk (~> 2.3)
     builder (3.2.4)
     byebug (11.0.1)
-    concurrent-ruby (1.1.7)
+    concurrent-ruby (1.1.8)
     crass (1.0.6)
     erubi (1.10.0)
     globalid (0.4.2)
@@ -129,7 +129,7 @@ GEM
       actionpack (>= 4.0)
       activesupport (>= 4.0)
       sprockets (>= 3.0.0)
-    thor (1.0.1)
+    thor (1.1.0)
     tzinfo (2.0.4)
       concurrent-ruby (~> 1.0)
     websocket-driver (0.7.3)
