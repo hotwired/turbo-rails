@@ -27,6 +27,7 @@ class Turbo::Streams::TagBuilder
 
   def initialize(view_context)
     @view_context = view_context
+    @view_context.formats |= [:html]
   end
 
   # Removes the <tt>target</tt> from the dom. The target can either be a dom id string or an object that responds to
