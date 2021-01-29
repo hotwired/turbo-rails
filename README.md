@@ -60,7 +60,9 @@ You can watch [the video introduction to Hotwire](https://hotwire.dev/#screencas
 
 #### `data-confirm`
 
-`data-confirm` works perfectly with Turbo.
+`data-confirm` works in browsers.
+
+If using a native adapter, you may need to implement additional logic, such as a [WKUIDelegate](https://developer.apple.com/documentation/webkit/wkuidelegate#//apple_ref/occ/intfm/WKUIDelegate).
 
 #### `data-disable-with`
 
