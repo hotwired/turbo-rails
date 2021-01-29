@@ -1,5 +1,5 @@
 module Turbo::StreamsHelper
-  # Returns a new <tt>Turbo::Streams::TagBuilder</tt> object that accepts stream actions and renders them them as
+  # Returns a new <tt>Turbo::Streams::TagBuilder</tt> object that accepts stream actions and renders them as
   # the template tags needed to send across the wire. This object is automatically yielded to turbo_stream.erb templates.
   #
   # When responding to HTTP requests, controllers can declare `turbo_stream` format response templates in that same
