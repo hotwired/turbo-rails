@@ -40,7 +40,7 @@ STREAM
 
   test "render correct partial for namespaced models" do
     get users_profile_path(id: 1), as: :turbo_stream
-    assert_dom_equal <<~HTML, @response.body
+    assert_dom_equal <<~HTML, @response.body.remove(/\n(?=<\/)/)
       <turbo-stream action="replace" target="users_profile_1"><template><p>David</p></template></turbo-stream>
       <turbo-stream action="update" target="users_profile_1"><template><p>David</p></template></turbo-stream>
     HTML
