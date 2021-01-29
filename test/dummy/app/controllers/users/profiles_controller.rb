@@ -1,9 +1,5 @@
-module Users
-  class ProfilesController < ApplicationController
-    
-    def show
-      @profile = Users::Profile.new(record_id: 1, name: "User")
-    end
-    
+class Users::ProfilesController < ApplicationController
+  def show
+    @profile = Users::Profile.new(id: 1, name: "User")
   end
 end
