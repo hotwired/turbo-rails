@@ -26,4 +26,15 @@ class Turbo::StreamsControllerTest < ActionDispatch::IntegrationTest
 <turbo-stream action="prepend" target="messages"><template><p>OLLA!</p></template></turbo-stream>
 STREAM
   end
+
+  test "includes html format when rendering turbo_stream actions" do
+    assert_nothing_raised do
+      post posts_path, as: :turbo_stream
+      assert_equal <<-STREAM.chomp, @response.body
+<turbo-stream action="update" target="form-area"><template>
+  Form
+</template></turbo-stream>
+STREAM
+    end
+  end
 end
