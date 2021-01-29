@@ -122,7 +122,7 @@ class Turbo::Streams::TagBuilder
     def render_record(possible_record)
       if possible_record.respond_to?(:to_partial_path)
         record = possible_record
-        @view_context.render(partial: record.to_partial_path, locals: { record.model_name.singular.to_sym => record }, formats: [ :html ])
+        @view_context.render(partial: record.to_partial_path, object: record, formats: :html)
       end
     end
 end
