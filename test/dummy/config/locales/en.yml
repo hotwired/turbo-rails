@@ -31,3 +31,7 @@
 
 en:
   hello: "Hello world"
+  admin:
+    companies:
+      company:
+        name: "Company:"

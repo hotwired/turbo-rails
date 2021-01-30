@@ -43,4 +43,12 @@ class Turbo::StreamsControllerTest < ActionDispatch::IntegrationTest
       <turbo-stream action="update" target="users_profile_1"><template><p>David</p></template></turbo-stream>
     HTML
   end
+
+  test "render correct partial and I18n with a custom view path in the controller" do
+    get admin_company_path(id: 1), as: :turbo_stream
+    assert_dom_equal <<~HTML, @response.body.remove(/\n(?=<\/)/)
+      <turbo-stream action="replace" target="company_1"><template><p>Company:</p>
+      <p>Basecamp</p></template></turbo-stream>
+    HTML
+  end
 end
