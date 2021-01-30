@@ -14,12 +14,7 @@ module Turbo::Streams::ActionHelper
   end
 
   private
-    def convert_to_turbo_stream_dom_id(element_or_dom_id)
-      if element_or_dom_id.respond_to?(:to_key)
-        element = element_or_dom_id
-        ActionView::RecordIdentifier.dom_id(element)
-      else
-        dom_id = element_or_dom_id
-      end
+    def convert_to_turbo_stream_dom_id(target)
+      target.respond_to?(:to_key) ? ActionView::RecordIdentifier.dom_id(target) : target
     end
 end
