@@ -16,6 +16,9 @@ module Turbo::FramesHelper
   #   <%= turbo_frame_tag "tray", target: "other_tray" %>
   #   # => <turbo-frame id="tray" target="other_tray"></turbo-frame>
   #
+  #   <%= turbo_frame_tag "tray", src: tray_path(tray), loading: "lazy" %>
+  #   # => <turbo-frame id="tray" src="http://example.com/trays/1" loading="lazy"></turbo-frame>
+  #
   #   <%= turbo_frame_tag "tray" do %>
   #     <div>My tray frame!</div>
   #   <% end %>
