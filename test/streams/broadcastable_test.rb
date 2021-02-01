@@ -77,4 +77,11 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
       @message.broadcast_action "prepend"
     end
   end
+
+  test "render correct local name in partial for namespaced models" do
+    @profile = Users::Profile.new(id: 1, name: "Ryan")
+    assert_broadcast_on @profile.to_param, turbo_stream_action_tag("replace", target: "users_profile_1", template: "<p>Ryan</p>\n") do
+      @profile.broadcast_replace
+    end
+  end
 end

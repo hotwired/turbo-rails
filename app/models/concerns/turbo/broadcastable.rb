@@ -233,7 +233,7 @@ module Turbo::Broadcastable
 
     def broadcast_rendering_with_defaults(options)
       options.tap do |o|
-        o[:locals]    = (o[:locals] || {}).reverse_merge!(model_name.singular.to_sym => self)
+        o[:object] ||= self
         o[:partial] ||= to_partial_path
       end
     end
