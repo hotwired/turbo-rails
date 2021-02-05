@@ -140,7 +140,7 @@ module Turbo::Broadcastable
     Turbo::StreamsChannel.broadcast_prepend_to *streamables, target: target, **broadcast_rendering_with_defaults(rendering)
   end
 
-  # Same as <tt>#broadcast_append_to</tt>, but the designated stream is automatically set to the current model.
+  # Same as <tt>#broadcast_prepend_to</tt>, but the designated stream is automatically set to the current model.
   def broadcast_prepend(target: broadcast_target_default, **rendering)
     broadcast_prepend_to self, target: target, **rendering
   end
@@ -190,7 +190,7 @@ module Turbo::Broadcastable
     broadcast_prepend_later_to self, target: target, **rendering
   end
 
-  # Same as <tt>broadcast_action_later_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
+  # Same as <tt>broadcast_action_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
   def broadcast_action_later_to(*streamables, action:, target: broadcast_target_default, **rendering)
     Turbo::StreamsChannel.broadcast_action_later_to(*streamables, action: action, target: target, **broadcast_rendering_with_defaults(rendering))
   end
@@ -219,7 +219,7 @@ module Turbo::Broadcastable
     broadcast_render_later_to self, **rendering
   end
 
-  # Same as <tt>broadcast_prepend_to</tt> but run with the added option of naming the stream using the passed
+  # Same as <tt>broadcast_render_later</tt> but run with the added option of naming the stream using the passed
   # <tt>streamables</tt>.
   def broadcast_render_later_to(*streamables, **rendering)
     Turbo::StreamsChannel.broadcast_render_later_to *streamables, **broadcast_rendering_with_defaults(rendering)
