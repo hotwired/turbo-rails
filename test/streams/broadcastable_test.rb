@@ -84,4 +84,14 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
       @profile.broadcast_replace
     end
   end
+
+  test "broadcastable target defaults to the pluralized model name" do
+    assert_equal "messages", @message.send(:broadcast_target_default)
+  end
+
+  test "broadcastable target can be overriden to be namespaced by parent model" do
+    comment = @message.create_comment(content: "content")
+
+    assert_equal "message_1_comments", comment.send(:broadcast_target_default)
+  end
 end

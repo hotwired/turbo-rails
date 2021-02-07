@@ -11,6 +11,10 @@ class Message
     @record_id, @content = record_id, content
   end
 
+  def create_comment(content:)
+    Comment.new(record_id: 1, message: self, content: content)
+  end
+
   def to_key
     [ record_id ]
   end
