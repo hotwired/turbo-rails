@@ -40,6 +40,16 @@ class Turbo::Streams::TagBuilder
     action :remove, target, allow_inferred_rendering: false
   end
 
+  # Clear the <tt>target</tt> in the dom. The target can either be a dom id string or an object that responds to
+  # <tt>to_key</tt>, which is then called and passed through <tt>ActionView::RecordIdentifier.dom_id</tt> (all Active Records
+  # do). Examples:
+  #
+  #   <%= turbo_stream.clear "clearance_5" %>
+  #   <%= turbo_stream.clear clearance %>
+  def clear(target)
+    replace target, ""
+  end
+
   # Replace the <tt>target</tt> in the dom with the either the <tt>content</tt> passed in, a rendering result determined
   # by the <tt>rendering</tt> keyword arguments, the content in the block, or the rendering of the target as a record. Examples:
   #
