@@ -9,8 +9,8 @@ insert_into_file "#{Webpacker.config.source_entry_path}/application.js", "import
 
 say "Remove Turbolinks"
 gsub_file 'Gemfile', /gem 'turbolinks'.*/, ''
-run "bin/bundle", capture: true
-run "bin/yarn remove turbolinks"
+run "#{RbConfig.ruby} bin/bundle", capture: true
+run "#{RbConfig.ruby} bin/yarn remove turbolinks"
 gsub_file "#{Webpacker.config.source_entry_path}/application.js", TURBOLINKS_REGEX, ''
 gsub_file "#{Webpacker.config.source_entry_path}/application.js", /Turbolinks.start.*\n/, ''
 
