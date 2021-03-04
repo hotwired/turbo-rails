@@ -2586,6 +2586,7 @@ class Session {
     this.enabled = true;
     this.progressBarDelay = 500;
     this.started = false;
+    this.disableDriveByDefault = false;
   }
   start() {
     if (!this.started) {
@@ -2772,9 +2773,12 @@ class Session {
   elementIsNavigable(element) {
     const container = element === null || element === void 0 ? void 0 : element.closest("[data-turbo]");
     if (container) {
+      if (this.disableDriveByDefault) {
+        return container.getAttribute("data-turbo") == "true";
+      }
       return container.getAttribute("data-turbo") != "false";
     } else {
-      return true;
+      return !this.disableDriveByDefault;
     }
   }
   locationIsVisitable(location) {
@@ -2831,6 +2835,10 @@ function clearCache() {
 
 function setProgressBarDelay(delay) {
   session.setProgressBarDelay(delay);
+}
+
+function disableDriveByDefault() {
+  session.disableDriveByDefault = true;
 }
 
 start();
