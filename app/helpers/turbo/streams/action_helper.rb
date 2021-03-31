@@ -12,7 +12,8 @@ module Turbo::Streams::ActionHelper
 
     if replace_if_present
       replacement = convert_to_turbo_stream_dom_id(replace_if_present)
-      %(<turbo-stream action="#{action}" target="#{target}" replace_if_present="#{replacement}">#{template}</turbo-stream>).html_safe
+      %(<turbo-stream action="remove" target="#{replacement}"></turbo-stream>
+        <turbo-stream action="#{action}" target="#{target}">#{template}</turbo-stream>).html_safe
     else
       %(<turbo-stream action="#{action}" target="#{target}">#{template}</turbo-stream>).html_safe
     end
