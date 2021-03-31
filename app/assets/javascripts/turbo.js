@@ -1191,11 +1191,21 @@ function activateElement(element) {
 const StreamActions = {
   append() {
     var _a;
-    (_a = this.targetElement) === null || _a === void 0 ? void 0 : _a.append(this.templateContent);
+    if (!this.replaceIfPresent || ((_a = this.replaceIfPresentElement) === null || _a === void 0)) {
+      (_a = this.targetElement) === null || _a === void 0 ? void 0 : _a.append(this.templateContent);
+    }
+    else {
+      _a.replaceWith(this.templateContent)
+    }
   },
   prepend() {
     var _a;
-    (_a = this.targetElement) === null || _a === void 0 ? void 0 : _a.prepend(this.templateContent);
+    if (!this.replaceIfPresent || ((_a = this.replaceIfPresentElement) === null || _a === void 0)) {
+      (_a = this.targetElement) === null || _a === void 0 ? void 0 : _a.prepend(this.templateContent);
+    }
+    else {
+      _a.replaceWith(this.templateContent)
+    }
   },
   remove() {
     var _a;
@@ -1254,6 +1264,13 @@ class StreamElement extends HTMLElement {
     }
     this.raise("target attribute is missing");
   }
+  get replaceIfPresentElement(){
+    var _a;
+    if (this.replaceIfPresent) {
+      return (_a = this.ownerDocument) === null || _a === void 0 ? void 0 : _a.getElementById(this.replaceIfPresent);
+    }
+    this.raise("target attribute is missing");
+  }
   get templateContent() {
     return this.templateElement.content;
   }
@@ -1268,6 +1285,9 @@ class StreamElement extends HTMLElement {
   }
   get target() {
     return this.getAttribute("target");
+  }
+  get replaceIfPresent(){
+    return this.getAttribute("replace_if_present");
   }
   raise(message) {
     throw new Error(`${this.description}: ${message}`);

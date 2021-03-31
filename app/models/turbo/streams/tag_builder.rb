@@ -76,8 +76,14 @@ class Turbo::Streams::TagBuilder
   #   <%= turbo_stream.append "clearances" do %>
   #     <div id='clearance_5'>Append this to .clearances</div>
   #   <% end %>
-  def append(target, content = nil, **rendering, &block)
-    action :append, target, content, **rendering, &block
+  #
+  # If <tt>replace_if_present</tt> is passed as an argument, the method will first attempt to find a dom element
+  # matching <tt>replace_if_present</tt> (in the form of a dom element identifier like <tt>target</tt>).
+  # If an element is found, it will be replaced by the rendering result, otherwise the rendering result will be
+  # appended to the target.
+  #
+  def append(target, content = nil, replace_if_present: nil, **rendering, &block)
+    action :append, target, content, replace_if_present: replace_if_present, **rendering, &block
   end
 
   # Prepend to the target in the dom identified with <tt>target</tt> either the <tt>content</tt> passed in or a
@@ -90,23 +96,29 @@ class Turbo::Streams::TagBuilder
   #   <%= turbo_stream.prepend "clearances" do %>
   #     <div id='clearance_5'>Prepend this to .clearances</div>
   #   <% end %>
-  def prepend(target, content = nil, **rendering, &block)
-    action :prepend, target, content, **rendering, &block
+  #
+  # If <tt>replace_if_present</tt> is passed as an argument, the method will first attempt to find a dom element
+  # matching <tt>replace_if_present</tt> (in the form of a dom element identifier like <tt>target</tt>).
+  # If an element is found, it will be replaced by the rendering result, otherwise the rendering result will be
+  # prepended to the target.
+  #
+  def prepend(target, content = nil, replace_if_present: nil, **rendering, &block)
+    action :prepend, target, content, replace_if_present: replace_if_present, **rendering, &block
   end
 
   # Send an action of the type <tt>name</tt>. Options described in the concrete methods.
-  def action(name, target, content = nil, allow_inferred_rendering: true, **rendering, &block)
+  def action(name, target, content = nil, allow_inferred_rendering: true, replace_if_present: nil, **rendering, &block)
     target_name = extract_target_name_from(target)
 
     case
     when content
-      turbo_stream_action_tag name, target: target_name, template: (render_record(content) if allow_inferred_rendering) || content
+      turbo_stream_action_tag name, target: target_name, replace_if_present: replace_if_present, template: (render_record(content) if allow_inferred_rendering) || content
     when block_given?
-      turbo_stream_action_tag name, target: target_name, template: @view_context.capture(&block)
+      turbo_stream_action_tag name, target: target_name, replace_if_present: replace_if_present, template: @view_context.capture(&block)
     when rendering.any?
-      turbo_stream_action_tag name, target: target_name, template: @view_context.render(formats: [ :html ], **rendering)
+      turbo_stream_action_tag name, target: target_name, replace_if_present: replace_if_present, template: @view_context.render(formats: [ :html ], **rendering)
     else
-      turbo_stream_action_tag name, target: target_name, template: (render_record(target) if allow_inferred_rendering)
+      turbo_stream_action_tag name, target: target_name, replace_if_present: replace_if_present, template: (render_record(target) if allow_inferred_rendering)
     end
   end
 

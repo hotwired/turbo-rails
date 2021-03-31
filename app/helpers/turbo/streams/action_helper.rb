@@ -6,11 +6,16 @@ module Turbo::Streams::ActionHelper
   #
   #   turbo_stream_action_tag "replace", target: "message_1", template: %(<div id="message_1">Hello!</div>)
   #   # => <turbo-stream action="replace" target="message_1"><template><div id="message_1">Hello!</div></template></turbo-stream>
-  def turbo_stream_action_tag(action, target:, template: nil)
+  def turbo_stream_action_tag(action, target:, template: nil, replace_if_present: nil)
     target   = convert_to_turbo_stream_dom_id(target)
     template = action.to_sym == :remove ? "" : "<template>#{template}</template>"
 
-    %(<turbo-stream action="#{action}" target="#{target}">#{template}</turbo-stream>).html_safe
+    if replace_if_present
+      replacement = convert_to_turbo_stream_dom_id(replace_if_present)
+      %(<turbo-stream action="#{action}" target="#{target}" replace_if_present="#{replacement}">#{template}</turbo-stream>).html_safe
+    else
+      %(<turbo-stream action="#{action}" target="#{target}">#{template}</turbo-stream>).html_safe
+    end
   end
 
   private
