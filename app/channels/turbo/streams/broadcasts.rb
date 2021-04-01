@@ -9,20 +9,20 @@ module Turbo::Streams::Broadcasts
     broadcast_action_to *streamables, action: :remove, target: target
   end
 
-  def broadcast_replace_to(*streamables, target:, replace_if_present: nil, **rendering)
-    broadcast_action_to *streamables, action: :replace, target: target, replace_if_present: replace_if_present, **rendering
+  def broadcast_replace_to(*streamables, target:, remove_if_present: nil, **rendering)
+    broadcast_action_to *streamables, action: :replace, target: target, remove_if_present: remove_if_present, **rendering
   end
 
-  def broadcast_append_to(*streamables, target:, replace_if_present: nil, **rendering)
-    broadcast_action_to *streamables, action: :append, target: target, replace_if_present: replace_if_present, **rendering
+  def broadcast_append_to(*streamables, target:, remove_if_present: nil, **rendering)
+    broadcast_action_to *streamables, action: :append, target: target, remove_if_present: remove_if_present, **rendering
   end
 
-  def broadcast_prepend_to(*streamables, target:, replace_if_present: nil, **rendering)
-    broadcast_action_to *streamables, action: :prepend, target: target, replace_if_present: replace_if_present, **rendering
+  def broadcast_prepend_to(*streamables, target:, remove_if_present: nil, **rendering)
+    broadcast_action_to *streamables, action: :prepend, target: target, remove_if_present: remove_if_present, **rendering
   end
 
-  def broadcast_action_to(*streamables, action:, target:, replace_if_present: nil, **rendering)
-    broadcast_stream_to *streamables, content: turbo_stream_action_tag(action, target: target, replace_if_present: replace_if_present, template:
+  def broadcast_action_to(*streamables, action:, target:, remove_if_present: nil, **rendering)
+    broadcast_stream_to *streamables, content: turbo_stream_action_tag(action, target: target, remove_if_present: remove_if_present, template:
       rendering.delete(:content) || (rendering.any? ? render_format(:html, **rendering) : nil)
     )
   end
@@ -32,17 +32,17 @@ module Turbo::Streams::Broadcasts
     broadcast_action_later_to *streamables, action: :replace, target: target, **rendering
   end
 
-  def broadcast_append_later_to(*streamables, target:, replace_if_present: nil, **rendering)
-    broadcast_action_later_to *streamables, action: :append, target: target, replace_if_present: replace_if_present, **rendering
+  def broadcast_append_later_to(*streamables, target:, remove_if_present: nil, **rendering)
+    broadcast_action_later_to *streamables, action: :append, target: target, remove_if_present: remove_if_present, **rendering
   end
 
-  def broadcast_prepend_later_to(*streamables, target:, replace_if_present: nil, **rendering)
-    broadcast_action_later_to *streamables, action: :prepend, target: target, replace_if_present: replace_if_present, **rendering
+  def broadcast_prepend_later_to(*streamables, target:, remove_if_present: nil, **rendering)
+    broadcast_action_later_to *streamables, action: :prepend, target: target, remove_if_present: remove_if_present, **rendering
   end
 
-  def broadcast_action_later_to(*streamables, action:, target:,replace_if_present: nil, **rendering)
+  def broadcast_action_later_to(*streamables, action:, target:,remove_if_present: nil, **rendering)
     Turbo::Streams::ActionBroadcastJob.perform_later \
-      stream_name_from(streamables), action: action, target: target, replace_if_present: replace_if_present, **rendering
+      stream_name_from(streamables), action: action, target: target, remove_if_present: remove_if_present, **rendering
   end
 
 

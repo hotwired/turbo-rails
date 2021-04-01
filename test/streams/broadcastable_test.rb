@@ -36,11 +36,19 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "broadcasting append to stream now with removed element" do
+    assert_broadcast_on "stream", turbo_stream_action_tag("append", target: "messages", remove_if_present: "message_1", template: "<p>Hello!</p>") do
+      @message.broadcast_append_to "stream", remove_if_present: "message_1"
+    end
+  end
+
+
   test "broadcasting append to stream with custom target now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("append", target: "board_messages", template: "<p>Hello!</p>") do
       @message.broadcast_append_to "stream", target: "board_messages"
     end
   end
+
 
   test "broadcasting append now" do
     assert_broadcast_on @message.to_param, turbo_stream_action_tag("append", target: "messages", template: "<p>Hello!</p>") do
@@ -54,11 +62,18 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "broadcasting prepend to stream now and remove element" do
+    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "messages", remove_if_present: "message_1", template: "<p>Hello!</p>") do
+      @message.broadcast_prepend_to "stream", remove_if_present: "message_1"
+    end
+  end
+
   test "broadcasting prepend to stream with custom target now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "board_messages", template: "<p>Hello!</p>") do
       @message.broadcast_prepend_to "stream", target: "board_messages"
     end
   end
+
 
   test "broadcasting prepend now" do
     assert_broadcast_on @message.to_param, turbo_stream_action_tag("prepend", target: "messages", template: "<p>Hello!</p>") do
@@ -75,6 +90,12 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
   test "broadcasting action now" do
     assert_broadcast_on @message.to_param, turbo_stream_action_tag("prepend", target: "messages", template: "<p>Hello!</p>") do
       @message.broadcast_action "prepend"
+    end
+  end
+
+  test "broadcasting action now with remove element" do
+    assert_broadcast_on @message.to_param, turbo_stream_action_tag("prepend", target: "messages", remove_if_present: "message_1", template: "<p>Hello!</p>") do
+      @message.broadcast_action "prepend", remove_if_present: "message_1"
     end
   end
 

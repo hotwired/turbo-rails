@@ -33,6 +33,13 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "broadcasting append now with remove_if_present" do
+    message = Message.new(record_id: 1, content: "hello!")
+    assert_broadcast_on "stream", turbo_stream_action_tag("append", target: "messages", remove_if_present: "message_1", template: "<p>hello!</p>") do
+      Turbo::StreamsChannel.broadcast_append_to "stream", target: "messages", remove_if_present: message, partial: "messages/message", locals: { message: message.content }
+    end
+  end
+
   test "broadcasting append now with empty template" do
     assert_broadcast_on "stream", %(<turbo-stream action="append" target="message_1"><template></template></turbo-stream>) do
       Turbo::StreamsChannel.broadcast_append_to "stream", target: "message_1", content: ""
@@ -42,6 +49,13 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
   test "broadcasting prepend now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "messages", template: "<p>hello!</p>") do
       Turbo::StreamsChannel.broadcast_prepend_to "stream", target: "messages", partial: "messages/message", locals: { message: "hello!" }
+    end
+  end
+
+  test "broadcasting prepend now with remove_if_present" do
+    message = Message.new(record_id: 1, content: "hello!")
+    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "messages", remove_if_present: "message_1", template: "<p>hello!</p>") do
+      Turbo::StreamsChannel.broadcast_prepend_to "stream", target: "messages", remove_if_present: message, partial: "messages/message", locals: { message: message.content }
     end
   end
 

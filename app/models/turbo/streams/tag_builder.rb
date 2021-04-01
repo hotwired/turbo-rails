@@ -77,13 +77,12 @@ class Turbo::Streams::TagBuilder
   #     <div id='clearance_5'>Append this to .clearances</div>
   #   <% end %>
   #
-  # If <tt>replace_if_present</tt> is passed as an argument, the method will first attempt to find a dom element
-  # matching <tt>replace_if_present</tt> (in the form of a dom element identifier like <tt>target</tt>).
-  # If an element is found, it will be replaced by the rendering result, otherwise the rendering result will be
-  # appended to the target.
+  # If <tt>remove_if_present</tt> is passed as an argument, the method will first attempt to find a dom element
+  # matching <tt>remove_if_present</tt> (in the form of a dom element identifier like <tt>target</tt>) and remove
+  # it before appending the rendering result.
   #
-  def append(target, content = nil, replace_if_present: nil, **rendering, &block)
-    action :append, target, content, replace_if_present: replace_if_present, **rendering, &block
+  def append(target, content = nil, remove_if_present: nil, **rendering, &block)
+    action :append, target, content, remove_if_present: remove_if_present, **rendering, &block
   end
 
   # Prepend to the target in the dom identified with <tt>target</tt> either the <tt>content</tt> passed in or a
@@ -97,28 +96,27 @@ class Turbo::Streams::TagBuilder
   #     <div id='clearance_5'>Prepend this to .clearances</div>
   #   <% end %>
   #
-  # If <tt>replace_if_present</tt> is passed as an argument, the method will first attempt to find a dom element
-  # matching <tt>replace_if_present</tt> (in the form of a dom element identifier like <tt>target</tt>).
-  # If an element is found, it will be replaced by the rendering result, otherwise the rendering result will be
-  # prepended to the target.
+  # If <tt>remove_if_present</tt> is passed as an argument, the method will first attempt to find a dom element
+  # matching <tt>remove_if_present</tt> (in the form of a dom element identifier like <tt>target</tt>) and remove
+  # it before prepending the rendering result.
   #
-  def prepend(target, content = nil, replace_if_present: nil, **rendering, &block)
-    action :prepend, target, content, replace_if_present: replace_if_present, **rendering, &block
+  def prepend(target, content = nil, remove_if_present: nil, **rendering, &block)
+    action :prepend, target, content, remove_if_present: remove_if_present, **rendering, &block
   end
 
   # Send an action of the type <tt>name</tt>. Options described in the concrete methods.
-  def action(name, target, content = nil, allow_inferred_rendering: true, replace_if_present: nil, **rendering, &block)
+  def action(name, target, content = nil, allow_inferred_rendering: true, remove_if_present: nil, **rendering, &block)
     target_name = extract_target_name_from(target)
 
     case
     when content
-      turbo_stream_action_tag name, target: target_name, replace_if_present: replace_if_present, template: (render_record(content) if allow_inferred_rendering) || content
+      turbo_stream_action_tag name, target: target_name, remove_if_present: remove_if_present, template: (render_record(content) if allow_inferred_rendering) || content
     when block_given?
-      turbo_stream_action_tag name, target: target_name, replace_if_present: replace_if_present, template: @view_context.capture(&block)
+      turbo_stream_action_tag name, target: target_name, remove_if_present: remove_if_present, template: @view_context.capture(&block)
     when rendering.any?
-      turbo_stream_action_tag name, target: target_name, replace_if_present: replace_if_present, template: @view_context.render(formats: [ :html ], **rendering)
+      turbo_stream_action_tag name, target: target_name, remove_if_present: remove_if_present, template: @view_context.render(formats: [ :html ], **rendering)
     else
-      turbo_stream_action_tag name, target: target_name, replace_if_present: replace_if_present, template: (render_record(target) if allow_inferred_rendering)
+      turbo_stream_action_tag name, target: target_name, remove_if_present: remove_if_present, template: (render_record(target) if allow_inferred_rendering)
     end
   end
 
