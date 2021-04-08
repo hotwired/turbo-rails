@@ -5,6 +5,12 @@ class Turbo::FramesHelperTest < ActionView::TestCase
     assert_dom_equal %(<turbo-frame src="/trays/1" id="tray"></turbo-frame>), turbo_frame_tag("tray", src: "/trays/1")
   end
 
+  test "frame with model src" do
+    record = Message.new(record_id: "1", content: "ignored")
+
+    assert_dom_equal %(<turbo-frame src="/messages/1" id="message"></turbo-frame>), turbo_frame_tag("message", src: record)
+  end
+
   test "frame with src and target" do
     assert_dom_equal %(<turbo-frame src="/trays/1" id="tray" target="_top"></turbo-frame>), turbo_frame_tag("tray", src: "/trays/1", target: "_top")
   end
