@@ -4,6 +4,7 @@ require "action_controller/railtie"
 require "action_cable/engine"
 require "active_job/railtie"
 require "active_model/railtie"
+require "active_record/railtie"
 require "sprockets/railtie"
 
 Bundler.require(*Rails.groups)
@@ -19,4 +20,3 @@ module Dummy
     # the framework and any gems in your application.
   end
 end
-
