@@ -4,7 +4,16 @@ require "action_cable"
 class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
   include ActiveJob::TestHelper, Turbo::Streams::ActionHelper
 
-  setup { @message = Message.new(record_id: 1, content: "Hello!") }
+  setup {
+    @message = Message.new(record_id: 1, content: "Hello!")
+    @chat_room = ChatRoom.new(id: 1, name: "Chat Room")
+  }
+
+  test "broadcasting to chat room" do
+    assert_broadcast_on "stream", turbo_stream_action_tag("append", target: "chat_room_1") do
+      @chat_room._run_commit_callbacks
+    end
+  end
 
   test "broadcasting remove to stream now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("remove", target: "message_1") do
