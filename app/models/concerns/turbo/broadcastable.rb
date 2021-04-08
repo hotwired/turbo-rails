@@ -66,7 +66,7 @@ module Turbo::Broadcastable
 
     # All default targets will use the return of this method. Overwrite if you want something else than <tt>model_name.plural</tt>.
     def broadcast_target_default
-      ->(broadcastable) { broadcastable.send(:broadcast_target_default) }
+      model_name.plural
     end
   end
 
@@ -228,7 +228,7 @@ module Turbo::Broadcastable
 
   private
     def broadcast_target_default
-      model_name.plural
+      self.class.broadcast_target_default
     end
 
     def broadcast_rendering_with_defaults(options)
