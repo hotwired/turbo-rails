@@ -8,7 +8,7 @@ run "yarn add @hotwired/turbo-rails"
 insert_into_file "#{Webpacker.config.source_entry_path}/application.js", "import \"@hotwired/turbo-rails\"\n", before: /import.*ActiveStorage/
 
 say "Remove Turbolinks"
-gsub_file 'Gemfile', /gem 'turbolinks'.*/, ''
+run "#{RbConfig.ruby} bin/bundle remove turbolinks"
 run "#{RbConfig.ruby} bin/bundle", capture: true
 run "#{RbConfig.ruby} bin/yarn remove turbolinks"
 gsub_file "#{Webpacker.config.source_entry_path}/application.js", TURBOLINKS_REGEX, ''

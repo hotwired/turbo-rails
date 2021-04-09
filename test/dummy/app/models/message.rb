@@ -16,7 +16,7 @@ class Message
   end
 
   def to_param
-    "message:#{record_id}"
+    record_id.to_s
   end
 
   def to_partial_path
@@ -29,5 +29,13 @@ class Message
 
   def model_name
     self.class.model_name
+  end
+
+  def to_model
+    self
+  end
+
+  def persisted?
+    true
   end
 end

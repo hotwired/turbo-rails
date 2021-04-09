@@ -19,12 +19,7 @@ if APPLICATION_LAYOUT_PATH.exist?
   end
 else
   say "Default application.html.erb is missing!", :red
-
-  if APPLICATION_LAYOUT_PATH.read =~ /stimulus/
-    say %(        Add <%= javascript_include_tag("turbo", type: "module-shim") %> and <%= yield :head %> within the <head> tag after Stimulus includes in your custom layout.)
-  else
-    say %(        Add <%= javascript_include_tag("turbo", type: "module") %> and <%= yield :head %> within the <head> tag in your custom layout.)
-  end
+  say %(        Add <%= javascript_include_tag("turbo", type: "module-shim") %> and <%= yield :head %> within the <head> tag after Stimulus includes in your custom layout.)
 end
 
 say "Enable redis in bundle"
