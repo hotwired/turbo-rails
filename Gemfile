@@ -11,4 +11,5 @@ group :test do
   gem 'rexml'
   gem 'selenium-webdriver'
   gem 'webdrivers'
+  gem 'sqlite3'
 end

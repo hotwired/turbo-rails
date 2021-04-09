@@ -93,6 +93,9 @@ GEM
       mini_mime (>= 0.1.1)
     marcel (1.0.1)
     method_source (1.0.0)
+    mimemagic (0.3.10)
+      nokogiri (~> 1)
+      rake
     mini_mime (1.0.3)
     mini_portile2 (2.5.0)
     minitest (5.14.4)
@@ -147,6 +150,7 @@ GEM
       actionpack (>= 4.0)
       activesupport (>= 4.0)
       sprockets (>= 3.0.0)
+    sqlite3 (1.4.2)
     thor (1.1.0)
     tzinfo (2.0.4)
       concurrent-ruby (~> 1.0)
@@ -171,6 +175,7 @@ DEPENDENCIES
   rake
   rexml
   selenium-webdriver
+  sqlite3
   turbo-rails!
   webdrivers
 
