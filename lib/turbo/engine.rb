@@ -16,6 +16,10 @@ module Turbo
       #{root}/app/jobs
     )
 
+    initializer "turbo.no_action_cable" do
+      Rails.autoloaders.once.do_not_eager_load(Dir["#{root}/app/channels/turbo/*_channel.rb"]) unless defined?(ActionCable)
+    end
+
     initializer "turbo.assets" do
       if Rails.application.config.respond_to?(:assets)
         Rails.application.config.assets.precompile += %w( turbo )
