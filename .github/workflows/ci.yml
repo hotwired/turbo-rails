@@ -32,4 +32,4 @@ jobs:
       - name: Run tests
         run: |
           bundle exec rails db:test:prepare
-          bundle exec rails test
+          bundle exec rake
