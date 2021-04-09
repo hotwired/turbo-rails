@@ -16,13 +16,17 @@ module Turbo
       #{root}/app/jobs
     )
 
+    initializer "turbo.no_action_cable" do
+      Rails.autoloaders.once.do_not_eager_load(Dir["#{root}/app/channels/turbo/*_channel.rb"]) unless defined?(ActionCable)
+    end
+
     initializer "turbo.assets" do
       if Rails.application.config.respond_to?(:assets)
         Rails.application.config.assets.precompile += %w( turbo )
       end
     end
 
-    initializer "turbo.helpers" do
+    initializer "turbo.helpers", before: :load_config_initializers do
       ActiveSupport.on_load(:action_controller_base) do
         include Turbo::Streams::TurboStreamsTagBuilder, Turbo::Frames::FrameRequest, Turbo::Native::Navigation
         helper Turbo::Engine.helpers

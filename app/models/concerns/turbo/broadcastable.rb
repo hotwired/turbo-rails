@@ -39,7 +39,7 @@ module Turbo::Broadcastable
   module ClassMethods
     # Configures the model to broadcast creates, updates, and destroys to a stream name derived at runtime by the
     # <tt>stream</tt> symbol invocation. By default, the creates are appended to a dom id target name derived from
-    # the model's plural name. The insertion can also be made to be a prepend by overwriting <tt>insertion</tt> and
+    # the model's plural name. The insertion can also be made to be a prepend by overwriting <tt>inserts_by</tt> and
     # the target dom id overwritten by passing <tt>target</tt>. Examples:
     #
     #   class Message < ApplicationRecord

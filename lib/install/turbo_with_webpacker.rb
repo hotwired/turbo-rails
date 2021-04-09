@@ -1,16 +1,17 @@
 # Some Rails versions use commonJS(require) others use ESM(import).
 TURBOLINKS_REGEX = /(import .* from "turbolinks".*\n|require\("turbolinks"\).*\n)/.freeze
+ACTIVE_STORAGE_REGEX = /(import.*ActiveStorage|require.*@rails\/activestorage.*)/.freeze
 
 abort "❌ Webpacker not found. Exiting." unless defined?(Webpacker::Engine)
 
 say "Install Turbo"
 run "yarn add @hotwired/turbo-rails"
-insert_into_file "#{Webpacker.config.source_entry_path}/application.js", "import \"@hotwired/turbo-rails\"\n", before: /import.*ActiveStorage/
+insert_into_file "#{Webpacker.config.source_entry_path}/application.js", "import \"@hotwired/turbo-rails\"\n", before: ACTIVE_STORAGE_REGEX
 
 say "Remove Turbolinks"
-gsub_file 'Gemfile', /gem 'turbolinks'.*/, ''
-run "bin/bundle", capture: true
-run "bin/yarn remove turbolinks"
+run "#{RbConfig.ruby} bin/bundle remove turbolinks"
+run "#{RbConfig.ruby} bin/bundle", capture: true
+run "#{RbConfig.ruby} bin/yarn remove turbolinks"
 gsub_file "#{Webpacker.config.source_entry_path}/application.js", TURBOLINKS_REGEX, ''
 gsub_file "#{Webpacker.config.source_entry_path}/application.js", /Turbolinks.start.*\n/, ''
 

@@ -2851,15 +2851,18 @@ var turbo_es2017Esm = Object.freeze({
 let consumer;
 
 async function getConsumer() {
-  if (consumer) return consumer;
-  const {createConsumer: createConsumer} = await Promise.resolve().then((function() {
-    return index;
-  }));
-  return setConsumer(createConsumer());
+  return consumer || setConsumer(createConsumer().then(setConsumer));
 }
 
 function setConsumer(newConsumer) {
   return consumer = newConsumer;
+}
+
+async function createConsumer() {
+  const {createConsumer: createConsumer} = await Promise.resolve().then((function() {
+    return index;
+  }));
+  return createConsumer();
 }
 
 async function subscribeTo(channel, mixin) {
@@ -2871,6 +2874,7 @@ var cable = Object.freeze({
   __proto__: null,
   getConsumer: getConsumer,
   setConsumer: setConsumer,
+  createConsumer: createConsumer,
   subscribeTo: subscribeTo
 });
 
@@ -3334,7 +3338,7 @@ function createWebSocketURL(url) {
   }
 }
 
-function createConsumer(url = getConfig("url") || INTERNAL.default_mount_path) {
+function createConsumer$1(url = getConfig("url") || INTERNAL.default_mount_path) {
   return new Consumer(url);
 }
 
@@ -3356,7 +3360,7 @@ var index = Object.freeze({
   adapters: adapters,
   createWebSocketURL: createWebSocketURL,
   logger: logger,
-  createConsumer: createConsumer,
+  createConsumer: createConsumer$1,
   getConfig: getConfig
 });
 
