@@ -12,4 +12,5 @@ group :test do
   gem 'selenium-webdriver'
   gem 'webdrivers'
   gem 'sqlite3'
+  gem 'webpacker'
 end
