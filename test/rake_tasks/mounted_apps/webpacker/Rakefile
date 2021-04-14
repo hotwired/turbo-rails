@@ -1,0 +1,4 @@
+require "bundler/setup"
+
+APP_RAKEFILE = File.expand_path("app_rakefile", __dir__)
+load "rails/tasks/engine.rake"
