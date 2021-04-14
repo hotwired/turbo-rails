@@ -23,10 +23,10 @@
     chalk "^2.0.0"
     js-tokens "^4.0.0"
 
-"@hotwired/turbo@^7.0.0-beta.4":
-  version "7.0.0-beta.4"
-  resolved "https://registry.yarnpkg.com/@hotwired/turbo/-/turbo-7.0.0-beta.4.tgz#be6d7014902d45121f56358d360e0810bad4c19e"
-  integrity sha512-koox7UeA2Na0tLBPesxNO3nk/gtezRxF33NHKbAx+zv5s2k1Xh/orB5xNr5dAckoUj3Pdpytnw41WH4QB1jYBg==
+"@hotwired/turbo@^7.0.0-beta.5":
+  version "7.0.0-beta.5"
+  resolved "https://registry.yarnpkg.com/@hotwired/turbo/-/turbo-7.0.0-beta.5.tgz#3167e8e882b9075c5b3b2e2f32432cca2862c61c"
+  integrity sha512-z10dI2U/StkMSmnfJUsyez6jrhnitgzjyw2CxE3LnAAzW/TBhvsMYKsVG7Xu337r3gh0r6UwIFWyvvtm3in6gg==
 
 "@rails/actioncable@^6.0.0":
   version "6.1.3"
