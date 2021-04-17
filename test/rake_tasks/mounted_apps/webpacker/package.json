@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "dependencies": {
+    "@hotwired/turbo-rails": "^7.0.0-beta.5",
+    "@rails/webpacker": "file:../../../../"
+  },
+  "license": "MIT"
+}
