@@ -1,3 +1,5 @@
+require 'rake_task_test_helper'
+
 class RakeTasksTest < Minitest::Test
   include RakeTaskTestHelper
 
