@@ -40,8 +40,8 @@ module Turbo::StreamsHelper
   # (when Current.account.id = 5). Updates to this stream can be sent like
   # <tt>entry.broadcast_append_to entry.account, :entries, target: "entries"</tt>.
   def turbo_stream_from(*streamables, **attributes)
-    attributes["channel"] = "Turbo::StreamsChannel"
-    attributes["signed-stream-name"] = Turbo::StreamsChannel.signed_stream_name(streamables)
+    attributes[:channel] = "Turbo::StreamsChannel"
+    attributes[:"signed-stream-name"] = Turbo::StreamsChannel.signed_stream_name(streamables)
     tag.turbo_cable_stream_source(**attributes)
   end
 end
