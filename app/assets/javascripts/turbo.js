@@ -824,7 +824,7 @@ class LinkInterceptor {
         if (this.delegate.shouldInterceptLinkClick(event.target, event.detail.url)) {
           this.clickEvent.preventDefault();
           event.preventDefault();
-          this.delegate.linkClickIntercepted(event.target, event.detail.url);
+          this.convertLinkWithMethodClickToFormSubmission(event.target) || this.delegate.linkClickIntercepted(event.target, event.detail.url);
         }
       }
       delete this.clickEvent;
@@ -844,6 +844,21 @@ class LinkInterceptor {
     this.element.removeEventListener("click", this.clickBubbled);
     document.removeEventListener("turbo:click", this.linkClicked);
     document.removeEventListener("turbo:before-visit", this.willVisit);
+  }
+  convertLinkWithMethodClickToFormSubmission(link) {
+    var _a;
+    const linkMethod = link.getAttribute("data-turbo-method") || link.getAttribute("data-method");
+    if (linkMethod) {
+      const form = document.createElement("form");
+      form.method = linkMethod;
+      form.action = link.getAttribute("href") || "undefined";
+      (_a = link.parentNode) === null || _a === void 0 ? void 0 : _a.insertBefore(form, link);
+      return dispatch("submit", {
+        target: form
+      });
+    } else {
+      return false;
+    }
   }
   respondsToEventTarget(target) {
     const element = target instanceof Element ? target : target instanceof Node ? target.parentElement : null;
@@ -1484,7 +1499,7 @@ class Visit {
     }
   }
   scrollToAnchor() {
-    if (getAnchor(this.location) != null) {
+    if (getAnchor(this.location)) {
       this.view.scrollToAnchor(getAnchor(this.location));
       return true;
     }
@@ -2773,12 +2788,22 @@ function activateElement(element, currentURL) {
 }
 
 const StreamActions = {
+  after() {
+    var _a, _b;
+    (_b = (_a = this.targetElement) === null || _a === void 0 ? void 0 : _a.parentElement) === null || _b === void 0 ? void 0 : _b.insertBefore(this.templateContent, this.targetElement.nextSibling);
+  },
   append() {
     var _a;
+    this.removeDuplicateTargetChildren();
     (_a = this.targetElement) === null || _a === void 0 ? void 0 : _a.append(this.templateContent);
+  },
+  before() {
+    var _a, _b;
+    (_b = (_a = this.targetElement) === null || _a === void 0 ? void 0 : _a.parentElement) === null || _b === void 0 ? void 0 : _b.insertBefore(this.templateContent, this.targetElement);
   },
   prepend() {
     var _a;
+    this.removeDuplicateTargetChildren();
     (_a = this.targetElement) === null || _a === void 0 ? void 0 : _a.prepend(this.templateContent);
   },
   remove() {
@@ -2820,6 +2845,21 @@ class StreamElement extends HTMLElement {
     try {
       this.remove();
     } catch (_a) {}
+  }
+  removeDuplicateTargetChildren() {
+    this.duplicateChildren.forEach((({targetChild: targetChild}) => {
+      targetChild.remove();
+    }));
+  }
+  get duplicateChildren() {
+    var _a;
+    return [ ...(_a = this.templateContent) === null || _a === void 0 ? void 0 : _a.children ].map((templateChild => {
+      let targetChild = [ ...this.targetElement.children ].filter((c => c.id === templateChild.id))[0];
+      return {
+        targetChild: targetChild,
+        templateChild: templateChild
+      };
+    })).filter((({targetChild: targetChild}) => targetChild));
   }
   get performAction() {
     if (this.action) {
@@ -2929,6 +2969,21 @@ function clearCache() {
 function setProgressBarDelay(delay) {
   session.setProgressBarDelay(delay);
 }
+
+var Turbo = Object.freeze({
+  __proto__: null,
+  navigator: navigator,
+  start: start,
+  registerAdapter: registerAdapter,
+  visit: visit,
+  connectStreamSource: connectStreamSource,
+  disconnectStreamSource: disconnectStreamSource,
+  renderStreamMessage: renderStreamMessage,
+  clearCache: clearCache,
+  setProgressBarDelay: setProgressBarDelay
+});
+
+window.Turbo = Turbo;
 
 start();
 
