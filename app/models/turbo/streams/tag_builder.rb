@@ -53,6 +53,32 @@ class Turbo::Streams::TagBuilder
     action :replace, target, content, **rendering, &block
   end
 
+  # Insert the <tt>content</tt> passed in, a rendering result determined by the <tt>rendering</tt> keyword arguments,
+  # the content in the block, or the rendering of the target as a record before the <tt>target</tt> in the dom. Examples:
+  #
+  #   <%= turbo_stream.before "clearance_5", "<div id='clearance_4'>Insert before the dom target identified by clearance_5</div>" %>
+  #   <%= turbo_stream.before clearance %>
+  #   <%= turbo_stream.before clearance, partial: "clearances/clearance", locals: { title: "Hello" } %>
+  #   <%= turbo_stream.before "clearance_5" do %>
+  #     <div id='clearance_4'>Insert before the dom target identified by clearance_5</div>
+  #   <% end %>
+  def before(target, content = nil, **rendering, &block)
+    action :before, target, content, **rendering, &block
+  end
+
+  # Insert the <tt>content</tt> passed in, a rendering result determined by the <tt>rendering</tt> keyword arguments,
+  # the content in the block, or the rendering of the target as a record after the <tt>target</tt> in the dom. Examples:
+  #
+  #   <%= turbo_stream.after "clearance_5", "<div id='clearance_6'>Insert after the dom target identified by clearance_5</div>" %>
+  #   <%= turbo_stream.after clearance %>
+  #   <%= turbo_stream.after clearance, partial: "clearances/clearance", locals: { title: "Hello" } %>
+  #   <%= turbo_stream.after "clearance_5" do %>
+  #     <div id='clearance_6'>Insert after the dom target identified by clearance_5</div>
+  #   <% end %>
+  def after(target, content = nil, **rendering, &block)
+    action :after, target, content, **rendering, &block
+  end
+
   # Update the <tt>target</tt> in the dom with the either the <tt>content</tt> passed in or a rendering result determined
   # by the <tt>rendering</tt> keyword arguments, the content in the block, or the rendering of the target as a record. Examples:
   #
