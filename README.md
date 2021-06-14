@@ -40,13 +40,12 @@ The JavaScript for Turbo can either be run through the asset pipeline, which is 
 
 Running `turbo:install` will install through NPM if Webpacker is installed in the application. Otherwise the asset pipeline version is used.
 
-If you're using Webpack and need to use either the cable consumer or the Turbo instance, you can import [`Turbo`](https://turbo.hotwire.dev/reference/drive) and/or [`cable`](https://github.com/hotwired/turbo-rails/blob/main/app/javascript/turbo/cable.js) (`import { Turbo, cable } from "@hotwired/turbo-rails"`), but ensure that your application actually *uses* the members it `import`s when using this style (see [turbo-rails#48](https://github.com/hotwired/turbo-rails/issues/48)).
+If you're using Webpack and need to use the cable consumer, you can import [`cable`](https://github.com/hotwired/turbo-rails/blob/main/app/javascript/turbo/cable.js) (`import { cable } from "@hotwired/turbo-rails"`), but ensure that your application actually *uses* the members it `import`s when using this style (see [turbo-rails#48](https://github.com/hotwired/turbo-rails/issues/48)).
 
-If you're using a [native adapter](https://turbo.hotwire.dev/handbook/native), you'll need to assign `window.Turbo`, even if it's not used for anything else:
+The `Turbo` instance is automatically assigned to `window.Turbo` upon import:
 
 ```js
-import { Turbo } from "@hotwired/turbo-rails"
-window.Turbo = Turbo
+import "@hotwired/turbo-rails"
 ```
 
 ## Usage
