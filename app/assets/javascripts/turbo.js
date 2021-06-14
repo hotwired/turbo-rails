@@ -2749,13 +2749,14 @@ class FrameController {
   set sourceURL(sourceURL) {
     this.settingSourceURL = true;
     this.element.src = sourceURL !== null && sourceURL !== void 0 ? sourceURL : null;
+    this.currentURL = this.element.src;
     this.settingSourceURL = false;
   }
   get loadingStyle() {
     return this.element.loading;
   }
   get isLoading() {
-    return this.formSubmission !== undefined || this.resolveVisitPromise !== undefined;
+    return this.formSubmission !== undefined || this.resolveVisitPromise() !== undefined;
   }
   get isActive() {
     return this.element.isActive && this.connected;
