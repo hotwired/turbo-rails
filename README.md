@@ -55,11 +55,7 @@ You can watch [the video introduction to Hotwire](https://hotwire.dev/#screencas
 
 ## Compatibility with Rails UJS
 
-Rails UJS includes helpers for sending links and forms over XMLHttpRequest, so you can respond with Ajax. Turbo supersedes this functionality, so you should ensure that you're either running Rails 6.1 with the defaults that turn this off for forms, or that you add `config.action_view.form_with_generates_remote_forms = false` to your `config/application.rb`.
-
-Note that the helpers that turn `link_to` into remote invocations will _not_ currently work with Turbo. Links that have been made remote will not stick within frames nor will they allow you to respond with turbo stream actions. The recommendation is to replace these links with styled `button_to`, so you'll flow through a regular form, and you'll be better off with a11y compliance.
-
-You can still use the `data-confirm` and `data-disable-with`.
+Turbo can coexist with Rails UJS, but you need to take a series of ugprade steps to make it happen. See [the upgrading guide](https://github.com/hotwired/turbo-rails/blob/main/UPGRADING.md).
 
 
 ## Development
