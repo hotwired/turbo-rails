@@ -1,8 +1,8 @@
 # Upgrading from Rails UJS / Turbolinks to Turbo
 
-Turbo supersedes the functionality offered by Rails UJS to turn links and form submissions into XMLHttpRequests, so if you're making a complete switch from Rails UJS / Turbolinks to Turbo, you should ensure tha you have `config.action_view.form_with_generates_remote_forms = false` set in your `config/application.rb`. But not all applications can upgrade in one jump, and may need to have Rails UJS coexist alongside Turbo. Here are the steps you need to follow:
+Turbo supersedes the functionality offered by Rails UJS to turn links and form submissions into XMLHttpRequests, so if you're making a complete switch from Rails UJS / Turbolinks to Turbo, you should ensure that you have `config.action_view.form_with_generates_remote_forms = false` set in your `config/application.rb`. But not all applications can upgrade in one jump, and may need to have Rails UJS coexist alongside Turbo. Here are the steps you need to follow:
 
-## 1. Ensure Rails UJS is using compatibile selectors
+## 1. Ensure Rails UJS is using compatible selectors
 Rails UJS is offered either directly from the Rails framework or by the classic jquery-ujs plugin. Whichever of these you use, you can leave in place, but you need to either upgrade to a compatible version (see https://github.com/rails/rails/pull/42476) or vendor the JavaScript file needed in your app and tweak it yourself.
 
 ## 2. Replace the turbolinks gem in Gemfile with turbo-rails
