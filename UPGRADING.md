@@ -99,3 +99,64 @@ You probably have something like `require("turbolinks").start()`, which needs to
 
 ## 4. Replace all turbolinks namespaces with turbo
 If you have anything like `document.addEventListener("turbolinks:before-cache" ...)`, you'll need to replace those event names with the turbo-namespaced version, like `turbo:before-cache`. Same goes for calls to `Turbolinks.visit`, which you'll need to replace them with calls to `Turbo.visit`. And DOM element attributes, like `data-turbolinks-action`, which need to become `data-turbo-action` (remember all those `data: { turbolinks: false }` -> `data: { turbo: false }` too).
+
+
+## 5. Optional: Provide backwards compatible shims for mobile adapters
+If you've built native apps using the Turbolinks mobile adapters, and you need to transition those as well, you might need a shim to translate calls to Turbolinks to Turbo. For Basecamp, this is what we needed:
+
+```js
+// Compatibility shim for mobile apps
+window.Turbolinks = {
+  visit: Turbo.visit,
+
+  controller: {
+    isDeprecatedAdapter(adapter) {
+      return typeof adapter.visitProposedToLocation !== "function"
+    },
+
+    startVisitToLocationWithAction(location, action, restorationIdentifier) {
+      window.Turbo.navigator.startVisit(location, restorationIdentifier, { action })
+    },
+
+    get restorationIdentifier() {
+      return window.Turbo.navigator.restorationIdentifier
+    },
+
+    get adapter() {
+      return window.Turbo.navigator.adapter
+    },
+
+    set adapter(adapter) {
+      if (this.isDeprecatedAdapter(adapter)) {
+        // Old mobile adapters do not support visitProposedToLocation()
+        adapter.visitProposedToLocation = function(location, options) {
+          adapter.visitProposedToLocationWithAction(location, options.action)
+        }
+
+        // Old mobile adapters use visit.location.absoluteURL, which is not available
+        // because Turbo dropped the Location class in favor of the DOM URL API
+        const adapterVisitStarted = adapter.visitStarted
+        adapter.visitStarted = function(visit) {
+          Object.defineProperties(visit.location, {
+            absoluteURL: {
+              configurable: true,
+              get() { return this.toString() }
+            }
+          })
+
+          adapter.currentVisit = visit
+          adapterVisitStarted(visit)
+        }
+      }
+
+      window.Turbo.registerAdapter(adapter)
+    }
+  }
+}
+
+// Required by the desktop app
+document.addEventListener("turbo:load", function() {
+  const event = new CustomEvent("turbolinks:load", { bubbles: true })
+  document.documentElement.dispatchEvent(event)
+})
+```
