@@ -265,7 +265,9 @@ module Turbo::Broadcastable
 
     def broadcast_rendering_with_defaults(options)
       options.tap do |o|
-        o[:object] ||= self
+        # Add the current instance into the locals with the element name (which is the un-namespaced name)
+        # as the key. This parallels how the ActionView::ObjectRenderer would create a local variable.
+        o[:locals] = (o[:locals] || {}).reverse_merge!(model_name.element.to_sym => self)
         o[:partial] ||= to_partial_path
       end
     end
