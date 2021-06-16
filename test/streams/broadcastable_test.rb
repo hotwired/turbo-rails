@@ -96,6 +96,13 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
       @profile.broadcast_replace
     end
   end
+
+  test "partials don't get overwritten if they collide with the template name" do
+    @profile = Users::Profile.new(id: 1, name: "Ryan")
+    assert_broadcast_on @profile.to_param, turbo_stream_action_tag("replace", target: "users_profile_1", template: "<p>Hello!</p>") do
+      @profile.broadcast_replace partial: 'messages/message', locals: { message: @message }
+    end
+  end
 end
 
 class Turbo::BroadcastableArticleTest < ActionCable::Channel::TestCase
