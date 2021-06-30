@@ -943,6 +943,9 @@ class Renderer {
       return element;
     } else {
       const createdScriptElement = document.createElement("script");
+      if (this.cspNonce) {
+        createdScriptElement.nonce = this.cspNonce;
+      }
       createdScriptElement.textContent = element.textContent;
       createdScriptElement.async = false;
       copyElementAttributes(createdScriptElement, element);
@@ -970,6 +973,10 @@ class Renderer {
   get permanentElementMap() {
     return this.currentSnapshot.getPermanentElementMapForSnapshot(this.newSnapshot);
   }
+  get cspNonce() {
+    var _a;
+    return (_a = document.head.querySelector('meta[name="csp-nonce"]')) === null || _a === void 0 ? void 0 : _a.getAttribute("content");
+  }
 }
 
 function copyElementAttributes(destinationElement, sourceElement) {
@@ -994,6 +1001,8 @@ class FrameRenderer extends Renderer {
     this.scrollFrameIntoView();
     await nextAnimationFrame();
     this.focusFirstAutofocusableElement();
+    await nextAnimationFrame();
+    this.activateScriptElements();
   }
   loadFrameElement() {
     var _a;
@@ -1019,6 +1028,15 @@ class FrameRenderer extends Renderer {
       }
     }
     return false;
+  }
+  activateScriptElements() {
+    for (const inertScriptElement of this.newScriptElements) {
+      const activatedScriptElement = this.createScriptElement(inertScriptElement);
+      inertScriptElement.replaceWith(activatedScriptElement);
+    }
+  }
+  get newScriptElements() {
+    return this.currentElement.querySelectorAll("script");
   }
 }
 
@@ -1627,6 +1645,30 @@ class BrowserAdapter {
   }
 }
 
+class CacheObserver {
+  constructor() {
+    this.started = false;
+  }
+  start() {
+    if (!this.started) {
+      this.started = true;
+      addEventListener("turbo:before-cache", this.removeStaleElements, false);
+    }
+  }
+  stop() {
+    if (this.started) {
+      this.started = false;
+      removeEventListener("turbo:before-cache", this.removeStaleElements, false);
+    }
+  }
+  removeStaleElements() {
+    const staleElements = [ ...document.querySelectorAll('[data-turbo-cache="false"]') ];
+    for (const element of staleElements) {
+      element.remove();
+    }
+  }
+}
+
 class FormSubmitObserver {
   constructor(delegate) {
     this.started = false;
@@ -2216,7 +2258,7 @@ class PageRenderer extends Renderer {
     return this.newHeadSnapshot.provisionalElements;
   }
   get newBodyScriptElements() {
-    return [ ...this.newElement.querySelectorAll("script") ];
+    return this.newElement.querySelectorAll("script");
   }
 }
 
@@ -2307,6 +2349,7 @@ class Session {
     this.view = new PageView(this, document.documentElement);
     this.adapter = new BrowserAdapter(this);
     this.pageObserver = new PageObserver(this);
+    this.cacheObserver = new CacheObserver;
     this.linkClickObserver = new LinkClickObserver(this);
     this.formSubmitObserver = new FormSubmitObserver(this);
     this.scrollObserver = new ScrollObserver(this);
@@ -2319,6 +2362,7 @@ class Session {
   start() {
     if (!this.started) {
       this.pageObserver.start();
+      this.cacheObserver.start();
       this.linkClickObserver.start();
       this.formSubmitObserver.start();
       this.scrollObserver.start();
@@ -2335,6 +2379,7 @@ class Session {
   stop() {
     if (this.started) {
       this.pageObserver.stop();
+      this.cacheObserver.stop();
       this.linkClickObserver.stop();
       this.formSubmitObserver.stop();
       this.scrollObserver.stop();
@@ -2371,9 +2416,9 @@ class Session {
   get restorationIdentifier() {
     return this.history.restorationIdentifier;
   }
-  historyPoppedToLocationWithRestorationIdentifier(location) {
+  historyPoppedToLocationWithRestorationIdentifier(location, restorationIdentifier) {
     if (this.enabled) {
-      this.navigator.proposeVisit(location, {
+      this.navigator.startVisit(location, restorationIdentifier, {
         action: "restore",
         historyChanged: true
       });
@@ -2790,36 +2835,36 @@ function activateElement(element, currentURL) {
 
 const StreamActions = {
   after() {
-    var _a, _b;
-    (_b = (_a = this.targetElement) === null || _a === void 0 ? void 0 : _a.parentElement) === null || _b === void 0 ? void 0 : _b.insertBefore(this.templateContent, this.targetElement.nextSibling);
+    this.targetElements.forEach((e => {
+      var _a;
+      return (_a = e.parentElement) === null || _a === void 0 ? void 0 : _a.insertBefore(this.templateContent, e.nextSibling);
+    }));
   },
   append() {
-    var _a;
     this.removeDuplicateTargetChildren();
-    (_a = this.targetElement) === null || _a === void 0 ? void 0 : _a.append(this.templateContent);
+    this.targetElements.forEach((e => e.append(this.templateContent)));
   },
   before() {
-    var _a, _b;
-    (_b = (_a = this.targetElement) === null || _a === void 0 ? void 0 : _a.parentElement) === null || _b === void 0 ? void 0 : _b.insertBefore(this.templateContent, this.targetElement);
+    this.targetElements.forEach((e => {
+      var _a;
+      return (_a = e.parentElement) === null || _a === void 0 ? void 0 : _a.insertBefore(this.templateContent, e);
+    }));
   },
   prepend() {
-    var _a;
     this.removeDuplicateTargetChildren();
-    (_a = this.targetElement) === null || _a === void 0 ? void 0 : _a.prepend(this.templateContent);
+    this.targetElements.forEach((e => e.prepend(this.templateContent)));
   },
   remove() {
-    var _a;
-    (_a = this.targetElement) === null || _a === void 0 ? void 0 : _a.remove();
+    this.targetElements.forEach((e => e.remove()));
   },
   replace() {
-    var _a;
-    (_a = this.targetElement) === null || _a === void 0 ? void 0 : _a.replaceWith(this.templateContent);
+    this.targetElements.forEach((e => e.replaceWith(this.templateContent)));
   },
   update() {
-    if (this.targetElement) {
-      this.targetElement.innerHTML = "";
-      this.targetElement.append(this.templateContent);
-    }
+    this.targetElements.forEach((e => {
+      e.innerHTML = "";
+      e.append(this.templateContent);
+    }));
   }
 };
 
@@ -2848,19 +2893,13 @@ class StreamElement extends HTMLElement {
     } catch (_a) {}
   }
   removeDuplicateTargetChildren() {
-    this.duplicateChildren.forEach((({targetChild: targetChild}) => {
-      targetChild.remove();
-    }));
+    this.duplicateChildren.forEach((c => c.remove()));
   }
   get duplicateChildren() {
     var _a;
-    return [ ...(_a = this.templateContent) === null || _a === void 0 ? void 0 : _a.children ].map((templateChild => {
-      let targetChild = [ ...this.targetElement.children ].filter((c => c.id === templateChild.id))[0];
-      return {
-        targetChild: targetChild,
-        templateChild: templateChild
-      };
-    })).filter((({targetChild: targetChild}) => targetChild));
+    const existingChildren = this.targetElements.flatMap((e => [ ...e.children ])).filter((c => !!c.id));
+    const newChildrenIds = [ ...(_a = this.templateContent) === null || _a === void 0 ? void 0 : _a.children ].filter((c => !!c.id)).map((c => c.id));
+    return existingChildren.filter((c => newChildrenIds.includes(c.id)));
   }
   get performAction() {
     if (this.action) {
@@ -2872,15 +2911,17 @@ class StreamElement extends HTMLElement {
     }
     this.raise("action attribute is missing");
   }
-  get targetElement() {
-    var _a;
+  get targetElements() {
     if (this.target) {
-      return (_a = this.ownerDocument) === null || _a === void 0 ? void 0 : _a.getElementById(this.target);
+      return this.targetElementsById;
+    } else if (this.targets) {
+      return this.targetElementsByQuery;
+    } else {
+      this.raise("target or targets attribute is missing");
     }
-    this.raise("target attribute is missing");
   }
   get templateContent() {
-    return this.templateElement.content;
+    return this.templateElement.content.cloneNode(true);
   }
   get templateElement() {
     if (this.firstElementChild instanceof HTMLTemplateElement) {
@@ -2894,6 +2935,9 @@ class StreamElement extends HTMLElement {
   get target() {
     return this.getAttribute("target");
   }
+  get targets() {
+    return this.getAttribute("targets");
+  }
   raise(message) {
     throw new Error(`${this.description}: ${message}`);
   }
@@ -2906,6 +2950,24 @@ class StreamElement extends HTMLElement {
       bubbles: true,
       cancelable: true
     });
+  }
+  get targetElementsById() {
+    var _a;
+    const element = (_a = this.ownerDocument) === null || _a === void 0 ? void 0 : _a.getElementById(this.target);
+    if (element !== null) {
+      return [ element ];
+    } else {
+      return [];
+    }
+  }
+  get targetElementsByQuery() {
+    var _a;
+    const elements = (_a = this.ownerDocument) === null || _a === void 0 ? void 0 : _a.querySelectorAll(this.targets);
+    if (elements.length !== 0) {
+      return Array.prototype.slice.call(elements);
+    } else {
+      return [];
+    }
   }
 }
 
