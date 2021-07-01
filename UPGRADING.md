@@ -94,7 +94,7 @@ end
 ```
 
 ## 3. Replace the inclusion of turbolinks in your pack file with turbo
-You probably have something like `require("turbolinks").start()`, which needs to become `import "@hotwired/turbo"`. You don't need to start anything. Turbo is automatically started (and assigned to `window.Turbo`) upon importation.
+You probably have something like `require("turbolinks").start()`, which needs to become `import "@hotwired/turbo-rails"`. You don't need to start anything. Turbo is automatically started (and assigned to `window.Turbo`) upon importation.
 
 
 ## 4. Replace all turbolinks namespaces with turbo
