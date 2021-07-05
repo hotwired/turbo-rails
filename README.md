@@ -55,7 +55,7 @@ You can watch [the video introduction to Hotwire](https://hotwired.dev/#screenca
 
 ## Compatibility with Rails UJS
 
-Turbo can coexist with Rails UJS, but you need to take a series of ugprade steps to make it happen. See [the upgrading guide](https://github.com/hotwired/turbo-rails/blob/main/UPGRADING.md).
+Turbo can coexist with Rails UJS, but you need to take a series of upgrade steps to make it happen. See [the upgrading guide](https://github.com/hotwired/turbo-rails/blob/main/UPGRADING.md).
 
 
 ## Development
