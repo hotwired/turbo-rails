@@ -2988,7 +2988,7 @@ customElements.define("turbo-stream", StreamElement);
 
         Load your application’s JavaScript bundle inside the <head> element instead. <script> elements in <body> are evaluated with each page change.
 
-        For more information, see: https://turbo.hotwire.dev/handbook/building#working-with-script-elements
+        For more information, see: https://turbo.hotwired.dev/handbook/building#working-with-script-elements
 
         ——
         Suppress this warning by adding a "data-turbo-suppress-warning" attribute to: %s
