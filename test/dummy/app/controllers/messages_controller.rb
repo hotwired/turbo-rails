@@ -9,4 +9,8 @@ class MessagesController < ApplicationController
       format.turbo_stream { render turbo_stream: turbo_stream.append(:messages, "message_1"), status: :created }
     end
   end
+
+  def update
+    @message = Message.new(record_id: 1, content: "My message")
+  end
 end
