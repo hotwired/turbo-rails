@@ -27,6 +27,12 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "broadcasting update now" do
+    assert_broadcast_on "stream", turbo_stream_action_tag("update", target: "message_1", template: "<p>hello!</p>") do
+      Turbo::StreamsChannel.broadcast_update_to "stream", target: "message_1", partial: "messages/message", locals: { message: "hello!" }
+    end
+  end
+
   test "broadcasting append now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("append", target: "messages", template: "<p>hello!</p>") do
       Turbo::StreamsChannel.broadcast_append_to "stream", target: "messages", partial: "messages/message", locals: { message: "hello!" }
@@ -56,6 +62,15 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
     assert_broadcast_on "stream", turbo_stream_action_tag("replace", target: "message_1", template: "<p>hello!</p>") do
       perform_enqueued_jobs do
         Turbo::StreamsChannel.broadcast_replace_later_to \
+          "stream", target: "message_1", partial: "messages/message", locals: { message: "hello!" }
+      end
+    end
+  end
+
+  test "broadcasting update later" do
+    assert_broadcast_on "stream", turbo_stream_action_tag("update", target: "message_1", template: "<p>hello!</p>") do
+      perform_enqueued_jobs do
+        Turbo::StreamsChannel.broadcast_update_later_to \
           "stream", target: "message_1", partial: "messages/message", locals: { message: "hello!" }
       end
     end
@@ -103,7 +118,7 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
     end
   end
 
-  test "broadcasting update now" do
+  test "broadcasting direct update now" do
     assert_broadcast_on "stream", %(direct) do
       Turbo::StreamsChannel.broadcast_stream_to "stream", content: "direct"
     end
