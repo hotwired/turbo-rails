@@ -62,7 +62,7 @@ Turbo can coexist with Rails UJS, but you need to take a series of upgrade steps
 
 * To run the Rails tests: `bundle exec rake`.
   * To install dependencies: `bundle install`
-  * To prepare the test database: `cd tests/dummy; RAILS_ENV=test bundle exec rails db:migrate`
+  * To prepare the test database: `cd tests/dummy; RAILS_ENV=test ./bin/rails db:migrate`
 * To compile the JavaScript for the asset pipeline: `yarn build`
 
 
