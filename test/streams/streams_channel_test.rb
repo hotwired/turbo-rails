@@ -118,7 +118,7 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
     end
   end
 
-  test "broadcasting update now" do
+  test "broadcasting direct update now" do
     assert_broadcast_on "stream", %(direct) do
       Turbo::StreamsChannel.broadcast_stream_to "stream", content: "direct"
     end
