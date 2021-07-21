@@ -30,6 +30,18 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "broadcasting update to stream now" do
+    assert_broadcast_on "stream", turbo_stream_action_tag("update", target: "message_1", template: "<p>Hello!</p>") do
+      @message.broadcast_update_to "stream"
+    end
+  end
+
+  test "broadcasting update now" do
+    assert_broadcast_on @message.to_param, turbo_stream_action_tag("update", target: "message_1", template: "<p>Hello!</p>") do
+      @message.broadcast_update
+    end
+  end
+
   test "broadcasting before to stream now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("before", target: "message_1", template: "<p>Hello!</p>") do
       @message.broadcast_before_to "stream", target: "message_1"

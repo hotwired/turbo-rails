@@ -13,6 +13,10 @@ module Turbo::Streams::Broadcasts
     broadcast_action_to *streamables, action: :replace, target: target, **rendering
   end
 
+  def broadcast_update_to(*streamables, target:, **rendering)
+    broadcast_action_to *streamables, action: :update, target: target, **rendering
+  end
+
   def broadcast_before_to(*streamables, target:, **rendering)
     broadcast_action_to *streamables, action: :before, target: target, **rendering
   end
@@ -38,6 +42,10 @@ module Turbo::Streams::Broadcasts
 
   def broadcast_replace_later_to(*streamables, target:, **rendering)
     broadcast_action_later_to *streamables, action: :replace, target: target, **rendering
+  end
+
+  def broadcast_update_later_to(*streamables, target:, **rendering)
+    broadcast_action_later_to *streamables, action: :update, target: target, **rendering
   end
 
   def broadcast_before_later_to(*streamables, target:, **rendering)
