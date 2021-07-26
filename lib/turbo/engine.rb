@@ -15,6 +15,7 @@ module Turbo
       #{root}/app/models/concerns
       #{root}/app/jobs
     )
+    config.turbo_frame_auto_wrap_response_body = false
 
     initializer "turbo.no_action_cable" do
       Rails.autoloaders.once.do_not_eager_load(Dir["#{root}/app/channels/turbo/*_channel.rb"]) unless defined?(ActionCable)
@@ -75,6 +76,10 @@ module Turbo
           @encoders[:turbo_stream] = TurboStreamEncoder.new
         end
       end
+    end
+
+    initializer "turbo.configure_rails_initialization" do
+      Rails.application.middleware.use Turbo::Frames::FrameRequest::Middleware
     end
   end
 end

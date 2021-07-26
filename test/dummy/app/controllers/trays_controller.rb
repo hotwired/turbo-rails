@@ -2,6 +2,10 @@ class TraysController < ApplicationController
   def show
   end
 
+  def new
+    render 'new', with_turbo_frame: true
+  end
+
   def create
     case params[:return_to]
     when "recede_or_redirect"       then recede_or_redirect_to tray_url(id: 1)
@@ -13,5 +17,17 @@ class TraysController < ApplicationController
     else
       raise "Supply return_to to direct response"
     end
+  end
+
+  def part_one
+    render partial: 'part_of_tray'
+  end
+
+  def part_two
+    render partial: 'part_of_tray', with_turbo_frame: true
+  end
+
+  def part_three
+    render partial: 'part_of_tray', with_turbo_frame: false
   end
 end
