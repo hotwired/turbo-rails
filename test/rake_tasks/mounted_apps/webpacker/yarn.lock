@@ -2,20 +2,25 @@
 # yarn lockfile v1
 
 
-"@hotwired/turbo-rails@^7.0.0-beta.5":
-  version "7.0.0-beta.5"
-  resolved "https://registry.yarnpkg.com/@hotwired/turbo-rails/-/turbo-rails-7.0.0-beta.5.tgz#a0efdb7a20613845c43afe6f376b353e62f7e68d"
-  integrity sha512-zj+ZYbs2IHeJHtLavcLX5K0oW/3K8s3zjok4lpujxqLactp3OpuqBZxKBr+tgODnAX/WYFoKLpzivyx3xVRfTw==
+"@hotwired/turbo-rails@^7.0.0-beta.8":
+  version "7.0.0-beta.8"
+  resolved "https://registry.yarnpkg.com/@hotwired/turbo-rails/-/turbo-rails-7.0.0-beta.8.tgz#609eccfdc636c40e34244333f0fe947e573b4b8f"
+  integrity sha512-Azs1UevWbGLCFfcf0ymz/uZlvQR3nuc/ymT4+XTMpsiAIVjq1Y3FJw5gseXpumzz+r3U6sLWIPa+c1Acd5Zofw==
   dependencies:
-    "@hotwired/turbo" "^7.0.0-beta.4"
-    "@rails/actioncable" "^6.1.0"
+    "@hotwired/turbo" "^7.0.0-beta.8"
+    "@rails/actioncable" "^6.0.0"
 
-"@hotwired/turbo@^7.0.0-beta.4", "@hotwired/turbo@^7.0.0-beta.5":
+"@hotwired/turbo@^7.0.0-beta.5":
   version "7.0.0-beta.5"
   resolved "https://registry.yarnpkg.com/@hotwired/turbo/-/turbo-7.0.0-beta.5.tgz#3167e8e882b9075c5b3b2e2f32432cca2862c61c"
   integrity sha512-z10dI2U/StkMSmnfJUsyez6jrhnitgzjyw2CxE3LnAAzW/TBhvsMYKsVG7Xu337r3gh0r6UwIFWyvvtm3in6gg==
 
-"@rails/actioncable@^6.0.0", "@rails/actioncable@^6.1.0":
+"@hotwired/turbo@^7.0.0-beta.8":
+  version "7.0.0-beta.8"
+  resolved "https://registry.yarnpkg.com/@hotwired/turbo/-/turbo-7.0.0-beta.8.tgz#133630eabbd3c26183efcfb6dea2db5dd172e8da"
+  integrity sha512-3HfWoxtGGQOxaXo2bh2tvEBFAV4oSSIA/BFnMvIfY5D4HbEKYpPH2Q3Roa707/E9LtnIgyN/RibDY6dszCwPuw==
+
+"@rails/actioncable@^6.0.0":
   version "6.1.3"
   resolved "https://registry.yarnpkg.com/@rails/actioncable/-/actioncable-6.1.3.tgz#c8a67ec4d22ecd6931f7ebd98143fddbc815419a"
   integrity sha512-m02524MR9cTnUNfGz39Lkx9jVvuL0tle4O7YgvouJ7H83FILxzG1nQ5jw8pAjLAr9XQGu+P1sY4SKE3zyhCNjw==

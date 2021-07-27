@@ -15,10 +15,33 @@ run "#{RbConfig.ruby} bin/yarn remove turbolinks"
 gsub_file "#{Webpacker.config.source_entry_path}/application.js", TURBOLINKS_REGEX, ''
 gsub_file "#{Webpacker.config.source_entry_path}/application.js", /Turbolinks.start.*\n/, ''
 
-say "Enable redis in bundle"
-uncomment_lines "Gemfile", %(gem 'redis')
+engine_root = defined?(ENGINE_ROOT) && Pathname.new(ENGINE_ROOT)
+if engine_root
+  say "Appending redis to Gemfile"
+  append_to_file engine_root.join("Gemfile"), %(gem 'redis')
 
-say "Switch development cable to use redis"
-gsub_file "config/cable.yml", /development:\n\s+adapter: async/, "development:\n  adapter: redis\n  url: redis://localhost:6379/1"
+  say "Create config/cable.yml to use redis"
+  create_file engine_root.join("config/cable.yml") do
+    <<~FILE
+      development:
+        adapter: redis
+        url: redis://localhost:6379/1
+
+      test:
+        adapter: test
+
+      production:
+        adapter: redis
+        url: <%= ENV.fetch("REDIS_URL") { "redis://localhost:6379/1" } %>
+        channel_prefix: dummy_production
+    FILE
+  end
+else
+  say "Enable redis in bundle"
+  uncomment_lines "Gemfile", %(gem 'redis')
+
+  say "Switch development cable to use redis"
+  gsub_file "config/cable.yml", /development:\n\s+adapter: async/, "development:\n  adapter: redis\n  url: redis://localhost:6379/1"
+end
 
 say "Turbo successfully installed ⚡️", :green

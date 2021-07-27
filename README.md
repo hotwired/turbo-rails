@@ -48,6 +48,19 @@ If you're using a [native adapter](https://turbo.hotwire.dev/handbook/native), y
 import { Turbo } from "@hotwired/turbo-rails"
 window.Turbo = Turbo
 ```
+### Installing on Mounted Engines
+The setup for use in a mounted engine will involve the following steps:
+
+1. Add the `turbo-rails` gem to your gemspec file: `spec.add_dependency "turbo-rails"`
+2. Run `./bin/bundle install`
+3. Run `./bin/rails app:turbo:install`
+4. Add `require "turbo-rails"` to your Rails::Engine subclass file (e.g. `lib/blorgh/engine.rb`)
+5. Add a similar initializer for your assets to that same Rails::Engine file:
+```ruby
+initializer "blorgh.assets.precompile" do |app|
+  app.config.assets.precompile += %w( blorgh/application.css )
+end
+```
 
 ## Usage
 
