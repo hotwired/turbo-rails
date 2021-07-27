@@ -30,6 +30,30 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "broadcasting update to stream now" do
+    assert_broadcast_on "stream", turbo_stream_action_tag("update", target: "message_1", template: "<p>Hello!</p>") do
+      @message.broadcast_update_to "stream"
+    end
+  end
+
+  test "broadcasting update now" do
+    assert_broadcast_on @message.to_param, turbo_stream_action_tag("update", target: "message_1", template: "<p>Hello!</p>") do
+      @message.broadcast_update
+    end
+  end
+
+  test "broadcasting before to stream now" do
+    assert_broadcast_on "stream", turbo_stream_action_tag("before", target: "message_1", template: "<p>Hello!</p>") do
+      @message.broadcast_before_to "stream", target: "message_1"
+    end
+  end
+
+  test "broadcasting after to stream now" do
+    assert_broadcast_on "stream", turbo_stream_action_tag("after", target: "message_1", template: "<p>Hello!</p>") do
+      @message.broadcast_after_to "stream", target: "message_1"
+    end
+  end
+
   test "broadcasting append to stream now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("append", target: "messages", template: "<p>Hello!</p>") do
       @message.broadcast_append_to "stream"
@@ -82,6 +106,13 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
     @profile = Users::Profile.new(id: 1, name: "Ryan")
     assert_broadcast_on @profile.to_param, turbo_stream_action_tag("replace", target: "users_profile_1", template: "<p>Ryan</p>\n") do
       @profile.broadcast_replace
+    end
+  end
+
+  test "local variables don't get overwritten if they collide with the template name" do
+    @profile = Users::Profile.new(id: 1, name: "Ryan")
+    assert_broadcast_on @profile.to_param, turbo_stream_action_tag("replace", target: "users_profile_1", template: "<p>Hello!</p>") do
+      @profile.broadcast_replace partial: 'messages/message', locals: { message: @message }
     end
   end
 end

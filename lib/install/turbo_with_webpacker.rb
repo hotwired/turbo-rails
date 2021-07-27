@@ -1,6 +1,7 @@
 # Some Rails versions use commonJS(require) others use ESM(import).
 TURBOLINKS_REGEX = /(import .* from "turbolinks".*\n|require\("turbolinks"\).*\n)/.freeze
 ACTIVE_STORAGE_REGEX = /(import.*ActiveStorage|require.*@rails\/activestorage.*)/.freeze
+cable_config_path = Rails.root.join("config/cable.yml")
 
 abort "❌ Webpacker not found. Exiting." unless defined?(Webpacker::Engine)
 
@@ -37,11 +38,15 @@ if engine_root
     FILE
   end
 else
-  say "Enable redis in bundle"
-  uncomment_lines "Gemfile", %(gem 'redis')
+  if cable_config_path.exist?
+    say "Enable redis in bundle"
+    uncomment_lines "Gemfile", %(gem 'redis')
 
-  say "Switch development cable to use redis"
-  gsub_file "config/cable.yml", /development:\n\s+adapter: async/, "development:\n  adapter: redis\n  url: redis://localhost:6379/1"
+    say "Switch development cable to use redis"
+    gsub_file cable_config_path, /development:\n\s+adapter: async/, "development:\n  adapter: redis\n  url: redis://localhost:6379/1"
+  else
+    say 'ActionCable config file (config/cable.yml) is missing. Uncomment "gem \'redis\'" in your Gemfile and create config/cable.yml to use the Turbo Streams broadcast feature.'
+  end
 end
 
 say "Turbo successfully installed ⚡️", :green

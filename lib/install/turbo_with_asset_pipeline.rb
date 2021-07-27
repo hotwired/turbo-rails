@@ -1,5 +1,6 @@
 app_layout_path = Rails.root.join("app/views/layouts/application.html.erb")
 importmap_path = Rails.root.join("app/assets/javascripts/importmap.json.erb")
+cable_config_path = Rails.root.join("config/cable.yml")
 
 def engine_root
   defined?(ENGINE_ROOT) && Pathname.new(ENGINE_ROOT)
@@ -42,7 +43,6 @@ if engine_root
       development:
         adapter: redis
         url: redis://localhost:6379/1
-
       test:
         adapter: test
 
@@ -53,11 +53,15 @@ if engine_root
     FILE
   end
 else
-  say "Enable redis in bundle"
-  uncomment_lines Rails.root.join("Gemfile"), %(gem 'redis')
+	if cable_config_path.exist?
+		say "Enable redis in bundle"
+		uncomment_lines "Gemfile", %(gem 'redis')
 
-  say "Switch development cable to use redis"
-  gsub_file Rails.root.join("config/cable.yml"), /development:\n\s+adapter: async/, "development:\n  adapter: redis\n  url: redis://localhost:6379/1"
+		say "Switch development cable to use redis"
+		gsub_file cable_config_path, /development:\n\s+adapter: async/, "development:\n  adapter: redis\n  url: redis://localhost:6379/1"
+	else
+		say 'ActionCable config file (config/cable.yml) is missing. Uncomment "gem \'redis\'" in your Gemfile and create config/cable.yml to use the Turbo Streams broadcast feature.'
+	end
 end
 
 say "Turbo successfully installed ⚡️", :green

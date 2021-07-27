@@ -11,3 +11,5 @@ git tag v$VERSION
 git push --tags
 gem build turbo-rails.gemspec
 gem push "turbo-rails-$VERSION.gem"
+
+puts "Need to publish NPM package too?"
