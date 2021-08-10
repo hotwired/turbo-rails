@@ -38,7 +38,7 @@ The JavaScript for Turbo can either be run through the asset pipeline, which is 
 2. Run `./bin/bundle install`
 3. Run `./bin/rails turbo:install`
 
-Running `turbo:install` will install through NPM if Webpacker is installed in the application. Otherwise the asset pipeline version is used.
+Running `turbo:install` will install through NPM if Webpacker is installed in the application. Otherwise the asset pipeline version is used. To use the asset pipeline version, you must have `importmap-rails` installed first and listed higher in the Gemfile.
 
 If you're using Webpack and need to use the cable consumer, you can import [`cable`](https://github.com/hotwired/turbo-rails/blob/main/app/javascript/turbo/cable.js) (`import { cable } from "@hotwired/turbo-rails"`), but ensure that your application actually *uses* the members it `import`s when using this style (see [turbo-rails#48](https://github.com/hotwired/turbo-rails/issues/48)).
 
