@@ -25,5 +25,3 @@ if CABLE_CONFIG_PATH.exist?
 else
   say 'ActionCable config file (config/cable.yml) is missing. Uncomment "gem \'redis\'" in your Gemfile and create config/cable.yml to use the Turbo Streams broadcast feature.'
 end
-
-say "Turbo successfully installed ⚡️", :green
