@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    turbo-rails (0.6.0)
+    turbo-rails (0.7.0)
       rails (>= 6.0.0)
 
 GEM
@@ -82,11 +82,11 @@ GEM
     concurrent-ruby (1.1.9)
     crass (1.0.6)
     erubi (1.10.0)
-    globalid (0.4.2)
-      activesupport (>= 4.2.0)
+    globalid (0.5.2)
+      activesupport (>= 5.0)
     i18n (1.8.10)
       concurrent-ruby (~> 1.0)
-    loofah (2.10.0)
+    loofah (2.11.0)
       crass (~> 1.0.2)
       nokogiri (>= 1.5.9)
     mail (2.7.1)
