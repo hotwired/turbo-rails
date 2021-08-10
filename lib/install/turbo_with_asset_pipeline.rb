@@ -1,27 +1,8 @@
-APPLICATION_LAYOUT_PATH = Rails.root.join("app/views/layouts/application.html.erb")
-IMPORTMAP_PATH = Rails.root.join("app/assets/javascripts/importmap.json.erb")
+APP_JS_ROOT = Rails.root.join("app/assets/javascripts")
 CABLE_CONFIG_PATH = Rails.root.join("config/cable.yml")
 
-if APPLICATION_LAYOUT_PATH.exist?
-  say "Yield head in application layout for cache helper"
-  insert_into_file APPLICATION_LAYOUT_PATH.to_s, "\n    <%= yield :head %>", before: /\s*<\/head>/
-
-  if APPLICATION_LAYOUT_PATH.read =~ /stimulus/
-    say "Add Turbo include tags in application layout"
-    insert_into_file APPLICATION_LAYOUT_PATH.to_s, %(\n    <%= javascript_include_tag "turbo", type: "module-shim" %>), after: /<%= stimulus_include_tags %>/
-
-    if IMPORTMAP_PATH.exist?
-      say "Add Turbo to importmap"
-      insert_into_file IMPORTMAP_PATH, %(    "turbo": "<%= asset_path "turbo" %>",\n), after: /  "imports": {\s*\n/
-    end
-  else
-    say "Add Turbo include tags in application layout"
-    insert_into_file APPLICATION_LAYOUT_PATH.to_s, %(\n    <%= javascript_include_tag "turbo", type: "module" %>), before: /\s*<\/head>/
-  end
-else
-  say "Default application.html.erb is missing!", :red
-  say %(        Add <%= javascript_include_tag("turbo", type: "module-shim") %> and <%= yield :head %> within the <head> tag after Stimulus includes in your custom layout.)
-end
+say "Import turbo-rails in existing app/assets/javascripts/application.js"
+append_to_file APP_JS_ROOT.join("application.js"), %(import "@hotwired/turbo-rails"\n)
 
 if CABLE_CONFIG_PATH.exist?
   say "Enable redis in bundle"
