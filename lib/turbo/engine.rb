@@ -22,14 +22,14 @@ module Turbo
 
     initializer "turbo.assets" do
       if Rails.application.config.respond_to?(:assets)
-        Rails.application.config.assets.precompile += %w( turbo )
+        Rails.application.config.assets.precompile += %w( turbo.js )
       end
     end
 
     initializer "turbo.importmap" do
       if Rails.application.config.respond_to?(:importmap)
         Rails.application.config.importmap.paths.tap do |paths|
-          paths.asset "@hotwired/turbo-rails", path: "turbo"
+          paths.asset "@hotwired/turbo-rails", path: "turbo.js"
         end
       end
     end
