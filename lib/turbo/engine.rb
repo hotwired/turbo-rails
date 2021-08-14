@@ -28,9 +28,7 @@ module Turbo
 
     initializer "turbo.importmap" do
       if Rails.application.config.respond_to?(:importmap)
-        Rails.application.config.importmap.paths.tap do |paths|
-          paths.asset "@hotwired/turbo-rails", path: "turbo.js"
-        end
+        Rails.application.config.importmap.pin "@hotwired/turbo-rails", to: "turbo.js"
       end
     end
 
