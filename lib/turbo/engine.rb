@@ -26,12 +26,6 @@ module Turbo
       end
     end
 
-    initializer "turbo.importmap" do
-      if Rails.application.config.respond_to?(:importmap)
-        Rails.application.config.importmap.pin "@hotwired/turbo-rails", to: "turbo.js"
-      end
-    end
-
     initializer "turbo.helpers", before: :load_config_initializers do
       ActiveSupport.on_load(:action_controller_base) do
         include Turbo::Streams::TurboStreamsTagBuilder, Turbo::Frames::FrameRequest, Turbo::Native::Navigation
