@@ -1,9 +1,15 @@
-APP_JS_ROOT = Rails.root.join("app/assets/javascripts")
+APP_JS_PATH = Rails.root.join("app/javascript/application.js")
 CABLE_CONFIG_PATH = Rails.root.join("config/cable.yml")
 IMPORTMAP_PATH = Rails.root.join("config/initializers/importmap.rb")
 
-say "Import turbo-rails in existing app/assets/javascripts/application.js"
-append_to_file APP_JS_ROOT.join("application.js"), %(import "@hotwired/turbo-rails"\n)
+if APP_JS_PATH.exist?
+  say "Import turbo-rails in existing app/javascript/application.js"
+  append_to_file APP_JS_PATH, %(import "@hotwired/turbo-rails"\n)
+else
+  say <<~INSTRUCTIONS, :red
+    You must import @hotwire/turbo-rails in your application.js.
+  INSTRUCTIONS
+end
 
 if IMPORTMAP_PATH.exist?
   say "Pin @hotwired/turbo-rails in config/initializers/importmap.rb"
@@ -12,7 +18,7 @@ if IMPORTMAP_PATH.exist?
     %(  pin "@hotwired/turbo-rails", to: "turbo.js"\n\n),
     after: "Rails.application.config.importmap.draw do\n"
 else
-  say <<~INSTRUCTIONS, :green
+  say <<~INSTRUCTIONS, :red
     You must add @hotwire/turbo-rails to your importmap to reference them via ESM.
   INSTRUCTIONS
 end
