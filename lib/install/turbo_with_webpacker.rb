@@ -1,20 +1,10 @@
-# Some Rails versions use commonJS(require) others use ESM(import).
-TURBOLINKS_REGEX = /(import .* from "turbolinks".*\n|require\("turbolinks"\).*\n)/.freeze
-ACTIVE_STORAGE_REGEX = /(import.*ActiveStorage|require.*@rails\/activestorage.*)/.freeze
-CABLE_CONFIG_PATH = Rails.root.join("config/cable.yml")
-
-abort "❌ Webpacker not found. Exiting." unless defined?(Webpacker::Engine)
+say "Appending Turbo setup code to #{Webpacker.config.source_entry_path}/application.js"
+append_to_file "#{Webpacker.config.source_entry_path}/application.js", %(\nimport "@hotwired/turbo-rails"\n)
 
 say "Install Turbo"
 run "yarn add @hotwired/turbo-rails"
-insert_into_file "#{Webpacker.config.source_entry_path}/application.js", "import \"@hotwired/turbo-rails\"\n", before: ACTIVE_STORAGE_REGEX
 
-say "Remove Turbolinks"
-run "#{RbConfig.ruby} bin/bundle remove turbolinks"
-run "#{RbConfig.ruby} bin/bundle", capture: true
-run "#{RbConfig.ruby} bin/yarn remove turbolinks"
-gsub_file "#{Webpacker.config.source_entry_path}/application.js", TURBOLINKS_REGEX, ''
-gsub_file "#{Webpacker.config.source_entry_path}/application.js", /Turbolinks.start.*\n/, ''
+CABLE_CONFIG_PATH = Rails.root.join("config/cable.yml")
 
 if CABLE_CONFIG_PATH.exist?
   say "Enable redis in bundle"
