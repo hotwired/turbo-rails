@@ -57,6 +57,13 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "broadcasting remove later" do
+    assert_broadcast_on "stream", turbo_stream_action_tag("remove", target: "message_1") do
+      perform_enqueued_jobs do
+        Turbo::StreamsChannel.broadcast_remove_later_to "stream", target: "message_1"
+      end
+    end
+  end
 
   test "broadcasting replace later" do
     assert_broadcast_on "stream", turbo_stream_action_tag("replace", target: "message_1", template: "<p>hello!</p>") do

@@ -39,6 +39,9 @@ module Turbo::Streams::Broadcasts
     )
   end
 
+  def broadcast_remove_later_to(*streamables, target:)
+    broadcast_action_later_to *streamables, action: :remove, target: target
+  end
 
   def broadcast_replace_later_to(*streamables, target:, **rendering)
     broadcast_action_later_to *streamables, action: :replace, target: target, **rendering

@@ -210,6 +210,15 @@ module Turbo::Broadcastable
     broadcast_action_to self, action: action, target: target, **rendering
   end
 
+  # Same as <tt>broadcast_remove_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
+  def broadcast_remove_later_to(*streamables, target: self)
+    Turbo::StreamsChannel.broadcast_remove_later_to *streamables, target: target
+  end
+
+  # Same as <tt>#broadcast_remove_later_to</tt>, but the designated stream is automatically set to the current model.
+  def broadcast_remove_later
+    broadcast_remove_later_to self
+  end
 
   # Same as <tt>broadcast_replace_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
   def broadcast_replace_later_to(*streamables, **rendering)
