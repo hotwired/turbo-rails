@@ -1,6 +1,6 @@
 APP_JS_PATH = Rails.root.join("app/javascript/application.js")
 CABLE_CONFIG_PATH = Rails.root.join("config/cable.yml")
-IMPORTMAP_PATH = Rails.root.join("config/initializers/importmap.rb")
+IMPORTMAP_PATH = Rails.root.join("config/importmap.rb")
 
 if APP_JS_PATH.exist?
   say "Import turbo-rails in existing app/javascript/application.js"
@@ -12,7 +12,7 @@ else
 end
 
 if IMPORTMAP_PATH.exist?
-  say "Pin @hotwired/turbo-rails in config/initializers/importmap.rb"
+  say "Pin @hotwired/turbo-rails in config/importmap.rb"
   insert_into_file \
     IMPORTMAP_PATH.to_s, 
     %(  pin "@hotwired/turbo-rails", to: "turbo.js"\n\n),
