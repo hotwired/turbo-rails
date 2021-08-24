@@ -20,5 +20,10 @@ namespace :turbo do
     task :webpacker do
       run_turbo_install_template "turbo_with_webpacker"
     end
+
+    desc "Switch on Redis and use it in development"
+    task :redis do
+      run_turbo_install_template "turbo_needs_redis"
+    end
   end
 end
