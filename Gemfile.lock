@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    turbo-rails (0.7.4)
+    turbo-rails (0.7.5)
       rails (>= 6.0.0)
 
 GEM
@@ -125,7 +125,7 @@ GEM
     rails-dom-testing (2.0.3)
       activesupport (>= 4.2.0)
       nokogiri (>= 1.6)
-    rails-html-sanitizer (1.4.1)
+    rails-html-sanitizer (1.4.2)
       loofah (~> 2.3)
     railties (6.1.3.2)
       actionpack (= 6.1.3.2)
