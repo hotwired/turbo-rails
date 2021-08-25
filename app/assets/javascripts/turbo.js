@@ -361,8 +361,10 @@ class FetchRequest {
       const response = await fetch(this.url.href, fetchOptions);
       return await this.receive(response);
     } catch (error) {
-      this.delegate.requestErrored(this, error);
-      throw error;
+      if (error.name !== "AbortError") {
+        this.delegate.requestErrored(this, error);
+        throw error;
+      }
     } finally {
       this.delegate.requestFinished(this);
     }
@@ -385,13 +387,15 @@ class FetchRequest {
     return fetchResponse;
   }
   get fetchOptions() {
+    var _a;
     return {
       method: FetchMethod[this.method].toUpperCase(),
       credentials: "same-origin",
       headers: this.headers,
       redirect: "follow",
       body: this.body,
-      signal: this.abortSignal
+      signal: this.abortSignal,
+      referrer: (_a = this.delegate.referrer) === null || _a === void 0 ? void 0 : _a.href
     };
   }
   get defaultHeaders() {
@@ -544,7 +548,8 @@ class FormSubmission {
   }
   get action() {
     var _a;
-    return ((_a = this.submitter) === null || _a === void 0 ? void 0 : _a.getAttribute("formaction")) || this.formElement.action;
+    const formElementAction = typeof this.formElement.action === "string" ? this.formElement.action : null;
+    return ((_a = this.submitter) === null || _a === void 0 ? void 0 : _a.getAttribute("formaction")) || this.formElement.getAttribute("action") || formElementAction || "";
   }
   get location() {
     return expandURL(this.action);
@@ -691,11 +696,7 @@ class Snapshot {
     return this.getElementForAnchor(anchor) != null;
   }
   getElementForAnchor(anchor) {
-    try {
-      return this.element.querySelector(`[id='${anchor}'], a[name='${anchor}']`);
-    } catch (_a) {
-      return null;
-    }
+    return anchor ? this.element.querySelector(`[id='${anchor}'], a[name='${anchor}']`) : null;
   }
   get isConnected() {
     return this.element.isConnected;
@@ -784,6 +785,12 @@ class View {
   }
   scrollToPosition({x: x, y: y}) {
     this.scrollRoot.scrollTo(x, y);
+  }
+  scrollToTop() {
+    this.scrollToPosition({
+      x: 0,
+      y: 0
+    });
   }
   get scrollRoot() {
     return window;
@@ -1354,6 +1361,9 @@ class Visit {
   get restorationData() {
     return this.history.getRestorationDataForIdentifier(this.restorationIdentifier);
   }
+  get silent() {
+    return this.isSamePage;
+  }
   start() {
     if (this.state == VisitState.initialized) {
       this.recordTimingMetric(TimingMetric.visitStart);
@@ -1377,6 +1387,7 @@ class Visit {
       this.state = VisitState.completed;
       this.adapter.visitCompleted(this);
       this.delegate.visitCompleted(this);
+      this.followRedirect();
     }
   }
   fail() {
@@ -1483,8 +1494,10 @@ class Visit {
   }
   followRedirect() {
     if (this.redirectedToLocation && !this.followedRedirect) {
-      this.location = this.redirectedToLocation;
-      this.history.replace(this.redirectedToLocation, this.restorationIdentifier);
+      this.adapter.visitProposedToLocation(this.redirectedToLocation, {
+        action: "replace",
+        response: this.response
+      });
       this.followedRedirect = true;
     }
   }
@@ -1538,9 +1551,9 @@ class Visit {
   performScroll() {
     if (!this.scrolled) {
       if (this.action == "restore") {
-        this.scrollToRestoredPosition() || this.scrollToAnchor() || this.scrollToTop();
+        this.scrollToRestoredPosition() || this.scrollToAnchor() || this.view.scrollToTop();
       } else {
-        this.scrollToAnchor() || this.scrollToTop();
+        this.scrollToAnchor() || this.view.scrollToTop();
       }
       if (this.isSamePage) {
         this.delegate.visitScrolledToSamePageLocation(this.view.lastRenderedLocation, this.location);
@@ -1561,12 +1574,6 @@ class Visit {
       this.view.scrollToAnchor(anchor);
       return true;
     }
-  }
-  scrollToTop() {
-    this.view.scrollToPosition({
-      x: 0,
-      y: 0
-    });
   }
   recordTimingMetric(metric) {
     this.timingMetrics[metric] = (new Date).getTime();
@@ -1666,14 +1673,20 @@ class BrowserAdapter {
     this.progressBar.setValue(1);
     this.hideProgressBar();
   }
-  visitCompleted(visit) {
-    visit.followRedirect();
-  }
+  visitCompleted(visit) {}
   pageInvalidated() {
     this.reload();
   }
   visitFailed(visit) {}
   visitRendered(visit) {}
+  formSubmissionStarted(formSubmission) {
+    this.progressBar.setValue(0);
+    this.showProgressBarAfterDelay();
+  }
+  formSubmissionFinished(formSubmission) {
+    this.progressBar.setValue(1);
+    this.hideProgressBar();
+  }
   showProgressBarAfterDelay() {
     this.progressBarTimeout = window.setTimeout(this.showProgressBar, this.session.progressBarDelay);
   }
@@ -1891,7 +1904,8 @@ class LinkClickObserver {
     };
     this.clickBubbled = event => {
       if (this.clickEventIsSignificant(event)) {
-        const link = this.findLinkFromClickTarget(event.target);
+        const target = event.composedPath && event.composedPath()[0] || event.target;
+        const link = this.findLinkFromClickTarget(target);
         if (link) {
           const location = this.getLocationForLink(link);
           if (this.delegate.willFollowLinkToLocation(link, location)) {
@@ -1937,7 +1951,7 @@ class Navigator {
     this.delegate = delegate;
   }
   proposeVisit(location, options = {}) {
-    if (this.delegate.allowsVisitingLocation(location)) {
+    if (this.delegate.allowsVisitingLocationWithAction(location, options.action)) {
       this.delegate.visitProposedToLocation(location, options);
     }
   }
@@ -1978,7 +1992,11 @@ class Navigator {
   get history() {
     return this.delegate.history;
   }
-  formSubmissionStarted(formSubmission) {}
+  formSubmissionStarted(formSubmission) {
+    if (typeof this.adapter.formSubmissionStarted === "function") {
+      this.adapter.formSubmissionStarted(formSubmission);
+    }
+  }
   async formSubmissionSucceededWithResponse(formSubmission, fetchResponse) {
     if (formSubmission == this.formSubmission) {
       const responseHTML = await fetchResponse.responseHTML;
@@ -2001,14 +2019,23 @@ class Navigator {
     const responseHTML = await fetchResponse.responseHTML;
     if (responseHTML) {
       const snapshot = PageSnapshot.fromHTMLString(responseHTML);
-      await this.view.renderPage(snapshot);
+      if (fetchResponse.serverError) {
+        await this.view.renderError(snapshot);
+      } else {
+        await this.view.renderPage(snapshot);
+      }
+      this.view.scrollToTop();
       this.view.clearSnapshotCache();
     }
   }
   formSubmissionErrored(formSubmission, error) {
     console.error(error);
   }
-  formSubmissionFinished(formSubmission) {}
+  formSubmissionFinished(formSubmission) {
+    if (typeof this.adapter.formSubmissionFinished === "function") {
+      this.adapter.formSubmissionFinished(formSubmission);
+    }
+  }
   visitStarted(visit) {
     this.delegate.visitStarted(visit);
   }
@@ -2016,7 +2043,10 @@ class Navigator {
     this.delegate.visitCompleted(visit);
   }
   locationWithActionIsSamePage(location, action) {
-    return getRequestURL(location) === getRequestURL(this.view.lastRenderedLocation) && (getAnchor(location) != null || action == "restore");
+    const anchor = getAnchor(location);
+    const currentAnchor = getAnchor(this.view.lastRenderedLocation);
+    const isRestorationToTop = action === "restore" && typeof anchor === "undefined";
+    return action !== "replace" && getRequestURL(location) === getRequestURL(this.view.lastRenderedLocation) && (isRestorationToTop || anchor != null && anchor !== currentAnchor);
   }
   visitScrolledToSamePageLocation(oldURL, newURL) {
     this.delegate.visitScrolledToSamePageLocation(oldURL, newURL);
@@ -2408,6 +2438,7 @@ class Session {
     this.scrollObserver = new ScrollObserver(this);
     this.streamObserver = new StreamObserver(this);
     this.frameRedirector = new FrameRedirector(document.documentElement);
+    this.drive = true;
     this.enabled = true;
     this.progressBarDelay = 500;
     this.started = false;
@@ -2485,7 +2516,7 @@ class Session {
     });
   }
   willFollowLinkToLocation(link, location) {
-    return elementIsNavigable(link) && this.locationIsVisitable(location) && this.applicationAllowsFollowingLinkToLocation(link, location);
+    return this.elementDriveEnabled(link) && this.locationIsVisitable(location) && this.applicationAllowsFollowingLinkToLocation(link, location);
   }
   followedLinkToLocation(link, location) {
     const action = this.getActionForLink(link);
@@ -2494,13 +2525,12 @@ class Session {
     });
   }
   convertLinkWithMethodClickToFormSubmission(link) {
-    var _a;
     const linkMethod = link.getAttribute("data-turbo-method");
     if (linkMethod) {
       const form = document.createElement("form");
       form.method = linkMethod;
       form.action = link.getAttribute("href") || "undefined";
-      (_a = link.parentNode) === null || _a === void 0 ? void 0 : _a.insertBefore(form, link);
+      document.body.appendChild(form);
       return dispatch("submit", {
         cancelable: true,
         target: form
@@ -2509,8 +2539,8 @@ class Session {
       return false;
     }
   }
-  allowsVisitingLocation(location) {
-    return this.applicationAllowsVisitingLocation(location);
+  allowsVisitingLocationWithAction(location, action) {
+    return this.locationWithActionIsSamePage(location, action) || this.applicationAllowsVisitingLocation(location);
   }
   visitProposedToLocation(location, options) {
     extendURLWithDeprecatedProperties(location);
@@ -2518,7 +2548,9 @@ class Session {
   }
   visitStarted(visit) {
     extendURLWithDeprecatedProperties(visit.location);
-    this.notifyApplicationAfterVisitingLocation(visit.location, visit.action);
+    if (!visit.silent) {
+      this.notifyApplicationAfterVisitingLocation(visit.location, visit.action);
+    }
   }
   visitCompleted(visit) {
     this.notifyApplicationAfterPageLoad(visit.getTimingMetrics());
@@ -2530,7 +2562,7 @@ class Session {
     this.notifyApplicationAfterVisitingSamePageLocation(oldURL, newURL);
   }
   willSubmitForm(form, submitter) {
-    return elementIsNavigable(form) && elementIsNavigable(submitter);
+    return this.elementDriveEnabled(form) && this.elementDriveEnabled(submitter);
   }
   formSubmitted(form, submitter) {
     this.navigator.submitForm(form, submitter);
@@ -2549,7 +2581,10 @@ class Session {
     this.renderStreamMessage(message);
   }
   viewWillCacheSnapshot() {
-    this.notifyApplicationBeforeCachingSnapshot();
+    var _a;
+    if (!((_a = this.navigator.currentVisit) === null || _a === void 0 ? void 0 : _a.silent)) {
+      this.notifyApplicationBeforeCachingSnapshot();
+    }
   }
   allowsImmediateRender({element: element}, resume) {
     const event = this.notifyApplicationBeforeRender(element, resume);
@@ -2561,6 +2596,12 @@ class Session {
   }
   viewInvalidated() {
     this.adapter.pageInvalidated();
+  }
+  frameLoaded(frame) {
+    this.notifyApplicationAfterFrameLoad(frame);
+  }
+  frameRendered(fetchResponse, frame) {
+    this.notifyApplicationAfterFrameRender(fetchResponse, frame);
   }
   applicationAllowsFollowingLinkToLocation(link, location) {
     const event = this.notifyApplicationAfterClickingLinkToLocation(link, location);
@@ -2624,6 +2665,36 @@ class Session {
       newURL: newURL.toString()
     }));
   }
+  notifyApplicationAfterFrameLoad(frame) {
+    return dispatch("turbo:frame-load", {
+      target: frame
+    });
+  }
+  notifyApplicationAfterFrameRender(fetchResponse, frame) {
+    return dispatch("turbo:frame-render", {
+      detail: {
+        fetchResponse: fetchResponse
+      },
+      target: frame,
+      cancelable: true
+    });
+  }
+  elementDriveEnabled(element) {
+    const container = element === null || element === void 0 ? void 0 : element.closest("[data-turbo]");
+    if (this.drive) {
+      if (container) {
+        return container.getAttribute("data-turbo") != "false";
+      } else {
+        return true;
+      }
+    } else {
+      if (container) {
+        return container.getAttribute("data-turbo") == "true";
+      } else {
+        return false;
+      }
+    }
+  }
   getActionForLink(link) {
     const action = link.getAttribute("data-turbo-action");
     return isAction(action) ? action : "advance";
@@ -2633,15 +2704,6 @@ class Session {
   }
   get snapshot() {
     return this.view.snapshot;
-  }
-}
-
-function elementIsNavigable(element) {
-  const container = element === null || element === void 0 ? void 0 : element.closest("[data-turbo]");
-  if (container) {
-    return container.getAttribute("data-turbo") != "false";
-  } else {
-    return true;
   }
 }
 
@@ -2656,6 +2718,58 @@ const deprecatedLocationPropertyDescriptors = {
     }
   }
 };
+
+const session = new Session;
+
+const {navigator: navigator} = session;
+
+function start() {
+  session.start();
+}
+
+function registerAdapter(adapter) {
+  session.registerAdapter(adapter);
+}
+
+function visit(location, options) {
+  session.visit(location, options);
+}
+
+function connectStreamSource(source) {
+  session.connectStreamSource(source);
+}
+
+function disconnectStreamSource(source) {
+  session.disconnectStreamSource(source);
+}
+
+function renderStreamMessage(message) {
+  session.renderStreamMessage(message);
+}
+
+function clearCache() {
+  session.clearCache();
+}
+
+function setProgressBarDelay(delay) {
+  session.setProgressBarDelay(delay);
+}
+
+var Turbo = Object.freeze({
+  __proto__: null,
+  navigator: navigator,
+  session: session,
+  PageRenderer: PageRenderer,
+  PageSnapshot: PageSnapshot,
+  start: start,
+  registerAdapter: registerAdapter,
+  visit: visit,
+  connectStreamSource: connectStreamSource,
+  disconnectStreamSource: disconnectStreamSource,
+  renderStreamMessage: renderStreamMessage,
+  clearCache: clearCache,
+  setProgressBarDelay: setProgressBarDelay
+});
 
 class FrameController {
   constructor(element) {
@@ -2672,6 +2786,7 @@ class FrameController {
   connect() {
     if (!this.connected) {
       this.connected = true;
+      this.reloadable = false;
       if (this.loadingStyle == FrameLoadingStyle.lazy) {
         this.appearanceObserver.start();
       }
@@ -2707,7 +2822,7 @@ class FrameController {
     }
   }
   async loadSourceURL() {
-    if (!this.settingSourceURL && this.enabled && this.isActive && this.sourceURL != this.currentURL) {
+    if (!this.settingSourceURL && this.enabled && this.isActive && (this.reloadable || this.sourceURL != this.currentURL)) {
       const previousURL = this.currentURL;
       this.currentURL = this.sourceURL;
       if (this.sourceURL) {
@@ -2716,6 +2831,7 @@ class FrameController {
           this.appearanceObserver.stop();
           await this.element.loaded;
           this.hasBeenLoaded = true;
+          session.frameLoaded(this.element);
         } catch (error) {
           this.currentURL = previousURL;
           throw error;
@@ -2735,6 +2851,7 @@ class FrameController {
         const renderer = new FrameRenderer(this.view.snapshot, snapshot, false);
         if (this.view.renderPromise) await this.view.renderPromise;
         await this.view.render(renderer);
+        session.frameRendered(fetchResponse, this.element);
       }
     } catch (error) {
       console.error(error);
@@ -2752,6 +2869,7 @@ class FrameController {
     }
   }
   linkClickIntercepted(element, url) {
+    this.reloadable = true;
     this.navigateFrame(element, url);
   }
   shouldInterceptFormSubmission(element, submitter) {
@@ -2761,6 +2879,7 @@ class FrameController {
     if (this.formSubmission) {
       this.formSubmission.stop();
     }
+    this.reloadable = false;
     this.formSubmission = new FormSubmission(this, element, submitter);
     if (this.formSubmission.fetchRequest.isIdempotent) {
       this.navigateFrame(element, this.formSubmission.fetchRequest.url.href);
@@ -2864,10 +2983,10 @@ class FrameController {
         return !frameElement.disabled;
       }
     }
-    if (!elementIsNavigable(element)) {
+    if (!session.elementDriveEnabled(element)) {
       return false;
     }
-    if (submitter && !elementIsNavigable(submitter)) {
+    if (submitter && !session.elementDriveEnabled(submitter)) {
       return false;
     }
     return true;
@@ -2881,6 +3000,18 @@ class FrameController {
   get sourceURL() {
     if (this.element.src) {
       return this.element.src;
+    }
+  }
+  get reloadable() {
+    const frame = this.findFrameElement(this.element);
+    return frame.hasAttribute("reloadable");
+  }
+  set reloadable(value) {
+    const frame = this.findFrameElement(this.element);
+    if (value) {
+      frame.setAttribute("reloadable", "");
+    } else {
+      frame.removeAttribute("reloadable");
     }
   }
   set sourceURL(sourceURL) {
@@ -3089,57 +3220,6 @@ customElements.define("turbo-stream", StreamElement);
   }
 })();
 
-const session = new Session;
-
-const {navigator: navigator} = session;
-
-function start() {
-  session.start();
-}
-
-function registerAdapter(adapter) {
-  session.registerAdapter(adapter);
-}
-
-function visit(location, options) {
-  session.visit(location, options);
-}
-
-function connectStreamSource(source) {
-  session.connectStreamSource(source);
-}
-
-function disconnectStreamSource(source) {
-  session.disconnectStreamSource(source);
-}
-
-function renderStreamMessage(message) {
-  session.renderStreamMessage(message);
-}
-
-function clearCache() {
-  session.clearCache();
-}
-
-function setProgressBarDelay(delay) {
-  session.setProgressBarDelay(delay);
-}
-
-var Turbo = Object.freeze({
-  __proto__: null,
-  navigator: navigator,
-  PageRenderer: PageRenderer,
-  PageSnapshot: PageSnapshot,
-  start: start,
-  registerAdapter: registerAdapter,
-  visit: visit,
-  connectStreamSource: connectStreamSource,
-  disconnectStreamSource: disconnectStreamSource,
-  renderStreamMessage: renderStreamMessage,
-  clearCache: clearCache,
-  setProgressBarDelay: setProgressBarDelay
-});
-
 window.Turbo = Turbo;
 
 start();
@@ -3154,6 +3234,7 @@ var turbo_es2017Esm = Object.freeze({
   navigator: navigator,
   registerAdapter: registerAdapter,
   renderStreamMessage: renderStreamMessage,
+  session: session,
   setProgressBarDelay: setProgressBarDelay,
   start: start,
   visit: visit
