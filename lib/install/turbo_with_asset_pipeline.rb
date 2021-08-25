@@ -20,4 +20,4 @@ else
   INSTRUCTIONS
 end
 
-say "Run turbo:install:redis to switch on Redis and use it in development for turbo streams"
+say "Run turbo:install:redis to switch on Redis and use it in development for turbo streams", :red
