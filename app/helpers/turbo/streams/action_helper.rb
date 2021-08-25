@@ -12,10 +12,9 @@ module Turbo::Streams::ActionHelper
   def turbo_stream_action_tag(action, target: nil, targets: nil, template: nil)
     template = action.to_sym == :remove ? "" : "<template>#{template}</template>"
 
-    if target
-      target = convert_to_turbo_stream_dom_id(target)
+    if target = convert_to_turbo_stream_dom_id(target)
       %(<turbo-stream action="#{action}" target="#{target}">#{template}</turbo-stream>).html_safe
-    elsif targets
+    elsif targets = convert_to_turbo_stream_dom_id(targets)
       %(<turbo-stream action="#{action}" targets="#{targets}">#{template}</turbo-stream>).html_safe
     else
       raise ArgumentError, "target or targets must be supplied"

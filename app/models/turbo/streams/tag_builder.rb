@@ -212,29 +212,19 @@ class Turbo::Streams::TagBuilder
 
   # Send an action of the type <tt>name</tt> to <tt>target</tt>. Options described in the concrete methods.
   def action(name, target, content = nil, allow_inferred_rendering: true, **rendering, &block)
-    target_name = extract_target_name_from(target)
     template = render_template(target, content, allow_inferred_rendering: allow_inferred_rendering, **rendering, &block)
 
-    turbo_stream_action_tag name, target: target_name, template: template
+    turbo_stream_action_tag name, target: target, template: template
   end
 
   # Send an action of the type <tt>name</tt> to <tt>targets</tt>. Options described in the concrete methods.
   def action_all(name, targets, content = nil, allow_inferred_rendering: true, **rendering, &block)
-    targets_name = extract_target_name_from(targets)
     template = render_template(targets, content, allow_inferred_rendering: allow_inferred_rendering, **rendering, &block)
 
-    turbo_stream_action_tag name, targets: targets_name, template: template
+    turbo_stream_action_tag name, targets: targets, template: template
   end
 
   private
-    def extract_target_name_from(target)
-      if target.respond_to?(:to_key)
-        ActionView::RecordIdentifier.dom_id(target)
-      else
-        target
-      end
-    end
-
     def render_template(target, content = nil, allow_inferred_rendering: true, **rendering, &block)
       case
       when content
