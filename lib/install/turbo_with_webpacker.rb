@@ -3,5 +3,3 @@ append_to_file "#{Webpacker.config.source_entry_path}/application.js", %(\nimpor
 
 say "Install Turbo"
 run "yarn add @hotwired/turbo-rails"
-
-say "Run turbo:install:redis to switch on Redis and use it in development for turbo streams"
