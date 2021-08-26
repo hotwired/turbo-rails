@@ -46,6 +46,7 @@ The JavaScript for Turbo can either be run through the asset pipeline, which is 
 1. Add the `turbo-rails` gem to your Gemfile: `gem 'turbo-rails'`
 2. Run `./bin/bundle install`
 3. Run `./bin/rails turbo:install`
+4. Run `./bin/rails turbo:install:redis` to change the development ActionCable adapter from Async (the default one) to Redis. The Async adapter does not support broadcasting changes from the rails console to your browser.
 
 Running `turbo:install` will install through NPM if Webpacker is installed in the application. Otherwise the asset pipeline version is used. To use the asset pipeline version, you must have `importmap-rails` installed first and listed higher in the Gemfile.
 
@@ -56,6 +57,7 @@ The `Turbo` instance is automatically assigned to `window.Turbo` upon import:
 ```js
 import "@hotwired/turbo-rails"
 ```
+
 
 ## Usage
 
