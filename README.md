@@ -15,6 +15,15 @@ During rendering, Turbo replaces the current `<body>` element outright and merge
 
 Whereas Turbolinks previously just dealt with links, Turbo can now also process form submissions and responses. This means the entire flow in the web application is wrapped into Turbo, making all the parts fast. No more need for `data-remote=true`.
 
+Turbo Drive can be disabled on a per-element basis by annotating the element or any of its ancestors with `data-turbo="false"`. If you want Turbo Drive to be disabled by default, then you can adjust your import like this:
+
+```js
+import { Turbo } from "@hotwired/turbo-rails"
+Turbo.session.drive = false
+```
+
+Then you can use `data-turbo="true"` to enable Drive on a per-element basis.
+
 
 ## Turbo Frames
 
