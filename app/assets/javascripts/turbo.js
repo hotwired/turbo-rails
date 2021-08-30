@@ -1650,7 +1650,7 @@ class BrowserAdapter {
   visitRequestStarted(visit) {
     this.progressBar.setValue(0);
     if (visit.hasCachedSnapshot() || visit.action != "restore") {
-      this.showProgressBarAfterDelay();
+      this.showVisitProgressBarAfterDelay();
     } else {
       this.showProgressBar();
     }
@@ -1671,7 +1671,7 @@ class BrowserAdapter {
   }
   visitRequestFinished(visit) {
     this.progressBar.setValue(1);
-    this.hideProgressBar();
+    this.hideVisitProgressBar();
   }
   visitCompleted(visit) {}
   pageInvalidated() {
@@ -1681,20 +1681,32 @@ class BrowserAdapter {
   visitRendered(visit) {}
   formSubmissionStarted(formSubmission) {
     this.progressBar.setValue(0);
-    this.showProgressBarAfterDelay();
+    this.showFormProgressBarAfterDelay();
   }
   formSubmissionFinished(formSubmission) {
     this.progressBar.setValue(1);
-    this.hideProgressBar();
+    this.hideFormProgressBar();
   }
-  showProgressBarAfterDelay() {
-    this.progressBarTimeout = window.setTimeout(this.showProgressBar, this.session.progressBarDelay);
+  showVisitProgressBarAfterDelay() {
+    this.visitProgressBarTimeout = window.setTimeout(this.showProgressBar, this.session.progressBarDelay);
   }
-  hideProgressBar() {
+  hideVisitProgressBar() {
     this.progressBar.hide();
-    if (this.progressBarTimeout != null) {
-      window.clearTimeout(this.progressBarTimeout);
-      delete this.progressBarTimeout;
+    if (this.visitProgressBarTimeout != null) {
+      window.clearTimeout(this.visitProgressBarTimeout);
+      delete this.visitProgressBarTimeout;
+    }
+  }
+  showFormProgressBarAfterDelay() {
+    if (this.formProgressBarTimeout == null) {
+      this.formProgressBarTimeout = window.setTimeout(this.showProgressBar, this.session.progressBarDelay);
+    }
+  }
+  hideFormProgressBar() {
+    this.progressBar.hide();
+    if (this.formProgressBarTimeout != null) {
+      window.clearTimeout(this.formProgressBarTimeout);
+      delete this.formProgressBarTimeout;
     }
   }
   reload() {
@@ -1785,6 +1797,7 @@ class FrameRedirector {
   linkClickIntercepted(element, url) {
     const frame = this.findFrameElement(element);
     if (frame) {
+      frame.setAttribute("reloadable", "");
       frame.src = url;
     }
   }
@@ -1794,6 +1807,7 @@ class FrameRedirector {
   formSubmissionIntercepted(element, submitter) {
     const frame = this.findFrameElement(element);
     if (frame) {
+      frame.removeAttribute("reloadable");
       frame.delegate.formSubmissionIntercepted(element, submitter);
     }
   }
