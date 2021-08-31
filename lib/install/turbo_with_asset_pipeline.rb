@@ -9,10 +9,7 @@ end
 
 if (importmap_path = Rails.root.join("config/importmap.rb")).exist?
   say "Pin @hotwired/turbo-rails in config/importmap.rb"
-  insert_into_file \
-    importmap_path.to_s, 
-    %(  pin "@hotwired/turbo-rails", to: "turbo.js"\n\n),
-    after: "Rails.application.config.importmap.draw do\n"
+  append_to_file importmap_path.to_s, %(pin "@hotwired/turbo-rails", to: "turbo.js"\n)
 else
   say <<~INSTRUCTIONS, :red
     You must add @hotwired/turbo-rails to your importmap to reference them via ESM.
