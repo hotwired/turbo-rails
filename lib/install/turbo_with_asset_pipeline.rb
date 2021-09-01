@@ -16,5 +16,3 @@ else
     Example: pin "@hotwired/turbo-rails", to: "turbo.js"
   INSTRUCTIONS
 end
-
-say "Run turbo:install:redis to switch on Redis and use it in development for turbo streams", :red
