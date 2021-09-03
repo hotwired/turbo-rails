@@ -6,4 +6,4 @@ else
 end
 
 say "Install Turbo"
-run "npm i @hotwired/turbo-rails"
+run "yarn add @hotwired/turbo-rails"
