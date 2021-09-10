@@ -6,6 +6,10 @@ gem 'rake'
 gem 'byebug'
 gem 'puma'
 
+group :development, :test do
+  gem 'importmap-rails'
+end
+
 group :test do
   gem 'capybara'
   gem 'rexml'
