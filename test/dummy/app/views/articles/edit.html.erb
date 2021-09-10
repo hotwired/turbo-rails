@@ -1,0 +1,9 @@
+<h1>Edit Article</h1>
+
+<%= form_with model: @article, url: article_path(@article.id) do |form| %>
+  <%= form.label :body %>
+  <%= form.text_area :body %>
+
+  <button>Submit as PATCH</button>
+  <button formmethod="post" formaction="<%= articles_path %>">Submit as POST</button>
+<% end %>
