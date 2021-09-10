@@ -4,3 +4,4 @@
 # Use node modules from a JavaScript CDN by running ./bin/importmap
 
 pin "application"
+pin "@hotwired/turbo-rails", to: "turbo.js"
