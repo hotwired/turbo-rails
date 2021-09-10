@@ -5,3 +5,4 @@
 
 pin "application"
 pin "@hotwired/turbo-rails", to: "turbo.js"
+pin "@rails/actioncable", to: "actioncable.esm.js"
