@@ -1,6 +1,6 @@
 if (cable_config_path = Rails.root.join("config/cable.yml")).exist?
   say "Enable redis in bundle"
-  uncomment_lines "Gemfile", %(gem 'redis')
+  uncomment_lines "Gemfile", /gem ['"]redis['"]/
 
   say "Switch development cable to use redis"
   gsub_file cable_config_path.to_s, /development:\n\s+adapter: async/, "development:\n  adapter: redis\n  url: redis://localhost:6379/1"
