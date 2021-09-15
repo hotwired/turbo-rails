@@ -1173,7 +1173,7 @@ ProgressBar.animationDuration = 300;
 class HeadSnapshot extends Snapshot {
   constructor() {
     super(...arguments);
-    this.detailsByOuterHTML = this.children.filter((element => !elementIsNoscript(element))).reduce(((result, element) => {
+    this.detailsByOuterHTML = this.children.filter((element => !elementIsNoscript(element))).map((element) => elementWithoutNonce(element)).reduce(((result, element) => {
       const {outerHTML: outerHTML} = element;
       const details = outerHTML in result ? result[outerHTML] : {
         type: elementType(element),
@@ -1188,7 +1188,7 @@ class HeadSnapshot extends Snapshot {
     }), {});
   }
   get trackedElementSignature() {
-    return Object.keys(this.detailsByOuterHTML).filter((outerHTML => this.detailsByOuterHTML[outerHTML].tracked)).join("").replace(/nonce=["'][^"']*["']/, "nonce=\"\"");
+    return Object.keys(this.detailsByOuterHTML).filter((outerHTML => this.detailsByOuterHTML[outerHTML].tracked)).join("")
   }
   getScriptElementsNotInSnapshot(snapshot) {
     return this.getElementsMatchingTypeNotInSnapshot("script", snapshot);
@@ -1253,6 +1253,14 @@ function elementIsStylesheet(element) {
 function elementIsMetaElementWithName(element, name) {
   const tagName = element.tagName.toLowerCase();
   return tagName == "meta" && element.getAttribute("name") == name;
+}
+
+function elementWithoutNonce(element) {
+  if (element.hasAttribute("nonce")) {
+    element.setAttribute("nonce", "")
+  }
+  
+  return element  
 }
 
 class PageSnapshot extends Snapshot {
