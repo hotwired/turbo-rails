@@ -14,7 +14,7 @@ module Turbo::Streams::ActionHelper
 
     if target = convert_to_turbo_stream_dom_id(target)
       %(<turbo-stream action="#{action}" target="#{target}">#{template}</turbo-stream>).html_safe
-    elsif targets = convert_to_turbo_stream_dom_id(targets)
+    elsif targets = convert_to_turbo_stream_dom_id(targets, include_selector: true)
       %(<turbo-stream action="#{action}" targets="#{targets}">#{template}</turbo-stream>).html_safe
     else
       raise ArgumentError, "target or targets must be supplied"
@@ -22,7 +22,11 @@ module Turbo::Streams::ActionHelper
   end
 
   private
-    def convert_to_turbo_stream_dom_id(target)
-      target.respond_to?(:to_key) ? ActionView::RecordIdentifier.dom_id(target) : target
+    def convert_to_turbo_stream_dom_id(target, include_selector: false)
+      if target.respond_to?(:to_key)
+        [ ("#" if include_selector), ActionView::RecordIdentifier.dom_id(target) ].compact.join
+      else
+        target
+      end
     end
 end
