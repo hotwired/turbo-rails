@@ -31,5 +31,5 @@ jobs:
 
       - name: Run tests
         run: |
-          bundle exec rails db:test:prepare
-          bundle exec rake
+          bin/rails db:test:prepare
+          bin/test test/**/*_test.rb
