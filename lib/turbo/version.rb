@@ -1,3 +1,3 @@
 module Turbo
-  VERSION = "0.7.13"
+  VERSION = "0.7.14"
 end
