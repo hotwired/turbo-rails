@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  resources :frame_requests
   resources :messages
   resources :trays
   resources :posts

@@ -1,6 +1,16 @@
 require "turbo_test"
 
 class Turbo::FrameRequestControllerTest < ActionDispatch::IntegrationTest
+  test "frame request have turbo_frame variant" do
+    get frame_requests_path
+
+    assert_select "title", count: 1, text: "frame_requests/index"
+
+    get frame_requests_path, headers: { "Turbo-Frame" => "true" }
+
+    assert_select "title", count: 0
+  end
+
   test "frame requests are rendered with a layout" do
     get tray_path(id: 1)
     assert_select "title", count: 1

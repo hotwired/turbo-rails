@@ -1,0 +1,2 @@
+class FrameRequestsController < ApplicationController
+end
