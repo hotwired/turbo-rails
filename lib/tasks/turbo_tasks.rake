@@ -1,9 +1,9 @@
 def run_turbo_install_template(path)
-  system "#{RbConfig.ruby} ./bin/rails app:template LOCATION=#{File.expand_path("../install/#{path}.rb",  __dir__)}"
+  system "#{RbConfig.ruby} ./bin/rails app:template LOCATION=#{File.expand_path("../install/#{path}.rb", __dir__)}"
 end
 
 def redis_installed?
-  system('which redis-server')
+  system('which redis-server > /dev/null')
 end
 
 def switch_on_redis_if_available
