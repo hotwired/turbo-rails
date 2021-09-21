@@ -246,7 +246,11 @@ function dispatch(eventName, {target: target, cancelable: cancelable, detail: de
     bubbles: true,
     detail: detail
   });
-  void (target || document.documentElement).dispatchEvent(event);
+  if (target && document.body.contains(target)) {
+    void target.dispatchEvent(event);
+  } else {
+    void document.documentElement.dispatchEvent(event);
+  }
   return event;
 }
 
