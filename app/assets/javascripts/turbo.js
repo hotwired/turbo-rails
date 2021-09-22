@@ -246,10 +246,10 @@ function dispatch(eventName, {target: target, cancelable: cancelable, detail: de
     bubbles: true,
     detail: detail
   });
-  if (target && document.body.contains(target)) {
-    void target.dispatchEvent(event);
+  if (target && target.isConnected) {
+    target.dispatchEvent(event);
   } else {
-    void document.documentElement.dispatchEvent(event);
+    document.documentElement.dispatchEvent(event);
   }
   return event;
 }
