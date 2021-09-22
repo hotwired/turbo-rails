@@ -1,6 +1,15 @@
 if (cable_config_path = Rails.root.join("config/cable.yml")).exist?
   say "Enable redis in bundle"
-  uncomment_lines "Gemfile", /gem ['"]redis['"]/
+
+  gemfile_content = File.read(Rails.root.join("Gemfile"))
+  pattern = /gem ['"]redis['"]/
+
+  if gemfile_content.match?(pattern)
+    uncomment_lines "Gemfile", pattern
+  else
+    gem 'redis', '~> 4.0', comment: "Use Redis as Action Cable adapter instead of default Async. The Async adapter\ndoes not support Turbo Stream broadcasting."
+  end
+
   run_bundle
 
   say "Switch development cable to use redis"
