@@ -2560,6 +2560,7 @@ class Session {
       const form = document.createElement("form");
       form.method = linkMethod;
       form.action = link.getAttribute("href") || "undefined";
+      form.hidden = true;
       (_a = link.parentNode) === null || _a === void 0 ? void 0 : _a.insertBefore(form, link);
       return dispatch("submit", {
         cancelable: true,
