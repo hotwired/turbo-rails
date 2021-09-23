@@ -25,6 +25,16 @@ class BroadcastsTest < ApplicationSystemTestCase
     assert_selector("#messages-count", text: Message.count, wait: 10)
   end
 
+  test "New messages update the message count with inline: content" do
+    visit messages_path
+    
+    message = Message.new(record_id: 1, content: "Message with inline")
+    message.broadcast_update_to :messages, target: "messages-count", 
+      inline: ERB.new("<%= Message.count %> messages sent").result
+
+    assert_selector "#messages-count", text: "#{Message.count} messages sent", wait: 10
+  end
+
   test "Users::Profile broadcasts Turbo Streams" do
     visit users_profiles_path
 
