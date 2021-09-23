@@ -16,7 +16,7 @@ class BroadcastsTest < ApplicationSystemTestCase
     visit messages_path
 
     assert_text "Messages"
-    message = Message.new(record_id: 1, content: "A new message")
+    message = Message.create(content: "A new message")
     message.broadcast_append_to(:messages)
     assert_text("A new message")
     
@@ -28,7 +28,7 @@ class BroadcastsTest < ApplicationSystemTestCase
   test "New messages update the message count with inline: content" do
     visit messages_path
     
-    message = Message.new(record_id: 1, content: "Message with inline")
+    message = Message.create(content: "Message with inline")
     
     message.broadcast_update_to :messages, target: "message-history", 
       inline: <<~ERB 
