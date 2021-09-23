@@ -6,7 +6,7 @@ class Turbo::FramesHelperTest < ActionView::TestCase
   end
 
   test "frame with model src" do
-    record = Message.new(record_id: "1", content: "ignored")
+    record = Message.create(id: "1", content: "ignored")
 
     assert_dom_equal %(<turbo-frame src="/messages/1" id="message"></turbo-frame>), turbo_frame_tag("message", src: record)
   end
@@ -16,7 +16,7 @@ class Turbo::FramesHelperTest < ActionView::TestCase
   end
 
   test "frame with model argument" do
-    record = Message.new(record_id: "1", content: "ignored")
+    record = Message.new(id: "1", content: "ignored")
 
     assert_dom_equal %(<turbo-frame id="message_1"></turbo-frame>), turbo_frame_tag(record)
   end

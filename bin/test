@@ -8,7 +8,7 @@ puts "Installing JavasScript"
 `yarn build`
 
 puts "Migrating test database"
-`cd test/dummy; RAILS_ENV=test ./bin/rails db:migrate`
+`cd test/dummy; RAILS_ENV=test ./bin/rails db:migrate db:test:prepare`
 
 require "bundler/setup"
 require "rails/plugin/test"
