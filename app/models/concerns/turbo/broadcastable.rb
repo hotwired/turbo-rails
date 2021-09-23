@@ -26,6 +26,20 @@
 # and finally prepend the result of that partial rendering to the target identified with the dom id "clearances"
 # (which is derived by default from the plural model name of the model, but can be overwritten).
 #
+# You can also choose to render html or inline erb instead of a partial inside of a broadcast
+# you do this by passing an html: option or inline: to any broadcast method that accepts **rendering options
+# 
+#   class Message < ApplicationRecord
+#     belongs_to :user
+#
+#     after_create_commit :update_message_count
+#
+#     private
+#       def update_message_count
+#         broadcast_update_to(user, :message_count, html: "<p> #{user.messages.count} </p>")
+#       end
+#   end
+# 
 # There are four basic actions you can broadcast: <tt>remove</tt>, <tt>replace</tt>, <tt>append</tt>, and
 # <tt>prepend</tt>. As a rule, you should use the <tt>_later</tt> versions of everything except for remove when broadcasting
 # within a real-time path, like a controller or model, since all those updates require a rendering step, which can slow down
