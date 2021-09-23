@@ -4,7 +4,7 @@ require "action_cable"
 class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
   include ActiveJob::TestHelper, Turbo::Streams::ActionHelper
 
-  setup { @message = Message.new(record_id: 1, content: "Hello!") }
+  setup { @message = Message.new(id: 1, content: "Hello!") }
 
   test "broadcasting remove to stream now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("remove", target: "message_1") do
@@ -13,7 +13,7 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
   end
 
   test "broadcasting remove now" do
-    assert_broadcast_on @message.to_param, turbo_stream_action_tag("remove", target: "message_1") do
+    assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("remove", target: "message_1") do
       @message.broadcast_remove
     end
   end
@@ -25,7 +25,7 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
   end
 
   test "broadcasting replace now" do
-    assert_broadcast_on @message.to_param, turbo_stream_action_tag("replace", target: "message_1", template: "<p>Hello!</p>") do
+    assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("replace", target: "message_1", template: "<p>Hello!</p>") do
       @message.broadcast_replace
     end
   end
@@ -37,7 +37,7 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
   end
 
   test "broadcasting update now" do
-    assert_broadcast_on @message.to_param, turbo_stream_action_tag("update", target: "message_1", template: "<p>Hello!</p>") do
+    assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("update", target: "message_1", template: "<p>Hello!</p>") do
       @message.broadcast_update
     end
   end
@@ -67,7 +67,7 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
   end
 
   test "broadcasting append now" do
-    assert_broadcast_on @message.to_param, turbo_stream_action_tag("append", target: "messages", template: "<p>Hello!</p>") do
+    assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("append", target: "messages", template: "<p>Hello!</p>") do
       @message.broadcast_append
     end
   end
@@ -85,7 +85,7 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
   end
 
   test "broadcasting prepend now" do
-    assert_broadcast_on @message.to_param, turbo_stream_action_tag("prepend", target: "messages", template: "<p>Hello!</p>") do
+    assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("prepend", target: "messages", template: "<p>Hello!</p>") do
       @message.broadcast_prepend
     end
   end
@@ -97,7 +97,7 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
   end
 
   test "broadcasting action now" do
-    assert_broadcast_on @message.to_param, turbo_stream_action_tag("prepend", target: "messages", template: "<p>Hello!</p>") do
+    assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("prepend", target: "messages", template: "<p>Hello!</p>") do
       @message.broadcast_action "prepend"
     end
   end
