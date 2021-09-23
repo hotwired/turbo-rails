@@ -29,11 +29,15 @@ class BroadcastsTest < ApplicationSystemTestCase
     visit messages_path
     
     message = Message.new(record_id: 1, content: "Message with inline")
-    message.broadcast_update_to :messages, target: "messages-count", inline: <<~ERB
-      <%= Message.count %> messages sent
+    
+    message.broadcast_update_to :messages, target: "message-history", 
+      inline: <<~ERB 
+      <% Message.all.each do |message| %> 
+        <%= message.content %> 
+      <% end %>
     ERB
 
-    assert_selector "#messages-count", text: "#{Message.count} messages sent", wait: 10
+    assert_selector "#message-history", text: message.content, wait: 10
   end
 
   test "Users::Profile broadcasts Turbo Streams" do

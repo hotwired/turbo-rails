@@ -4,6 +4,9 @@
   <%= @messages.count %> messages sent
 </span>
 
+<span id="message-history">
+</span>
+
 <%= turbo_stream_from "messages" %>
 <div id="messages">
 </div>
