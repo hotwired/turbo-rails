@@ -32,7 +32,7 @@ class BroadcastsTest < ApplicationSystemTestCase
     
     message.broadcast_update_to :messages, target: "message-history", 
       inline: <<~ERB 
-      <% Message.all.each do |message| %> 
+      <% Message.order(created_at: :desc).first(3).each do |message| %> 
         <%= message.content %> 
       <% end %>
     ERB
