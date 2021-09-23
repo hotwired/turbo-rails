@@ -3,6 +3,10 @@ class MessagesController < ApplicationController
     @message = Message.new(id: 1, content: "My message")
   end
 
+  def index
+    @messages = Message.all
+  end
+
   def create
     respond_to do |format|
       format.html { redirect_to message_url(id: 1) }

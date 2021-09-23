@@ -296,9 +296,13 @@ module Turbo::Broadcastable
       options.tap do |o|
         # Add the current instance into the locals with the element name (which is the un-namespaced name)
         # as the key. This parallels how the ActionView::ObjectRenderer would create a local variable.
-        return if o[:html].present? # Allows html to be passed in instead of partial
-        o[:locals] = (o[:locals] || {}).reverse_merge!(model_name.element.to_sym => self)
-        o[:partial] ||= to_partial_path
+        if o[:html].present? 
+          # Allows html to be passed in instead of partial
+          o[:html] = o[:html]
+        else
+          o[:locals] = (o[:locals] || {}).reverse_merge!(model_name.element.to_sym => self)
+          o[:partial] ||= to_partial_path
+        end
       end
     end
 end

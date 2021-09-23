@@ -12,6 +12,17 @@ class BroadcastsTest < ApplicationSystemTestCase
     end
   end
 
+  test "New messages update the message count with html" do
+    visit messages_path
+
+    assert_text "Messages"
+    message = Message.new(record_id: 1, content: "A new message")
+    message.broadcast_append_to(:messages)
+    message.broadcast_update_to(:messages, target: "messages-count", 
+      html: "#{Message.count} messages sent")
+    assert_selector("#messages-count", text: Message.count, wait: 10)
+  end
+
   test "Users::Profile broadcasts Turbo Streams" do
     visit users_profiles_path
 
