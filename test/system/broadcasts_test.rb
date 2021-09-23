@@ -29,8 +29,9 @@ class BroadcastsTest < ApplicationSystemTestCase
     visit messages_path
     
     message = Message.new(record_id: 1, content: "Message with inline")
-    message.broadcast_update_to :messages, target: "messages-count", 
-      inline: ERB.new("<%= Message.count %> messages sent").result
+    message.broadcast_update_to :messages, target: "messages-count", inline: <<~ERB
+      <%= Message.count %> messages sent
+    ERB
 
     assert_selector "#messages-count", text: "#{Message.count} messages sent", wait: 10
   end
