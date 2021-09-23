@@ -18,6 +18,8 @@ class BroadcastsTest < ApplicationSystemTestCase
     assert_text "Messages"
     message = Message.new(record_id: 1, content: "A new message")
     message.broadcast_append_to(:messages)
+    assert_text("A new message")
+    
     message.broadcast_update_to(:messages, target: "messages-count", 
       html: "#{Message.count} messages sent")
     assert_selector("#messages-count", text: Message.count, wait: 10)
