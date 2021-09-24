@@ -36,7 +36,7 @@
 #
 #     private
 #       def update_message_count
-#         broadcast_update_to(user, :message_count, html: "<p> #{user.messages.count} </p>")
+#         broadcast_update_to(user, :messages, target: "message-count" html: "<p> #{user.messages.count} </p>")
 #       end
 #   end
 # 
