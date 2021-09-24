@@ -17,8 +17,6 @@ class BroadcastsTest < ApplicationSystemTestCase
 
     assert_text "Messages"
     message = Message.create(content: "A new message")
-    message.broadcast_append_to(:messages)
-    assert_text("A new message")
     
     message.broadcast_update_to(:messages, target: "messages-count", 
       html: "#{Message.count} messages sent")
@@ -30,14 +28,12 @@ class BroadcastsTest < ApplicationSystemTestCase
     
     message = Message.create(content: "Message with inline")
     
-    message.broadcast_update_to :messages, target: "message-history", 
+    message.broadcast_update_to :messages, target: "messages-count", 
       inline: <<~ERB 
-      <% Message.order(created_at: :desc).first(3).each do |message| %> 
-        <%= message.content %> 
-      <% end %>
+      <%= Message.count %> messages sent
     ERB
 
-    assert_selector "#message-history", text: message.content, wait: 10
+    assert_selector "#messages-count", text: Message.count, wait: 10
   end
 
   test "Users::Profile broadcasts Turbo Streams" do
