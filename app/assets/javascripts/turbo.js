@@ -30,10 +30,17 @@ function clickCaptured(event) {
 }
 
 (function() {
-  if ("SubmitEvent" in window) return;
   if ("submitter" in Event.prototype) return;
+  let prototype;
+  if ("SubmitEvent" in window && /Apple Computer/.test(navigator.vendor)) {
+    prototype = window.SubmitEvent.prototype;
+  } else if ("SubmitEvent" in window) {
+    return;
+  } else {
+    prototype = window.Event.prototype;
+  }
   addEventListener("click", clickCaptured, true);
-  Object.defineProperty(Event.prototype, "submitter", {
+  Object.defineProperty(prototype, "submitter", {
     get() {
       if (this.type == "submit" && this.target instanceof HTMLFormElement) {
         return submittersByForm.get(this.target);
@@ -734,8 +741,8 @@ class Snapshot {
 class FormInterceptor {
   constructor(delegate, element) {
     this.submitBubbled = event => {
-      if (event.target instanceof HTMLFormElement) {
-        const form = event.target;
+      const form = event.target;
+      if (form instanceof HTMLFormElement && form.closest("turbo-frame, html") == this.element) {
         const submitter = event.submitter || undefined;
         if (this.delegate.shouldInterceptFormSubmission(form, submitter)) {
           event.preventDefault();
@@ -2593,7 +2600,7 @@ class Session {
     this.notifyApplicationAfterVisitingSamePageLocation(oldURL, newURL);
   }
   willSubmitForm(form, submitter) {
-    return this.elementDriveEnabled(form) && this.elementDriveEnabled(submitter);
+    return this.elementDriveEnabled(form) && (!submitter || this.elementDriveEnabled(submitter));
   }
   formSubmitted(form, submitter) {
     this.navigator.submitForm(form, submitter);
@@ -2752,7 +2759,7 @@ const deprecatedLocationPropertyDescriptors = {
 
 const session = new Session;
 
-const {navigator: navigator} = session;
+const {navigator: navigator$1} = session;
 
 function start() {
   session.start();
@@ -2788,7 +2795,7 @@ function setProgressBarDelay(delay) {
 
 var Turbo = Object.freeze({
   __proto__: null,
-  navigator: navigator,
+  navigator: navigator$1,
   session: session,
   PageRenderer: PageRenderer,
   PageSnapshot: PageSnapshot,
@@ -3263,7 +3270,7 @@ var turbo_es2017Esm = Object.freeze({
   clearCache: clearCache,
   connectStreamSource: connectStreamSource,
   disconnectStreamSource: disconnectStreamSource,
-  navigator: navigator,
+  navigator: navigator$1,
   registerAdapter: registerAdapter,
   renderStreamMessage: renderStreamMessage,
   session: session,
