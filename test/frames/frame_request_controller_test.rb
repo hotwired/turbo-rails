@@ -18,4 +18,12 @@ class Turbo::FrameRequestControllerTest < ActionDispatch::IntegrationTest
 
     assert_not_equal etag_with_frame, etag_without_frame
   end
+
+  test "frame requests have a turbo_frame variant" do
+    get tray_path(id: 1)
+    assert_select "#variant", text: ""
+
+    get tray_path(id: 1), headers: { "Turbo-Frame" => "true" }
+    assert_select "#variant", text: "turbo_frame"
+  end
 end

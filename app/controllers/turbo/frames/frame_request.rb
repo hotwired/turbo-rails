@@ -15,10 +15,11 @@ module Turbo::Frames::FrameRequest
   included do
     layout -> { false if turbo_frame_request? }
     etag { :frame if turbo_frame_request? }
+    before_action { request.variant.push(:turbo_frame) if turbo_frame_request? }
   end
 
   private
     def turbo_frame_request?
-      request.headers["Turbo-Frame"].present?
+      request.turbo_frame?
     end
 end

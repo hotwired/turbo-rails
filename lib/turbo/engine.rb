@@ -1,5 +1,6 @@
 require "rails/engine"
 require "turbo/test_assertions"
+require "turbo/frames/request_extensions"
 
 module Turbo
   class Engine < Rails::Engine
@@ -41,6 +42,12 @@ module Turbo
 
     initializer "turbo.mimetype" do
       Mime::Type.register "text/vnd.turbo-stream.html", :turbo_stream
+    end
+
+    initializer "turbo.request_extensions" do
+      ActiveSupport.on_load(:action_dispatch_request) do
+        include Turbo::Frames::RequestExtensions
+      end
     end
 
     initializer "turbo.renderer" do
