@@ -18,9 +18,9 @@ class BroadcastsTest < ApplicationSystemTestCase
     assert_text "Messages"
     message = Message.create(content: "A new message")
     
-    message.broadcast_update_to(:messages, target: "messages-count", 
+    message.broadcast_update_to(:messages, target: "message-count", 
       html: "#{Message.count} messages sent")
-    assert_selector("#messages-count", text: Message.count, wait: 10)
+    assert_selector("#message-count", text: Message.count, wait: 10)
   end
 
   test "New messages update the message count with inline: content" do
@@ -28,12 +28,12 @@ class BroadcastsTest < ApplicationSystemTestCase
     
     message = Message.create(content: "Message with inline")
     
-    message.broadcast_update_to :messages, target: "messages-count", 
+    message.broadcast_update_to :messages, target: "message-count", 
       inline: <<~ERB 
       <%= Message.count %> messages sent
     ERB
 
-    assert_selector "#messages-count", text: Message.count, wait: 10
+    assert_selector "#message-count", text: Message.count, wait: 10
   end
 
   test "Users::Profile broadcasts Turbo Streams" do
