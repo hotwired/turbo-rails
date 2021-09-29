@@ -22,7 +22,7 @@ module Turbo
 
     initializer "turbo.assets" do
       if Rails.application.config.respond_to?(:assets)
-        Rails.application.config.assets.precompile += %w( turbo.js )
+        Rails.application.config.assets.precompile += %w( turbo.js turbo.min.js )
       end
     end
 
