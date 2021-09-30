@@ -26,8 +26,8 @@
 # and finally prepend the result of that partial rendering to the target identified with the dom id "clearances"
 # (which is derived by default from the plural model name of the model, but can be overwritten).
 #
-# You can also choose to render html or inline erb instead of a partial inside of a broadcast
-# you do this by passing an html: option or inline: to any broadcast method that accepts **rendering options
+# You can also choose to render html instead of a partial inside of a broadcast
+# you do this by passing an html: option to any broadcast method that accepts **rendering options
 # 
 #   class Message < ApplicationRecord
 #     belongs_to :user
@@ -311,8 +311,8 @@ module Turbo::Broadcastable
         # Add the current instance into the locals with the element name (which is the un-namespaced name)
         # as the key. This parallels how the ActionView::ObjectRenderer would create a local variable.
         o[:locals] = (o[:locals] || {}).reverse_merge!(model_name.element.to_sym => self)
-        # if the html or inline options are passed it will skip setting a partial from #to_partial_path
-        unless o.include?(:html) || o.include?(:inline)
+        # if the html option is passed in it will skip setting a partial from #to_partial_path
+        unless o.include?(:html)
           o[:partial] ||= to_partial_path
         end
       end
