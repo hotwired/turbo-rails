@@ -26,6 +26,20 @@
 # and finally prepend the result of that partial rendering to the target identified with the dom id "clearances"
 # (which is derived by default from the plural model name of the model, but can be overwritten).
 #
+# You can also choose to render html instead of a partial inside of a broadcast
+# you do this by passing the html: option to any broadcast method that accepts the **rendering argument
+# 
+#   class Message < ApplicationRecord
+#     belongs_to :user
+#
+#     after_create_commit :update_message_count
+#
+#     private
+#       def update_message_count
+#         broadcast_update_to(user, :messages, target: "message-count", html: "<p> #{user.messages.count} </p>")
+#       end
+#   end
+# 
 # There are four basic actions you can broadcast: <tt>remove</tt>, <tt>replace</tt>, <tt>append</tt>, and
 # <tt>prepend</tt>. As a rule, you should use the <tt>_later</tt> versions of everything except for remove when broadcasting
 # within a real-time path, like a controller or model, since all those updates require a rendering step, which can slow down
@@ -297,7 +311,10 @@ module Turbo::Broadcastable
         # Add the current instance into the locals with the element name (which is the un-namespaced name)
         # as the key. This parallels how the ActionView::ObjectRenderer would create a local variable.
         o[:locals] = (o[:locals] || {}).reverse_merge!(model_name.element.to_sym => self)
-        o[:partial] ||= to_partial_path
+        # if the html option is passed in it will skip setting a partial from #to_partial_path
+        unless o.include?(:html)
+          o[:partial] ||= to_partial_path
+        end
       end
     end
 end
