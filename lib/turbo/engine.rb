@@ -20,9 +20,17 @@ module Turbo
       Rails.autoloaders.once.do_not_eager_load(Dir["#{root}/app/channels/turbo/*_channel.rb"]) unless defined?(ActionCable)
     end
 
+    # If you don't want to precompile Turbo's assets (eg. because you're using webpack),
+    # you can do this in an intiailzer:
+    #
+    # config.after_initialize do
+    #   config.assets.precompile -= Turbo::Engine::PRECOMPILE_ASSETS
+    # end
+    PRECOMPILE_ASSETS = %w( turbo.js turbo.min.js )
+
     initializer "turbo.assets" do
       if Rails.application.config.respond_to?(:assets)
-        Rails.application.config.assets.precompile += %w( turbo.js turbo.min.js )
+        Rails.application.config.assets.precompile += PRECOMPILE_ASSETS
       end
     end
 
