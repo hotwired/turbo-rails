@@ -7,6 +7,9 @@ jobs:
         ruby-version:
           - "2.7"
           - "3.0"
+        rails-version:
+          - "6.1"
+          - "main"
         continue-on-error: [ false ]
 
         # Disabled until minitest relaxes its upper bound: https://github.com/seattlerb/minitest/pull/862
@@ -16,7 +19,10 @@ jobs:
         #   - ruby-version: head
         #     continue-on-error: true
 
-    name: ${{ format('Tests (Ruby {0})', matrix.ruby-version) }}
+    env:
+      RAILS_VERSION: "${{ matrix.rails-version }}"
+
+    name: ${{ format('Tests (Ruby {0}, Rails {1})', matrix.ruby-version, matrix.rails-version) }}
     runs-on: ubuntu-latest
     continue-on-error: ${{ matrix.continue-on-error }}
 
