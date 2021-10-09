@@ -17,8 +17,8 @@ class BroadcastsTest < ApplicationSystemTestCase
 
     assert_text "Messages"
     message = Message.create(content: "A new message")
-    
-    message.broadcast_update_to(:messages, target: "message-count", 
+
+    message.broadcast_update_to(:messages, target: "message-count",
       html: "#{Message.count} messages sent")
     assert_selector("#message-count", text: Message.count, wait: 10)
   end
@@ -34,9 +34,9 @@ class BroadcastsTest < ApplicationSystemTestCase
 
   private
 
-    def assert_broadcasts_text(text, &block)
+    def assert_broadcasts_text(text, wait: 5, &block)
       assert_no_text text
       perform_enqueued_jobs { block.call(text) }
-      assert_text text
+      assert_text text, wait: wait
     end
 end

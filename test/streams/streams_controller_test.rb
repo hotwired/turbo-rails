@@ -13,32 +13,40 @@ class Turbo::StreamsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "show all turbo actions" do
+    message_1 = Message.new(id: 1, content: "My message")
+    message_5 = Message.new(id: 5, content: "OLLA!")
+
     get message_path(id: 1), as: :turbo_stream
+
     assert_dom_equal <<~HTML, @response.body
       <turbo-stream action="remove" target="message_1"></turbo-stream>
-      <turbo-stream action="replace" target="message_1"><template><p>My message</p></template></turbo-stream>
+      <turbo-stream action="replace" target="message_1"><template>#{render(message_1)}</template></turbo-stream>
       <turbo-stream action="replace" target="message_1"><template>Something else</template></turbo-stream>
       <turbo-stream action="replace" target="message_5"><template>Something fifth</template></turbo-stream>
-      <turbo-stream action="replace" target="message_5"><template><p>OLLA!</p></template></turbo-stream>
-      <turbo-stream action="append" target="messages"><template><p>My message</p></template></turbo-stream>
-      <turbo-stream action="append" target="messages"><template><p>OLLA!</p></template></turbo-stream>
-      <turbo-stream action="prepend" target="messages"><template><p>My message</p></template></turbo-stream>
-      <turbo-stream action="prepend" target="messages"><template><p>OLLA!</p></template></turbo-stream>
+      <turbo-stream action="replace" target="message_5"><template>#{render(message_5)}</template></turbo-stream>
+      <turbo-stream action="append" target="messages"><template>#{render(message_1)}</template></turbo-stream>
+      <turbo-stream action="append" target="messages"><template>#{render(message_5)}</template></turbo-stream>
+      <turbo-stream action="prepend" target="messages"><template>#{render(message_1)}</template></turbo-stream>
+      <turbo-stream action="prepend" target="messages"><template>#{render(message_5)}</template></turbo-stream>
     HTML
   end
 
   test "update all turbo actions for multiple targets" do
+    message_1 = Message.new(id: 1, content: "My message")
+    message_5 = Message.new(id: 5, content: "OLLA!")
+
     patch message_path(id: 1), as: :turbo_stream
+
     assert_dom_equal <<~HTML, @response.body
       <turbo-stream action="remove" targets="#message_1"></turbo-stream>
-      <turbo-stream action="replace" targets="#message_1"><template><p>My message</p></template></turbo-stream>
+      <turbo-stream action="replace" targets="#message_1"><template>#{render(message_1)}</template></turbo-stream>
       <turbo-stream action="replace" targets="#message_1"><template>Something else</template></turbo-stream>
       <turbo-stream action="replace" targets="#message_5"><template>Something fifth</template></turbo-stream>
-      <turbo-stream action="replace" targets="#message_5"><template><p>OLLA!</p></template></turbo-stream>
-      <turbo-stream action="append" targets="#messages"><template><p>My message</p></template></turbo-stream>
-      <turbo-stream action="append" targets="#messages"><template><p>OLLA!</p></template></turbo-stream>
-      <turbo-stream action="prepend" targets="#messages"><template><p>My message</p></template></turbo-stream>
-      <turbo-stream action="prepend" targets="#messages"><template><p>OLLA!</p></template></turbo-stream>
+      <turbo-stream action="replace" targets="#message_5"><template>#{render(message_5)}</template></turbo-stream>
+      <turbo-stream action="append" targets="#messages"><template>#{render(message_1)}</template></turbo-stream>
+      <turbo-stream action="append" targets="#messages"><template>#{render(message_5)}</template></turbo-stream>
+      <turbo-stream action="prepend" targets="#messages"><template>#{render(message_1)}</template></turbo-stream>
+      <turbo-stream action="prepend" targets="#messages"><template>#{render(message_5)}</template></turbo-stream>
     HTML
   end
 
