@@ -26,32 +26,38 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
   end
 
   test "broadcasting replace now" do
-    assert_broadcast_on "stream", turbo_stream_action_tag("replace", target: "message_1", template: "<p>hello!</p>") do
-      Turbo::StreamsChannel.broadcast_replace_to "stream", target: "message_1", partial: "messages/message", locals: { message: "hello!" }
+    options = { partial: "messages/message", locals: { message: "hello!" } }
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("replace", target: "message_1", template: render(options)) do
+      Turbo::StreamsChannel.broadcast_replace_to "stream", target: "message_1", **options
     end
 
-    assert_broadcast_on "stream", turbo_stream_action_tag("replace", targets: ".message", template: "<p>hello!</p>") do
-      Turbo::StreamsChannel.broadcast_replace_to "stream", targets: ".message", partial: "messages/message", locals: { message: "hello!" }
+    assert_broadcast_on "stream", turbo_stream_action_tag("replace", targets: ".message", template: render(options)) do
+      Turbo::StreamsChannel.broadcast_replace_to "stream", targets: ".message", **options
     end
   end
 
   test "broadcasting update now" do
-    assert_broadcast_on "stream", turbo_stream_action_tag("update", target: "message_1", template: "<p>hello!</p>") do
-      Turbo::StreamsChannel.broadcast_update_to "stream", target: "message_1", partial: "messages/message", locals: { message: "hello!" }
+    options = { partial: "messages/message", locals: { message: "hello!" } }
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("update", target: "message_1", template: render(options)) do
+      Turbo::StreamsChannel.broadcast_update_to "stream", target: "message_1", **options
     end
 
-    assert_broadcast_on "stream", turbo_stream_action_tag("update", targets: ".message", template: "<p>hello!</p>") do
-      Turbo::StreamsChannel.broadcast_update_to "stream", targets: ".message", partial: "messages/message", locals: { message: "hello!" }
+    assert_broadcast_on "stream", turbo_stream_action_tag("update", targets: ".message", template: render(options)) do
+      Turbo::StreamsChannel.broadcast_update_to "stream", targets: ".message", **options
     end
   end
 
   test "broadcasting append now" do
-    assert_broadcast_on "stream", turbo_stream_action_tag("append", target: "messages", template: "<p>hello!</p>") do
-      Turbo::StreamsChannel.broadcast_append_to "stream", target: "messages", partial: "messages/message", locals: { message: "hello!" }
+    options = { partial: "messages/message", locals: { message: "hello!" } }
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("append", target: "messages", template: render(options)) do
+      Turbo::StreamsChannel.broadcast_append_to "stream", target: "messages", **options
     end
 
-    assert_broadcast_on "stream", turbo_stream_action_tag("append", targets: ".message", template: "<p>hello!</p>") do
-      Turbo::StreamsChannel.broadcast_append_to "stream", targets: ".message", partial: "messages/message", locals: { message: "hello!" }
+    assert_broadcast_on "stream", turbo_stream_action_tag("append", targets: ".message", template: render(options)) do
+      Turbo::StreamsChannel.broadcast_append_to "stream", targets: ".message", **options
     end
   end
 
@@ -62,102 +68,116 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
   end
 
   test "broadcasting prepend now" do
-    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "messages", template: "<p>hello!</p>") do
-      Turbo::StreamsChannel.broadcast_prepend_to "stream", target: "messages", partial: "messages/message", locals: { message: "hello!" }
+    options = { partial: "messages/message", locals: { message: "hello!" } }
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "messages", template: render(options)) do
+      Turbo::StreamsChannel.broadcast_prepend_to "stream", target: "messages", **options
     end
 
-    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", targets: ".message", template: "<p>hello!</p>") do
-      Turbo::StreamsChannel.broadcast_prepend_to "stream", targets: ".message", partial: "messages/message", locals: { message: "hello!" }
+    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", targets: ".message", template: render(options)) do
+      Turbo::StreamsChannel.broadcast_prepend_to "stream", targets: ".message", **options
     end
   end
 
   test "broadcasting action now" do
-    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "messages", template: "<p>hello!</p>") do
-      Turbo::StreamsChannel.broadcast_action_to "stream", action: "prepend", target: "messages", partial: "messages/message", locals: { message: "hello!" }
+    options = { partial: "messages/message", locals: { message: "hello!" } }
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "messages", template: render(options)) do
+      Turbo::StreamsChannel.broadcast_action_to "stream", action: "prepend", target: "messages", **options
     end
 
-    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", targets: ".message", template: "<p>hello!</p>") do
-      Turbo::StreamsChannel.broadcast_action_to "stream", action: "prepend", targets: ".message", partial: "messages/message", locals: { message: "hello!" }
+    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", targets: ".message", template: render(options)) do
+      Turbo::StreamsChannel.broadcast_action_to "stream", action: "prepend", targets: ".message", **options
     end
   end
 
   test "broadcasting replace later" do
-    assert_broadcast_on "stream", turbo_stream_action_tag("replace", target: "message_1", template: "<p>hello!</p>") do
+    options = { partial: "messages/message", locals: { message: "hello!" } }
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("replace", target: "message_1", template: render(options)) do
       perform_enqueued_jobs do
         Turbo::StreamsChannel.broadcast_replace_later_to \
-          "stream", target: "message_1", partial: "messages/message", locals: { message: "hello!" }
+          "stream", target: "message_1", **options
       end
     end
 
-    assert_broadcast_on "stream", turbo_stream_action_tag("replace", targets: ".message", template: "<p>hello!</p>") do
+    assert_broadcast_on "stream", turbo_stream_action_tag("replace", targets: ".message", template: render(options)) do
       perform_enqueued_jobs do
         Turbo::StreamsChannel.broadcast_replace_later_to \
-          "stream", targets: ".message", partial: "messages/message", locals: { message: "hello!" }
+          "stream", targets: ".message", **options
       end
     end
   end
 
   test "broadcasting update later" do
-    assert_broadcast_on "stream", turbo_stream_action_tag("update", target: "message_1", template: "<p>hello!</p>") do
+    options = { partial: "messages/message", locals: { message: "hello!" } }
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("update", target: "message_1", template: render(options)) do
       perform_enqueued_jobs do
         Turbo::StreamsChannel.broadcast_update_later_to \
-          "stream", target: "message_1", partial: "messages/message", locals: { message: "hello!" }
+          "stream", target: "message_1", **options
       end
     end
 
-    assert_broadcast_on "stream", turbo_stream_action_tag("update", targets: ".message", template: "<p>hello!</p>") do
+    assert_broadcast_on "stream", turbo_stream_action_tag("update", targets: ".message", template: render(options)) do
       perform_enqueued_jobs do
         Turbo::StreamsChannel.broadcast_update_later_to \
-          "stream", targets: ".message", partial: "messages/message", locals: { message: "hello!" }
+          "stream", targets: ".message", **options
       end
     end
   end
 
   test "broadcasting append later" do
-    assert_broadcast_on "stream", turbo_stream_action_tag("append", target: "messages", template: "<p>hello!</p>") do
+    options = { partial: "messages/message", locals: { message: "hello!" } }
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("append", target: "messages", template: render(options)) do
       perform_enqueued_jobs do
         Turbo::StreamsChannel.broadcast_append_later_to \
-          "stream", target: "messages", partial: "messages/message", locals: { message: "hello!" }
+          "stream", target: "messages", **options
       end
     end
 
-    assert_broadcast_on "stream", turbo_stream_action_tag("append", targets: ".message", template: "<p>hello!</p>") do
+    assert_broadcast_on "stream", turbo_stream_action_tag("append", targets: ".message", template: render(options)) do
       perform_enqueued_jobs do
         Turbo::StreamsChannel.broadcast_append_later_to \
-          "stream", targets: ".message", partial: "messages/message", locals: { message: "hello!" }
+          "stream", targets: ".message", **options
       end
     end
   end
 
   test "broadcasting prepend later" do
-    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "messages", template: "<p>hello!</p>") do
+    options = { partial: "messages/message", locals: { message: "hello!" } }
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "messages", template: render(options)) do
       perform_enqueued_jobs do
         Turbo::StreamsChannel.broadcast_prepend_later_to \
-          "stream", target: "messages", partial: "messages/message", locals: { message: "hello!" }
+          "stream", target: "messages", **options
       end
     end
 
-    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", targets: ".message", template: "<p>hello!</p>") do
+    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", targets: ".message", template: render(options)) do
       perform_enqueued_jobs do
         Turbo::StreamsChannel.broadcast_prepend_later_to \
-          "stream", targets: ".message", partial: "messages/message", locals: { message: "hello!" }
+          "stream", targets: ".message", **options
       end
     end
 
   end
 
   test "broadcasting action later" do
-    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "messages", template: "<p>hello!</p>") do
+    options = { partial: "messages/message", locals: { message: "hello!" } }
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "messages", template: render(options)) do
       perform_enqueued_jobs do
         Turbo::StreamsChannel.broadcast_action_later_to \
-          "stream", action: "prepend", target: "messages", partial: "messages/message", locals: { message: "hello!" }
+          "stream", action: "prepend", target: "messages", **options
       end
     end
 
-    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", targets: ".message", template: "<p>hello!</p>") do
+    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", targets: ".message", template: render(options)) do
       perform_enqueued_jobs do
         Turbo::StreamsChannel.broadcast_action_later_to \
-          "stream", action: "prepend", targets: ".message", partial: "messages/message", locals: { message: "hello!" }
+          "stream", action: "prepend", targets: ".message", **options
       end
     end
   end
