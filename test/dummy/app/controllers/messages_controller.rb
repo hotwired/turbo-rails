@@ -17,4 +17,8 @@ class MessagesController < ApplicationController
   def update
     @message = Message.new(id: 1, content: "My message")
   end
+
+  def new
+    @message = Message.new
+  end
 end

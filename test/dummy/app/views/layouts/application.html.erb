@@ -7,6 +7,33 @@
     <%= stylesheet_link_tag 'application', media: 'all' %>
     <%= yield :head %>
     <%= javascript_importmap_tags %>
+    <script type="module">
+      import Rails from "https://jspm.dev/@rails/ujs"
+
+      const extendUJS = ({ delegate, disableElement, enableElement, linkDisableSelector, buttonDisableSelector, formSubmitSelector }) => {
+        const getTurboFrame = (element) => {
+          if (element) {
+            const frameId = element.getAttribute("data-turbo-frame")
+            return frameId ? document.querySelector(`turbo-frame#${frameId}`) : element.closest("turbo-frame")
+          }
+        }
+
+        delegate(document, linkDisableSelector, "turbo:click", ({ target }) => {
+          const frame = getTurboFrame(target.closest("a"))
+
+          if (frame) {
+            frame.addEventListener("turbo:frame-load", () => enableElement(target), { once: true })
+          }
+        })
+
+        delegate(document, formSubmitSelector, "turbo:submit-start", ({ detail: { formSubmission: { submitter } } }) => disableElement(submitter))
+        delegate(document, formSubmitSelector, "turbo:submit-end", ({ detail: { formSubmission: { submitter } } }) => enableElement(submitter))
+      }
+
+      Rails.start()
+
+      extendUJS(Rails)
+    </script>
   </head>
 
   <body>

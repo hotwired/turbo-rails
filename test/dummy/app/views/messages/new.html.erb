@@ -1,0 +1,153 @@
+<turbo-frame id="frame"><%= params[:notice] %></turbo-frame>
+
+<h1>a[data-disable-with]</h1>
+
+<a href="<%= new_message_path(sleep: 0.1) %>" data-disable-with="Page: Visiting">Page: Visit</a>
+
+<a href="<%= new_message_path(notice: "Frame: Visited", sleep: 0.1) %>" data-turbo-frame="frame" data-disable-with="Frame: Visiting">Frame: Visit</a>
+
+<hr>
+
+<h1>form[method="get"] button[data-disable-with]</h1>
+
+<form>
+  <input type="hidden" name="sleep" value="0.1">
+  <button data-disable-with="Submitting GET form button">Submit GET form button</button>
+</form>
+
+<form data-turbo-frame="frame">
+  <input type="hidden" name="sleep" value="0.1">
+  <button data-disable-with="Submitting GET form[data-turbo-frame] button">Submit GET form[data-turbo-frame] button</button>
+</form>
+
+<hr>
+
+<h1>form[method="get"] input[data-disable-with]</h1>
+
+<form>
+  <input type="hidden" name="sleep" value="0.1">
+  <input type="submit" value="Submit GET form button[data-turbo-frame]" data-turbo-frame="frame" data-disable-with="Submitting GET form button[data-turbo-frame]">
+</form>
+
+<form>
+  <input type="hidden" name="sleep" value="0.1">
+  <input type="submit" value="Submit GET form input" data-disable-with="Submitting GET form input">
+</form>
+
+<form data-turbo-frame="frame">
+  <input type="hidden" name="sleep" value="0.1">
+  <input type="submit" value="Submit GET form[data-turbo-frame] input" data-disable-with="Submitting GET form[data-turbo-frame] input">
+</form>
+
+<form>
+  <input type="hidden" name="sleep" value="0.1">
+  <input type="submit" value="Submit GET form input[data-turbo-frame]" data-turbo-frame="frame" data-disable-with="Submitting GET form input[data-turbo-frame]">
+</form>
+
+<hr>
+
+<h1>form[method="post"] button[data-disable-with]</h1>
+
+<%= form_with model: @message do %>
+  <input type="hidden" name="sleep" value="0.1">
+  <button data-disable-with="Submitting POST form button">Submit POST form button</button>
+<% end %>
+
+<%= form_with model: @message, data: { turbo_frame: "frame" } do |form| %>
+  <input type="hidden" name="sleep" value="0.1">
+  <button data-disable-with="Submitting POST form[data-turbo-frame] button">Submit POST form[data-turbo-frame] button</button>
+<% end %>
+
+<%= form_with model: @message do |form| %>
+  <button data-confirm="Are you sure?">Page: Confirm POST form button</button>
+<% end %>
+
+<%= form_with model: @message, data: { turbo_frame: "frame" } do |form| %>
+  <button data-confirm="Are you sure?">Frame: Confirm POST form[data-turbo-frame] button</button>
+<% end %>
+
+<hr>
+
+<h1>form[method="post"] input[data-disable-with]</h1>
+
+<%= form_with model: @message do |form| %>
+  <input type="hidden" name="sleep" value="0.1">
+  <input type="submit" value="Submit POST form button[data-turbo-frame]" data-turbo-frame="frame" data-disable-with="Submitting POST form button[data-turbo-frame]">
+<% end %>
+
+<%= form_with model: @message do %>
+  <input type="hidden" name="sleep" value="0.1">
+  <input type="submit" value="Submit POST form input" data-disable-with="Submitting POST form input">
+<% end %>
+
+<%= form_with model: @message, data: { turbo_frame: "frame" } do |form| %>
+  <input type="hidden" name="sleep" value="0.1">
+  <input type="submit" value="Submit POST form[data-turbo-frame] input" data-disable-with="Submitting POST form[data-turbo-frame] input">
+<% end %>
+
+<%= form_with model: @message do |form| %>
+  <input type="hidden" name="sleep" value="0.1">
+  <input type="submit" value="Submit POST form input[data-turbo-frame]" data-turbo-frame="frame" data-disable-with="Submitting POST form input[data-turbo-frame]">
+<% end %>
+
+<hr>
+
+<h1>a[data-confirm]</h1>
+
+<a href="<%= new_message_path(notice: "Page: Visited") %>" data-confirm="Are you sure?">Page: Visit Confirm</a>
+
+<a href="<%= new_message_path(notice: "Frame: Visited") %>" data-confirm="Are you sure?" data-turbo-frame="frame">Frame: Visit Confirm</a>
+
+<hr>
+
+<h1>form[method="get"] button[data-confirm]</h1>
+
+<form>
+  <input type="hidden" name="notice" value="Page: Confirmed GET form button">
+  <button data-confirm="Are you sure?">Page: Confirm GET form button</button>
+</form>
+
+<form data-turbo-frame="frame">
+  <input type="hidden" name="notice" value="Frame: Confirmed GET form[data-turbo-frame] button">
+  <button data-confirm="Are you sure?">Frame: Confirm GET form[data-turbo-frame] button</button>
+</form>
+
+<hr>
+
+<h1>form[method="get"] input[data-confirm]</h1>
+
+<form>
+  <input type="hidden" name="notice" value="Page: Confirmed GET form input">
+  <input type="submit" value="Page: Confirm GET form input" data-confirm="Are you sure?">
+</form>
+
+<form data-turbo-frame="frame">
+  <input type="hidden" name="notice" value="Frame: Confirmed GET form[data-turbo-frame] input">
+  <input type="submit" value="Frame: Confirm GET form[data-turbo-frame] input" data-confirm="Are you sure?">
+</form>
+
+<hr>
+
+<h1>form[method="post"] button[data-confirm]</h1>
+
+<%= form_with model: @message do |form| %>
+  <input type="hidden" name="notice" value="Page: Confirmed POST form button">
+  <button data-confirm="Are you sure?">Page: Confirm POST form button</button>
+<% end %>
+
+<%= form_with model: @message, data: { turbo_frame: "frame" } do |form| %>
+  <input type="hidden" name="notice" value="Frame: Confirmed POST form[data-turbo-frame] button">
+  <button data-confirm="Are you sure?">Frame: Confirm POST form[data-turbo-frame] button</button>
+<% end %>
+
+<hr>
+
+<h1>form[method="post"] input[data-confirm]</h1>
+
+<%= form_with model: @message do |form| %>
+  <input type="submit" value="Page: Confirm POST form input" data-confirm="Are you sure?">
+<% end %>
+
+<%= form_with model: @message, data: { turbo_frame: "frame" } do |form| %>
+  <input type="submit" value="Frame: Confirm POST form[data-turbo-frame] input" data-confirm="Are you sure?">
+<% end %>
