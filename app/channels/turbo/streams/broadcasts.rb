@@ -83,6 +83,6 @@ module Turbo::Streams::Broadcasts
 
   private
     def render_format(format, **rendering)
-      ApplicationController.render(formats: [ format ], **rendering)
+      Turbo::Controller.render(formats: [ format ], **rendering)
     end
 end
