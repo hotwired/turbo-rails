@@ -3338,6 +3338,56 @@ class TurboCableStreamSourceElement extends HTMLElement {
 
 customElements.define("turbo-cable-stream-source", TurboCableStreamSourceElement);
 
+function extend({delegate: delegate, enableElement: enableElement, disableElement: disableElement, linkDisableSelector: linkDisableSelector, formDisableSelector: formDisableSelector, formSubmitSelector: formSubmitSelector}) {
+  const getTurboFrame = element => {
+    if (element) {
+      const frameId = element.getAttribute("data-turbo-frame");
+      return frameId ? document.querySelector(`turbo-frame#${frameId}:not([disabled])`) : element.closest("turbo-frame:not([disabled])");
+    }
+  };
+  delegate(document, linkDisableSelector, "turbo:click", (({target: target}) => {
+    const frame = getTurboFrame(target);
+    if (frame) {
+      frame.addEventListener("turbo:before-fetch-response", (() => {
+        enableElement(target);
+      }), {
+        once: true
+      });
+    }
+  }));
+  delegate(document, formDisableSelector, "click", (({target: submitter}) => {
+    const submit = submitter.type == "submit";
+    const form = submitter.form;
+    const isIdempotent = (submitter.formMethod || form?.method) == "get";
+    const frame = getTurboFrame(submitter) || getTurboFrame(form);
+    if (submit && form && isIdempotent && frame) {
+      frame.addEventListener("turbo:before-fetch-request", (() => {
+        disableElement(form);
+      }), {
+        once: true
+      });
+      frame.addEventListener("turbo:before-fetch-response", (() => {
+        enableElement(form);
+      }), {
+        once: true
+      });
+    }
+  }));
+  delegate(document, formSubmitSelector, "turbo:submit-start", (({detail: {formSubmission: {formElement: formElement}}}) => {
+    formElement.addEventListener("turbo:submit-end", (() => {
+      enableElement(formElement);
+    }), {
+      once: true
+    });
+    disableElement(formElement);
+  }));
+}
+
+var ujs = Object.freeze({
+  __proto__: null,
+  extend: extend
+});
+
 var adapters = {
   logger: self.console,
   WebSocket: self.WebSocket
@@ -3630,7 +3680,7 @@ Connection.prototype.events = {
   }
 };
 
-const extend = function(object, properties) {
+const extend$1 = function(object, properties) {
   if (properties != null) {
     for (let key in properties) {
       const value = properties[key];
@@ -3644,7 +3694,7 @@ class Subscription {
   constructor(consumer, params = {}, mixin) {
     this.consumer = consumer;
     this.identifier = JSON.stringify(params);
-    extend(this, mixin);
+    extend$1(this, mixin);
   }
   perform(action, data = {}) {
     data.action = action;
@@ -3795,4 +3845,4 @@ var index = Object.freeze({
   getConfig: getConfig
 });
 
-export { turbo_es2017Esm as Turbo, cable };
+export { turbo_es2017Esm as Turbo, cable, ujs };

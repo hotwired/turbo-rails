@@ -5,3 +5,6 @@ export { Turbo }
 
 import * as cable from "./cable"
 export { cable }
+
+import * as ujs from "./ujs"
+export { ujs }

@@ -6,3 +6,4 @@
 pin "application"
 pin "@hotwired/turbo-rails", to: "turbo.js"
 pin "@rails/actioncable", to: "actioncable.esm.js"
+pin "@rails/ujs", to: "https://jspm.dev/@rails/ujs"
