@@ -1,5 +1,7 @@
 require "turbo_test"
 
+class TestChannel < ApplicationCable::Channel; end
+
 class Turbo::StreamsHelperTest < ActionView::TestCase
   test "with streamable" do
     assert_dom_equal \
@@ -19,12 +21,9 @@ class Turbo::StreamsHelperTest < ActionView::TestCase
       turbo_stream_from("messages", channel: "NonExistentChannel")
   end
 
-  class TestChannel < ApplicationCable::Channel ; end
-
   test "with channel as a class name" do
     assert_dom_equal \
       %(<turbo-cable-stream-source channel="Turbo::StreamsHelperTest::TestChannel" signed-stream-name="#{Turbo::StreamsChannel.signed_stream_name("messages")}"></turbo-cable-stream-source>),
       turbo_stream_from("messages", channel: TestChannel)
   end
-
 end
