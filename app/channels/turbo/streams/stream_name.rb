@@ -13,6 +13,13 @@ module Turbo::Streams::StreamName
     Turbo.signed_stream_verifier.generate stream_name_from(streamables)
   end
 
+  module ClassMethods
+    # Can be used by custom turbo stream channels to obtain signed stream name from <tt>params</tt>
+    def verified_stream_name_from_params
+      self.class.verified_stream_name(params[:signed_stream_name])
+    end
+  end
+
   private
     def stream_name_from(streamables)
       if streamables.is_a?(Array)
