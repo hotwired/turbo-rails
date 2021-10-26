@@ -23,7 +23,7 @@ class Turbo::StreamsHelperTest < ActionView::TestCase
 
   test "with channel as a class name" do
     assert_dom_equal \
-      %(<turbo-cable-stream-source channel="Turbo::StreamsHelperTest::TestChannel" signed-stream-name="#{Turbo::StreamsChannel.signed_stream_name("messages")}"></turbo-cable-stream-source>),
+      %(<turbo-cable-stream-source channel="TestChannel" signed-stream-name="#{Turbo::StreamsChannel.signed_stream_name("messages")}"></turbo-cable-stream-source>),
       turbo_stream_from("messages", channel: TestChannel)
   end
 end
