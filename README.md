@@ -1,4 +1,4 @@
-# Turbo
+# <img src="assets/logo.png?sanitize=true" width="24" height="24" alt="Turbo"> Turbo
 
 [Turbo](https://turbo.hotwired.dev) gives you the speed of a single-page web application without having to write any JavaScript. Turbo accelerates links and form submissions without requiring you to change your server-side generated HTML. It lets you carve up a page into independent frames, which can be lazy-loaded and operate as independent components. And finally, helps you make partial page updates using just HTML and a set of CRUD-like container tags. These three techniques reduce the amount of custom JavaScript that many web applications need to write by an order of magnitude. And for the few dynamic bits that are left, you're invited to finish the job with [Stimulus](https://github.com/hotwired/stimulus).
 
