@@ -26,7 +26,7 @@ module Turbo::Streams::ActionHelper
       if target.respond_to?(:to_key)
         [ ("#" if include_selector), ActionView::RecordIdentifier.dom_id(target) ].compact.join
       else
-        target
+        target.start_with?("#") ? target[1..-1] : target
       end
     end
 end

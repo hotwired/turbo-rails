@@ -3,6 +3,7 @@ class Turbo::Streams::ActionBroadcastJob < ActiveJob::Base
   discard_on ActiveJob::DeserializationError
   
   def perform(stream, action:, target:, **rendering)
+    target = target[1..-1] if target.start_with?("#")
     Turbo::StreamsChannel.broadcast_action_to stream, action: action, target: target, **rendering
   end
 end
