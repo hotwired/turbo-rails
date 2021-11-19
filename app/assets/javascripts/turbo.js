@@ -14,6 +14,31 @@
   Object.setPrototypeOf(HTMLElement, BuiltInHTMLElement);
 })();
 
+(function(prototype) {
+  if (typeof prototype.requestSubmit == "function") return;
+  prototype.requestSubmit = function(submitter) {
+    if (submitter) {
+      validateSubmitter(submitter, this);
+      submitter.click();
+    } else {
+      submitter = document.createElement("input");
+      submitter.type = "submit";
+      submitter.hidden = true;
+      this.appendChild(submitter);
+      submitter.click();
+      this.removeChild(submitter);
+    }
+  };
+  function validateSubmitter(submitter, form) {
+    submitter instanceof HTMLElement || raise(TypeError, "parameter 1 is not of type 'HTMLElement'");
+    submitter.type == "submit" || raise(TypeError, "The specified element is not a submit button");
+    submitter.form == form || raise(DOMException, "The specified element is not owned by this form element", "NotFoundError");
+  }
+  function raise(errorConstructor, message, name) {
+    throw new errorConstructor("Failed to execute 'requestSubmit' on 'HTMLFormElement': " + message + ".", name);
+  }
+})(HTMLFormElement.prototype);
+
 const submittersByForm = new WeakMap;
 
 function findSubmitterFromClickTarget(target) {
@@ -160,6 +185,11 @@ function getAnchor(url) {
   }
 }
 
+function getAction(form, submitter) {
+  const action = (submitter === null || submitter === void 0 ? void 0 : submitter.getAttribute("formaction")) || form.getAttribute("action") || form.action;
+  return expandURL(action);
+}
+
 function getExtension(url) {
   return (getLastPathComponent(url).match(/\.[^.]*$/) || [])[0] || "";
 }
@@ -171,6 +201,10 @@ function isHTML(url) {
 function isPrefixedBy(baseURL, url) {
   const prefix = getPrefix(url);
   return baseURL.href === expandURL(prefix).href || baseURL.href.startsWith(prefix);
+}
+
+function locationIsVisitable(location, rootLocation) {
+  return isPrefixedBy(location, rootLocation) && isHTML(location);
 }
 
 function getRequestURL(url) {
@@ -306,6 +340,31 @@ function uuid() {
       return Math.floor(Math.random() * 15).toString(16);
     }
   })).join("");
+}
+
+function getAttribute(attributeName, ...elements) {
+  for (const value of elements.map((element => element === null || element === void 0 ? void 0 : element.getAttribute(attributeName)))) {
+    if (typeof value == "string") return value;
+  }
+  return null;
+}
+
+function markAsBusy(...elements) {
+  for (const element of elements) {
+    if (element.localName == "turbo-frame") {
+      element.setAttribute("busy", "");
+    }
+    element.setAttribute("aria-busy", "true");
+  }
+}
+
+function clearBusyState(...elements) {
+  for (const element of elements) {
+    if (element.localName == "turbo-frame") {
+      element.removeAttribute("busy");
+    }
+    element.removeAttribute("aria-busy");
+  }
 }
 
 var FetchMethod;
@@ -556,6 +615,9 @@ class FormSubmission {
     this.fetchRequest = new FetchRequest(this, this.method, this.location, this.body, this.formElement);
     this.mustRedirect = mustRedirect;
   }
+  static confirmMethod(message, element) {
+    return confirm(message);
+  }
   get method() {
     var _a;
     const method = ((_a = this.submitter) === null || _a === void 0 ? void 0 : _a.getAttribute("formmethod")) || this.formElement.getAttribute("method") || "";
@@ -586,8 +648,20 @@ class FormSubmission {
   get stringFormData() {
     return [ ...this.formData ].reduce(((entries, [name, value]) => entries.concat(typeof value == "string" ? [ [ name, value ] ] : [])), []);
   }
+  get confirmationMessage() {
+    return this.formElement.getAttribute("data-turbo-confirm");
+  }
+  get needsConfirmation() {
+    return this.confirmationMessage !== null;
+  }
   async start() {
     const {initialized: initialized, requesting: requesting} = FormSubmissionState;
+    if (this.needsConfirmation) {
+      const answer = FormSubmission.confirmMethod(this.confirmationMessage, this.formElement);
+      if (!answer) {
+        return;
+      }
+    }
     if (this.state == initialized) {
       this.state = requesting;
       return this.fetchRequest.perform();
@@ -611,7 +685,9 @@ class FormSubmission {
     }
   }
   requestStarted(request) {
+    var _a;
     this.state = FormSubmissionState.waiting;
+    (_a = this.submitter) === null || _a === void 0 ? void 0 : _a.setAttribute("disabled", "");
     dispatch("turbo:submit-start", {
       target: this.formElement,
       detail: {
@@ -656,7 +732,9 @@ class FormSubmission {
     this.delegate.formSubmissionErrored(this, error);
   }
   requestFinished(request) {
+    var _a;
     this.state = FormSubmissionState.stopped;
+    (_a = this.submitter) === null || _a === void 0 ? void 0 : _a.removeAttribute("disabled");
     dispatch("turbo:submit-end", {
       target: this.formElement,
       detail: Object.assign({
@@ -744,7 +822,8 @@ class FormInterceptor {
       const form = event.target;
       if (form instanceof HTMLFormElement && form.closest("turbo-frame, html") == this.element) {
         const submitter = event.submitter || undefined;
-        if (this.delegate.shouldInterceptFormSubmission(form, submitter)) {
+        const method = (submitter === null || submitter === void 0 ? void 0 : submitter.getAttribute("formmethod")) || form.method;
+        if (method != "dialog" && this.delegate.shouldInterceptFormSubmission(form, submitter)) {
           event.preventDefault();
           event.stopImmediatePropagation();
           this.delegate.formSubmissionIntercepted(form, submitter);
@@ -955,10 +1034,11 @@ function createPlaceholderForPermanentElement(permanentElement) {
 }
 
 class Renderer {
-  constructor(currentSnapshot, newSnapshot, isPreview) {
+  constructor(currentSnapshot, newSnapshot, isPreview, willRender = true) {
     this.currentSnapshot = currentSnapshot;
     this.newSnapshot = newSnapshot;
     this.isPreview = isPreview;
+    this.willRender = willRender;
     this.promise = new Promise(((resolve, reject) => this.resolvingFunctions = {
       resolve: resolve,
       reject: reject
@@ -1340,7 +1420,9 @@ var VisitState;
 
 const defaultOptions = {
   action: "advance",
-  historyChanged: false
+  historyChanged: false,
+  visitCachedSnapshot: () => {},
+  willRender: true
 };
 
 var SystemStatusCode;
@@ -1363,13 +1445,16 @@ class Visit {
     this.delegate = delegate;
     this.location = location;
     this.restorationIdentifier = restorationIdentifier || uuid();
-    const {action: action, historyChanged: historyChanged, referrer: referrer, snapshotHTML: snapshotHTML, response: response} = Object.assign(Object.assign({}, defaultOptions), options);
+    const {action: action, historyChanged: historyChanged, referrer: referrer, snapshotHTML: snapshotHTML, response: response, visitCachedSnapshot: visitCachedSnapshot, willRender: willRender} = Object.assign(Object.assign({}, defaultOptions), options);
     this.action = action;
     this.historyChanged = historyChanged;
     this.referrer = referrer;
     this.snapshotHTML = snapshotHTML;
     this.response = response;
     this.isSamePage = this.delegate.locationWithActionIsSamePage(this.location, this.action);
+    this.visitCachedSnapshot = visitCachedSnapshot;
+    this.willRender = willRender;
+    this.scrolled = !willRender;
   }
   get adapter() {
     return this.delegate.adapter;
@@ -1468,7 +1553,7 @@ class Visit {
         this.cacheSnapshot();
         if (this.view.renderPromise) await this.view.renderPromise;
         if (isSuccessful(statusCode) && responseHTML != null) {
-          await this.view.renderPage(PageSnapshot.fromHTMLString(responseHTML));
+          await this.view.renderPage(PageSnapshot.fromHTMLString(responseHTML), false, this.willRender);
           this.adapter.visitRendered(this);
           this.complete();
         } else {
@@ -1505,7 +1590,7 @@ class Visit {
           this.adapter.visitRendered(this);
         } else {
           if (this.view.renderPromise) await this.view.renderPromise;
-          await this.view.renderPage(snapshot, isPreview);
+          await this.view.renderPage(snapshot, isPreview, this.willRender);
           this.adapter.visitRendered(this);
           if (!isPreview) {
             this.complete();
@@ -1515,7 +1600,8 @@ class Visit {
     }
   }
   followRedirect() {
-    if (this.redirectedToLocation && !this.followedRedirect) {
+    var _a;
+    if (this.redirectedToLocation && !this.followedRedirect && ((_a = this.response) === null || _a === void 0 ? void 0 : _a.redirected)) {
       this.adapter.visitProposedToLocation(this.redirectedToLocation, {
         action: "replace",
         response: this.response
@@ -1537,34 +1623,41 @@ class Visit {
   requestPreventedHandlingResponse(request, response) {}
   async requestSucceededWithResponse(request, response) {
     const responseHTML = await response.responseHTML;
+    const {redirected: redirected, statusCode: statusCode} = response;
     if (responseHTML == undefined) {
       this.recordResponse({
-        statusCode: SystemStatusCode.contentTypeMismatch
+        statusCode: SystemStatusCode.contentTypeMismatch,
+        redirected: redirected
       });
     } else {
       this.redirectedToLocation = response.redirected ? response.location : undefined;
       this.recordResponse({
-        statusCode: response.statusCode,
-        responseHTML: responseHTML
+        statusCode: statusCode,
+        responseHTML: responseHTML,
+        redirected: redirected
       });
     }
   }
   async requestFailedWithResponse(request, response) {
     const responseHTML = await response.responseHTML;
+    const {redirected: redirected, statusCode: statusCode} = response;
     if (responseHTML == undefined) {
       this.recordResponse({
-        statusCode: SystemStatusCode.contentTypeMismatch
+        statusCode: SystemStatusCode.contentTypeMismatch,
+        redirected: redirected
       });
     } else {
       this.recordResponse({
-        statusCode: response.statusCode,
-        responseHTML: responseHTML
+        statusCode: statusCode,
+        responseHTML: responseHTML,
+        redirected: redirected
       });
     }
   }
   requestErrored(request, error) {
     this.recordResponse({
-      statusCode: SystemStatusCode.networkFailure
+      statusCode: SystemStatusCode.networkFailure,
+      redirected: false
     });
   }
   requestFinished() {
@@ -1622,12 +1715,12 @@ class Visit {
     } else if (this.action == "restore") {
       return !this.hasCachedSnapshot();
     } else {
-      return true;
+      return this.willRender;
     }
   }
   cacheSnapshot() {
     if (!this.snapshotCached) {
-      this.view.cacheSnapshot();
+      this.view.cacheSnapshot().then((snapshot => snapshot && this.visitCachedSnapshot(snapshot)));
       this.snapshotCached = true;
     }
   }
@@ -1775,7 +1868,7 @@ class FormSubmitObserver {
         const form = event.target instanceof HTMLFormElement ? event.target : undefined;
         const submitter = event.submitter || undefined;
         if (form) {
-          const method = (submitter === null || submitter === void 0 ? void 0 : submitter.getAttribute("formmethod")) || form.method;
+          const method = (submitter === null || submitter === void 0 ? void 0 : submitter.getAttribute("formmethod")) || form.getAttribute("method");
           if (method != "dialog" && this.delegate.willSubmitForm(form, submitter)) {
             event.preventDefault();
             this.delegate.formSubmitted(form, submitter);
@@ -1819,12 +1912,11 @@ class FrameRedirector {
   linkClickIntercepted(element, url) {
     const frame = this.findFrameElement(element);
     if (frame) {
-      frame.setAttribute("reloadable", "");
-      frame.src = url;
+      frame.delegate.linkClickIntercepted(element, url);
     }
   }
   shouldInterceptFormSubmission(element, submitter) {
-    return this.shouldRedirect(element, submitter);
+    return this.shouldSubmit(element, submitter);
   }
   formSubmissionIntercepted(element, submitter) {
     const frame = this.findFrameElement(element, submitter);
@@ -1832,6 +1924,13 @@ class FrameRedirector {
       frame.removeAttribute("reloadable");
       frame.delegate.formSubmissionIntercepted(element, submitter);
     }
+  }
+  shouldSubmit(form, submitter) {
+    var _a;
+    const action = getAction(form, submitter);
+    const meta = this.element.ownerDocument.querySelector(`meta[name="turbo-root"]`);
+    const rootLocation = expandURL((_a = meta === null || meta === void 0 ? void 0 : meta.content) !== null && _a !== void 0 ? _a : "/");
+    return this.shouldRedirect(form, submitter) && locationIsVisitable(action, rootLocation);
   }
   shouldRedirect(element, submitter) {
     const frame = this.findFrameElement(element, submitter);
@@ -1988,7 +2087,11 @@ class Navigator {
   }
   proposeVisit(location, options = {}) {
     if (this.delegate.allowsVisitingLocationWithAction(location, options.action)) {
-      this.delegate.visitProposedToLocation(location, options);
+      if (locationIsVisitable(location, this.view.snapshot.rootLocation)) {
+        this.delegate.visitProposedToLocation(location, options);
+      } else {
+        window.location.href = location.toString();
+      }
     }
   }
   startVisit(locatable, restorationIdentifier, options = {}) {
@@ -2001,13 +2104,7 @@ class Navigator {
   submitForm(form, submitter) {
     this.stop();
     this.formSubmission = new FormSubmission(this, form, submitter, true);
-    if (this.formSubmission.isIdempotent) {
-      this.proposeVisit(this.formSubmission.fetchRequest.url, {
-        action: this.getActionForFormSubmission(this.formSubmission)
-      });
-    } else {
-      this.formSubmission.start();
-    }
+    this.formSubmission.start();
   }
   stop() {
     if (this.formSubmission) {
@@ -2040,11 +2137,14 @@ class Navigator {
         if (formSubmission.method != FetchMethod.get) {
           this.view.clearSnapshotCache();
         }
-        const {statusCode: statusCode} = fetchResponse;
+        const {statusCode: statusCode, redirected: redirected} = fetchResponse;
+        const action = this.getActionForFormSubmission(formSubmission);
         const visitOptions = {
+          action: action,
           response: {
             statusCode: statusCode,
-            responseHTML: responseHTML
+            responseHTML: responseHTML,
+            redirected: redirected
           }
         };
         this.proposeVisit(fetchResponse.location, visitOptions);
@@ -2095,7 +2195,7 @@ class Navigator {
   }
   getActionForFormSubmission(formSubmission) {
     const {formElement: formElement, submitter: submitter} = formSubmission;
-    const action = (submitter === null || submitter === void 0 ? void 0 : submitter.getAttribute("data-turbo-action")) || formElement.getAttribute("data-turbo-action");
+    const action = getAttribute("data-turbo-action", submitter, formElement);
     return isAction(action) ? action : "advance";
   }
 }
@@ -2295,7 +2395,9 @@ class PageRenderer extends Renderer {
     this.mergeHead();
   }
   async render() {
-    this.replaceBody();
+    if (this.willRender) {
+      this.replaceBody();
+    }
   }
   finishRendering() {
     super.finishRendering();
@@ -2431,8 +2533,8 @@ class PageView extends View {
     this.snapshotCache = new SnapshotCache(10);
     this.lastRenderedLocation = new URL(location.href);
   }
-  renderPage(snapshot, isPreview = false) {
-    const renderer = new PageRenderer(this.snapshot, snapshot, isPreview);
+  renderPage(snapshot, isPreview = false, willRender = true) {
+    const renderer = new PageRenderer(this.snapshot, snapshot, isPreview, willRender);
     return this.render(renderer);
   }
   renderError(snapshot) {
@@ -2447,7 +2549,9 @@ class PageView extends View {
       this.delegate.viewWillCacheSnapshot();
       const {snapshot: snapshot, lastRenderedLocation: location} = this;
       await nextEventLoopTick();
-      this.snapshotCache.put(location, snapshot.clone());
+      const cachedSnapshot = snapshot.clone();
+      this.snapshotCache.put(location, cachedSnapshot);
+      return cachedSnapshot;
     }
   }
   getCachedSnapshotForLocation(location) {
@@ -2552,7 +2656,7 @@ class Session {
     });
   }
   willFollowLinkToLocation(link, location) {
-    return this.elementDriveEnabled(link) && this.locationIsVisitable(location) && this.applicationAllowsFollowingLinkToLocation(link, location);
+    return this.elementDriveEnabled(link) && locationIsVisitable(location, this.snapshot.rootLocation) && this.applicationAllowsFollowingLinkToLocation(link, location);
   }
   followedLinkToLocation(link, location) {
     const action = this.getActionForLink(link);
@@ -2561,14 +2665,23 @@ class Session {
     });
   }
   convertLinkWithMethodClickToFormSubmission(link) {
-    var _a;
     const linkMethod = link.getAttribute("data-turbo-method");
     if (linkMethod) {
       const form = document.createElement("form");
       form.method = linkMethod;
       form.action = link.getAttribute("href") || "undefined";
       form.hidden = true;
-      (_a = link.parentNode) === null || _a === void 0 ? void 0 : _a.insertBefore(form, link);
+      if (link.hasAttribute("data-turbo-confirm")) {
+        form.setAttribute("data-turbo-confirm", link.getAttribute("data-turbo-confirm"));
+      }
+      const frame = this.getTargetFrameForLink(link);
+      if (frame) {
+        form.setAttribute("data-turbo-frame", frame);
+        form.addEventListener("turbo:submit-start", (() => form.remove()));
+      } else {
+        form.addEventListener("submit", (() => form.remove()));
+      }
+      document.body.appendChild(form);
       return dispatch("submit", {
         cancelable: true,
         target: form
@@ -2600,7 +2713,8 @@ class Session {
     this.notifyApplicationAfterVisitingSamePageLocation(oldURL, newURL);
   }
   willSubmitForm(form, submitter) {
-    return this.elementDriveEnabled(form) && (!submitter || this.elementDriveEnabled(submitter));
+    const action = getAction(form, submitter);
+    return this.elementDriveEnabled(form) && (!submitter || this.elementDriveEnabled(submitter)) && locationIsVisitable(expandURL(action), this.snapshot.rootLocation);
   }
   formSubmitted(form, submitter) {
     this.navigator.submitForm(form, submitter);
@@ -2667,6 +2781,7 @@ class Session {
     });
   }
   notifyApplicationAfterVisitingLocation(location, action) {
+    markAsBusy(document.documentElement);
     return dispatch("turbo:visit", {
       detail: {
         url: location.href,
@@ -2690,6 +2805,7 @@ class Session {
     return dispatch("turbo:render");
   }
   notifyApplicationAfterPageLoad(timing = {}) {
+    clearBusyState(document.documentElement);
     return dispatch("turbo:load", {
       detail: {
         url: this.location.href,
@@ -2737,8 +2853,16 @@ class Session {
     const action = link.getAttribute("data-turbo-action");
     return isAction(action) ? action : "advance";
   }
-  locationIsVisitable(location) {
-    return isPrefixedBy(location, this.snapshot.rootLocation) && isHTML(location);
+  getTargetFrameForLink(link) {
+    const frame = link.getAttribute("data-turbo-frame");
+    if (frame) {
+      return frame;
+    } else {
+      const container = link.closest("turbo-frame");
+      if (container) {
+        return container.id;
+      }
+    }
   }
   get snapshot() {
     return this.view.snapshot;
@@ -2793,6 +2917,10 @@ function setProgressBarDelay(delay) {
   session.setProgressBarDelay(delay);
 }
 
+function setConfirmMethod(confirmMethod) {
+  FormSubmission.confirmMethod = confirmMethod;
+}
+
 var Turbo = Object.freeze({
   __proto__: null,
   navigator: navigator$1,
@@ -2806,11 +2934,14 @@ var Turbo = Object.freeze({
   disconnectStreamSource: disconnectStreamSource,
   renderStreamMessage: renderStreamMessage,
   clearCache: clearCache,
-  setProgressBarDelay: setProgressBarDelay
+  setProgressBarDelay: setProgressBarDelay,
+  setConfirmMethod: setConfirmMethod
 });
 
 class FrameController {
   constructor(element) {
+    this.fetchResponseLoaded = fetchResponse => {};
+    this.currentFetchRequest = null;
     this.resolveVisitPromise = () => {};
     this.connected = false;
     this.hasBeenLoaded = false;
@@ -2869,7 +3000,6 @@ class FrameController {
           this.appearanceObserver.stop();
           await this.element.loaded;
           this.hasBeenLoaded = true;
-          session.frameLoaded(this.element);
         } catch (error) {
           this.currentURL = previousURL;
           throw error;
@@ -2878,7 +3008,7 @@ class FrameController {
     }
   }
   async loadResponse(fetchResponse) {
-    if (fetchResponse.redirected) {
+    if (fetchResponse.redirected || fetchResponse.succeeded && fetchResponse.isHTML) {
       this.sourceURL = fetchResponse.response.url;
     }
     try {
@@ -2886,14 +3016,18 @@ class FrameController {
       if (html) {
         const {body: body} = parseHTMLDocument(html);
         const snapshot = new Snapshot(await this.extractForeignFrameElement(body));
-        const renderer = new FrameRenderer(this.view.snapshot, snapshot, false);
+        const renderer = new FrameRenderer(this.view.snapshot, snapshot, false, false);
         if (this.view.renderPromise) await this.view.renderPromise;
         await this.view.render(renderer);
         session.frameRendered(fetchResponse, this.element);
+        session.frameLoaded(this.element);
+        this.fetchResponseLoaded(fetchResponse);
       }
     } catch (error) {
       console.error(error);
       this.view.invalidate();
+    } finally {
+      this.fetchResponseLoaded = () => {};
     }
   }
   elementAppearedInViewport(element) {
@@ -2919,19 +3053,15 @@ class FrameController {
     }
     this.reloadable = false;
     this.formSubmission = new FormSubmission(this, element, submitter);
-    if (this.formSubmission.fetchRequest.isIdempotent) {
-      this.navigateFrame(element, this.formSubmission.fetchRequest.url.href, submitter);
-    } else {
-      const {fetchRequest: fetchRequest} = this.formSubmission;
-      this.prepareHeadersForRequest(fetchRequest.headers, fetchRequest);
-      this.formSubmission.start();
-    }
+    const {fetchRequest: fetchRequest} = this.formSubmission;
+    this.prepareHeadersForRequest(fetchRequest.headers, fetchRequest);
+    this.formSubmission.start();
   }
   prepareHeadersForRequest(headers, request) {
     headers["Turbo-Frame"] = this.id;
   }
   requestStarted(request) {
-    this.element.setAttribute("busy", "");
+    markAsBusy(this.element);
   }
   requestPreventedHandlingResponse(request, response) {
     this.resolveVisitPromise();
@@ -2949,14 +3079,14 @@ class FrameController {
     this.resolveVisitPromise();
   }
   requestFinished(request) {
-    this.element.removeAttribute("busy");
+    clearBusyState(this.element);
   }
-  formSubmissionStarted(formSubmission) {
-    const frame = this.findFrameElement(formSubmission.formElement);
-    frame.setAttribute("busy", "");
+  formSubmissionStarted({formElement: formElement}) {
+    markAsBusy(formElement, this.findFrameElement(formElement));
   }
   formSubmissionSucceededWithResponse(formSubmission, response) {
     const frame = this.findFrameElement(formSubmission.formElement, formSubmission.submitter);
+    this.proposeVisitIfNavigatedWithAction(frame, formSubmission.formElement, formSubmission.submitter);
     frame.delegate.loadResponse(response);
   }
   formSubmissionFailedWithResponse(formSubmission, fetchResponse) {
@@ -2965,9 +3095,8 @@ class FrameController {
   formSubmissionErrored(formSubmission, error) {
     console.error(error);
   }
-  formSubmissionFinished(formSubmission) {
-    const frame = this.findFrameElement(formSubmission.formElement);
-    frame.removeAttribute("busy");
+  formSubmissionFinished({formElement: formElement}) {
+    clearBusyState(formElement, this.findFrameElement(formElement));
   }
   allowsImmediateRender(snapshot, resume) {
     return true;
@@ -2975,10 +3104,14 @@ class FrameController {
   viewRenderedSnapshot(snapshot, isPreview) {}
   viewInvalidated() {}
   async visit(url) {
-    const request = new FetchRequest(this, FetchMethod.get, expandURL(url), undefined, this.element);
+    var _a;
+    const request = new FetchRequest(this, FetchMethod.get, expandURL(url), new URLSearchParams, this.element);
+    (_a = this.currentFetchRequest) === null || _a === void 0 ? void 0 : _a.cancel();
+    this.currentFetchRequest = request;
     return new Promise((resolve => {
       this.resolveVisitPromise = () => {
         this.resolveVisitPromise = () => {};
+        this.currentFetchRequest = null;
         resolve();
       };
       request.perform();
@@ -2986,12 +3119,36 @@ class FrameController {
   }
   navigateFrame(element, url, submitter) {
     const frame = this.findFrameElement(element, submitter);
+    this.proposeVisitIfNavigatedWithAction(frame, element, submitter);
     frame.setAttribute("reloadable", "");
     frame.src = url;
   }
+  proposeVisitIfNavigatedWithAction(frame, element, submitter) {
+    const action = getAttribute("data-turbo-action", submitter, element, frame);
+    if (isAction(action)) {
+      const {visitCachedSnapshot: visitCachedSnapshot} = new SnapshotSubstitution(frame);
+      frame.delegate.fetchResponseLoaded = fetchResponse => {
+        if (frame.src) {
+          const {statusCode: statusCode, redirected: redirected} = fetchResponse;
+          const responseHTML = frame.ownerDocument.documentElement.outerHTML;
+          const response = {
+            statusCode: statusCode,
+            redirected: redirected,
+            responseHTML: responseHTML
+          };
+          session.visit(frame.src, {
+            action: action,
+            response: response,
+            visitCachedSnapshot: visitCachedSnapshot,
+            willRender: false
+          });
+        }
+      };
+    }
+  }
   findFrameElement(element, submitter) {
     var _a;
-    const id = (submitter === null || submitter === void 0 ? void 0 : submitter.getAttribute("data-turbo-frame")) || element.getAttribute("data-turbo-frame") || this.element.getAttribute("target");
+    const id = getAttribute("data-turbo-frame", submitter, element) || this.element.getAttribute("target");
     return (_a = getFrameElementById(id)) !== null && _a !== void 0 ? _a : this.element;
   }
   async extractForeignFrameElement(container) {
@@ -3011,8 +3168,15 @@ class FrameController {
     }
     return new FrameElement;
   }
+  formActionIsVisitable(form, submitter) {
+    const action = getAction(form, submitter);
+    return locationIsVisitable(expandURL(action), this.rootLocation);
+  }
   shouldInterceptNavigation(element, submitter) {
-    const id = (submitter === null || submitter === void 0 ? void 0 : submitter.getAttribute("data-turbo-frame")) || element.getAttribute("data-turbo-frame") || this.element.getAttribute("target");
+    const id = getAttribute("data-turbo-frame", submitter, element) || this.element.getAttribute("target");
+    if (element instanceof HTMLFormElement && !this.formActionIsVisitable(element, submitter)) {
+      return false;
+    }
     if (!this.enabled || id == "_top") {
       return false;
     }
@@ -3068,6 +3232,24 @@ class FrameController {
   get isActive() {
     return this.element.isActive && this.connected;
   }
+  get rootLocation() {
+    var _a;
+    const meta = this.element.ownerDocument.querySelector(`meta[name="turbo-root"]`);
+    const root = (_a = meta === null || meta === void 0 ? void 0 : meta.content) !== null && _a !== void 0 ? _a : "/";
+    return expandURL(root);
+  }
+}
+
+class SnapshotSubstitution {
+  constructor(element) {
+    this.visitCachedSnapshot = ({element: element}) => {
+      var _a;
+      const {id: id, clone: clone} = this;
+      (_a = element.querySelector("#" + id)) === null || _a === void 0 ? void 0 : _a.replaceWith(clone);
+    };
+    this.clone = element.cloneNode(true);
+    this.id = element.id;
+  }
 }
 
 function getFrameElementById(id) {
@@ -3090,6 +3272,7 @@ function activateElement(element, currentURL) {
     }
     if (element instanceof FrameElement) {
       element.connectedCallback();
+      element.disconnectedCallback();
       return element;
     }
   }
@@ -3274,6 +3457,7 @@ var turbo_es2017Esm = Object.freeze({
   registerAdapter: registerAdapter,
   renderStreamMessage: renderStreamMessage,
   session: session,
+  setConfirmMethod: setConfirmMethod,
   setProgressBarDelay: setProgressBarDelay,
   start: start,
   visit: visit
