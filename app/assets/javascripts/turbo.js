@@ -403,12 +403,8 @@ class FetchRequest {
     this.delegate = delegate;
     this.method = method;
     this.headers = this.defaultHeaders;
-    if (this.isIdempotent) {
-      this.url = mergeFormDataEntries(location, [ ...body.entries() ]);
-    } else {
-      this.body = body;
-      this.url = location;
-    }
+    this.body = body;
+    this.url = this.isIdempotent ? mergeFormDataEntries(new URL(location.href), this.entries) : location;
     this.target = target;
   }
   get location() {
@@ -466,7 +462,7 @@ class FetchRequest {
       credentials: "same-origin",
       headers: this.headers,
       redirect: "follow",
-      body: this.body,
+      body: this.isIdempotent ? null : this.body,
       signal: this.abortSignal,
       referrer: (_a = this.delegate.referrer) === null || _a === void 0 ? void 0 : _a.href
     };
@@ -488,7 +484,7 @@ class FetchRequest {
       cancelable: true,
       detail: {
         fetchOptions: fetchOptions,
-        url: this.url.href,
+        url: this.url,
         resume: this.resolveRequestPromise
       },
       target: this.target
@@ -498,16 +494,12 @@ class FetchRequest {
 }
 
 function mergeFormDataEntries(url, entries) {
-  const currentSearchParams = new URLSearchParams(url.search);
+  const searchParams = new URLSearchParams;
   for (const [name, value] of entries) {
     if (value instanceof File) continue;
-    if (currentSearchParams.has(name)) {
-      currentSearchParams.delete(name);
-      url.searchParams.set(name, value);
-    } else {
-      url.searchParams.append(name, value);
-    }
+    searchParams.append(name, value);
   }
+  url.search = searchParams.toString();
   return url;
 }
 
@@ -820,7 +812,7 @@ class FormInterceptor {
   constructor(delegate, element) {
     this.submitBubbled = event => {
       const form = event.target;
-      if (form instanceof HTMLFormElement && form.closest("turbo-frame, html") == this.element) {
+      if (!event.defaultPrevented && form instanceof HTMLFormElement && form.closest("turbo-frame, html") == this.element) {
         const submitter = event.submitter || undefined;
         const method = (submitter === null || submitter === void 0 ? void 0 : submitter.getAttribute("formmethod")) || form.method;
         if (method != "dialog" && this.delegate.shouldInterceptFormSubmission(form, submitter)) {
@@ -1757,10 +1749,10 @@ class BrowserAdapter {
     this.navigator.startVisit(location, uuid(), options);
   }
   visitStarted(visit) {
+    visit.loadCachedSnapshot();
     visit.issueRequest();
     visit.changeHistory();
     visit.goToSamePageAnchor();
-    visit.loadCachedSnapshot();
   }
   visitRequestStarted(visit) {
     this.progressBar.setValue(0);
@@ -2996,7 +2988,7 @@ class FrameController {
       this.currentURL = this.sourceURL;
       if (this.sourceURL) {
         try {
-          this.element.loaded = this.visit(this.sourceURL);
+          this.element.loaded = this.visit(expandURL(this.sourceURL));
           this.appearanceObserver.stop();
           await this.element.loaded;
           this.hasBeenLoaded = true;
@@ -3105,7 +3097,7 @@ class FrameController {
   viewInvalidated() {}
   async visit(url) {
     var _a;
-    const request = new FetchRequest(this, FetchMethod.get, expandURL(url), new URLSearchParams, this.element);
+    const request = new FetchRequest(this, FetchMethod.get, url, url.searchParams, this.element);
     (_a = this.currentFetchRequest) === null || _a === void 0 ? void 0 : _a.cancel();
     this.currentFetchRequest = request;
     return new Promise((resolve => {
