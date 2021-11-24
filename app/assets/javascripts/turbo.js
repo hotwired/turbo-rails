@@ -404,7 +404,7 @@ class FetchRequest {
     this.method = method;
     this.headers = this.defaultHeaders;
     this.body = body;
-    this.url = this.isIdempotent ? mergeFormDataEntries(new URL(location.href), this.entries) : location;
+    this.url = location;
     this.target = target;
   }
   get location() {
@@ -491,16 +491,6 @@ class FetchRequest {
     });
     if (event.defaultPrevented) await requestInterception;
   }
-}
-
-function mergeFormDataEntries(url, entries) {
-  const searchParams = new URLSearchParams;
-  for (const [name, value] of entries) {
-    if (value instanceof File) continue;
-    searchParams.append(name, value);
-  }
-  url.search = searchParams.toString();
-  return url;
 }
 
 class AppearanceObserver {
@@ -604,6 +594,10 @@ class FormSubmission {
     this.formElement = formElement;
     this.submitter = submitter;
     this.formData = buildFormData(formElement, submitter);
+    this.location = expandURL(this.action);
+    if (this.method == FetchMethod.get) {
+      mergeFormDataEntries(this.location, [ ...this.body.entries() ]);
+    }
     this.fetchRequest = new FetchRequest(this, this.method, this.location, this.body, this.formElement);
     this.mustRedirect = mustRedirect;
   }
@@ -619,9 +613,6 @@ class FormSubmission {
     var _a;
     const formElementAction = typeof this.formElement.action === "string" ? this.formElement.action : null;
     return ((_a = this.submitter) === null || _a === void 0 ? void 0 : _a.getAttribute("formaction")) || this.formElement.getAttribute("action") || formElementAction || "";
-  }
-  get location() {
-    return expandURL(this.action);
   }
   get body() {
     if (this.enctype == FormEnctype.urlEncoded || this.method == FetchMethod.get) {
@@ -768,6 +759,16 @@ function getMetaContent(name) {
 
 function responseSucceededWithoutRedirect(response) {
   return response.statusCode == 200 && !response.redirected;
+}
+
+function mergeFormDataEntries(url, entries) {
+  const searchParams = new URLSearchParams;
+  for (const [name, value] of entries) {
+    if (value instanceof File) continue;
+    searchParams.append(name, value);
+  }
+  url.search = searchParams.toString();
+  return url;
 }
 
 class Snapshot {
@@ -3097,7 +3098,7 @@ class FrameController {
   viewInvalidated() {}
   async visit(url) {
     var _a;
-    const request = new FetchRequest(this, FetchMethod.get, url, url.searchParams, this.element);
+    const request = new FetchRequest(this, FetchMethod.get, url, new URLSearchParams, this.element);
     (_a = this.currentFetchRequest) === null || _a === void 0 ? void 0 : _a.cancel();
     this.currentFetchRequest = request;
     return new Promise((resolve => {

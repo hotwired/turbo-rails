@@ -26,7 +26,7 @@ module Turbo
     # config.after_initialize do
     #   config.assets.precompile -= Turbo::Engine::PRECOMPILE_ASSETS
     # end
-    PRECOMPILE_ASSETS = %w( turbo.js turbo.min.js )
+    PRECOMPILE_ASSETS = %w( turbo.js turbo.min.js turbo.min.js.map )
 
     initializer "turbo.assets" do
       if Rails.application.config.respond_to?(:assets)

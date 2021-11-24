@@ -28,7 +28,8 @@ export default [
     output: {
       file: "app/assets/javascripts/turbo.min.js",
       format: "es",
-      inlineDynamicImports: true
+      inlineDynamicImports: true,
+      sourcemap: true
     },
     plugins: [
       resolve(),
