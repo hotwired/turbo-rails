@@ -1,5 +1,9 @@
 Rails.application.routes.draw do
-  resources :messages
+  resources :messages do
+    collection do
+      get :echo
+    end
+  end
   resources :trays
   resources :posts
   namespace :users do
