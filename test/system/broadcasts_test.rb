@@ -37,6 +37,13 @@ class BroadcastsTest < ApplicationSystemTestCase
     end
   end
 
+  test "passing extra parameters to channel" do
+    visit echo_messages_path
+    wait_for_subscriber
+
+    assert_text "Hello, world!", wait: 100
+  end
+
   private
 
   def assert_broadcasts_text(text, wait: 5, &block)
