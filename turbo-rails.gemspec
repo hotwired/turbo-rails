@@ -13,7 +13,6 @@ Gem::Specification.new do |s|
 
   s.add_dependency "actionpack", ">= 6.0.0"
   s.add_dependency "actionview", ">= 6.0.0"
-  s.add_dependency "activejob", ">= 6.0.0"
   s.add_dependency "activesupport", ">= 6.0.0"
   s.add_dependency "bundler", ">= 1.15.0"
   s.add_dependency "railties", ">= 6.0.0"
