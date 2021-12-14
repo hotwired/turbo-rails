@@ -16,10 +16,5 @@ Gem::Specification.new do |s|
   s.add_dependency "activesupport", ">= 6.0.0"
   s.add_dependency "railties", ">= 6.0.0"
 
-  s.add_development_dependency "activemodel", ">= 6.0.0"
-  s.add_development_dependency "activerecord", ">= 6.0.0"
-  s.add_development_dependency "activestorage", ">= 6.0.0"
-  s.add_development_dependency "sprockets-rails", ">= 2.0.0"
-
   s.files = Dir["{app,config,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
 end
