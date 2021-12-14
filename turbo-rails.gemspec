@@ -11,7 +11,6 @@ Gem::Specification.new do |s|
 
   s.required_ruby_version = ">= 2.6.0"
 
-  s.add_dependency "actioncable", ">= 6.0.0"
   s.add_dependency "actionpack", ">= 6.0.0"
   s.add_dependency "actionview", ">= 6.0.0"
   s.add_dependency "activejob", ">= 6.0.0"
