@@ -1,5 +1,6 @@
 class TraysController < ApplicationController
   def show
+    @frame_id = turbo_frame_request_id
   end
 
   def create

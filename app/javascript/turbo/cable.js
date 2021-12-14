@@ -1,13 +1,16 @@
 let consumer
 
 export async function getConsumer() {
-  if (consumer) return consumer
-  const { createConsumer } = await import("@rails/actioncable/src")
-  return setConsumer(createConsumer())
+  return consumer || setConsumer(createConsumer().then(setConsumer))
 }
 
 export function setConsumer(newConsumer) {
   return consumer = newConsumer
+}
+
+export async function createConsumer() {
+  const { createConsumer } = await import(/* webpackChunkName: "actioncable" */ "@rails/actioncable/src")
+  return createConsumer()
 }
 
 export async function subscribeTo(channel, mixin) {

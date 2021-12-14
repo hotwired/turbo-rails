@@ -1,4 +1,9 @@
 <h1>Messages</h1>
 
+<span id="message-count">
+  <%= @messages.count %> messages sent
+</span>
+
 <%= turbo_stream_from "messages" %>
-<div id="messages"></div>
+<div id="messages">
+</div>

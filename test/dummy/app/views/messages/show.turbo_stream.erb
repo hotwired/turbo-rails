@@ -2,8 +2,8 @@
 <%= turbo_stream.replace @message %>
 <%= turbo_stream.replace @message, "Something else" %>
 <%= turbo_stream.replace "message_5", "Something fifth" %>
-<%= turbo_stream.replace "message_5", partial: "messages/message", locals: { message: Message.new(record_id: 5, content: "OLLA!") } %>
+<%= turbo_stream.replace "message_5", partial: "messages/message", locals: { message: Message.new(id: 5, content: "OLLA!") } %>
 <%= turbo_stream.append "messages", @message %>
-<%= turbo_stream.append "messages", partial: "messages/message", locals: { message: Message.new(record_id: 5, content: "OLLA!") } %>
+<%= turbo_stream.append "messages", partial: "messages/message", locals: { message: Message.new(id: 5, content: "OLLA!") } %>
 <%= turbo_stream.prepend "messages", @message %>
-<%= turbo_stream.prepend "messages", partial: "messages/message", locals: { message: Message.new(record_id: 5, content: "OLLA!") } %>
+<%= turbo_stream.prepend "messages", partial: "messages/message", locals: { message: Message.new(id: 5, content: "OLLA!") } %>
