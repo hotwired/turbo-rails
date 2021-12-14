@@ -74,14 +74,14 @@ This gem provides a `turbo_stream_from` helper to create a turbo stream.
 
 ## Installation
 
-The JavaScript for Turbo can either be run through the asset pipeline, which is included with this gem, or through the package that lives on NPM, through Webpacker.
+This gem is automatically configured for applications made with Rails 7+ (unless --skip-hotwire is passed to the generator). But if you're on Rails 6, you can install it manually:
 
 1. Add the `turbo-rails` gem to your Gemfile: `gem 'turbo-rails'`
 2. Run `./bin/bundle install`
 3. Run `./bin/rails turbo:install`
 4. Run `./bin/rails turbo:install:redis` to change the development Action Cable adapter from Async (the default one) to Redis. The Async adapter does not support Turbo Stream broadcasting.
 
-Running `turbo:install` will install through NPM if Webpacker is installed in the application. Otherwise the asset pipeline version is used. To use the asset pipeline version, you must have `importmap-rails` installed first and listed higher in the Gemfile.
+Running `turbo:install` will install through NPM if Node.js is used in the application. Otherwise the asset pipeline version is used. To use the asset pipeline version, you must have `importmap-rails` installed first and listed higher in the Gemfile.
 
 If you're using node and need to use the cable consumer, you can import [`cable`](https://github.com/hotwired/turbo-rails/blob/main/app/javascript/turbo/cable.js) (`import { cable } from "@hotwired/turbo-rails"`), but ensure that your application actually *uses* the members it `import`s when using this style (see [turbo-rails#48](https://github.com/hotwired/turbo-rails/issues/48)).
 
