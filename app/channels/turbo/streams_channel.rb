@@ -9,7 +9,7 @@
 # helper modules like <tt>Turbo::Streams::StreamName</tt>:
 #
 #   class CustomChannel < ActionCable::Channel::Base
-#      extend Turbo::Stream::Broadcasts, Turbo::Streams::StreamName
+#      extend Turbo::Streams::Broadcasts, Turbo::Streams::StreamName
 #      include Turbo::Streams::StreamName::ClassMethods
 #
 #      def subscribed
