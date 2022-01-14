@@ -115,6 +115,19 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
       @profile.broadcast_replace partial: 'messages/message', locals: { message: @message }
     end
   end
+
+  test "broadcast render now" do
+    assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("replace", target: "message_1", template: "Goodbye!") do
+      @message.broadcast_render
+    end
+  end
+
+  test "broadcast render to stream now" do
+    @profile = Users::Profile.new(id: 1, name: "Ryan")
+    assert_broadcast_on @profile.to_param, turbo_stream_action_tag("replace", target: "message_1", template: "Goodbye!") do
+      @message.broadcast_render_to @profile
+    end
+  end
 end
 
 class Turbo::BroadcastableArticleTest < ActionCable::Channel::TestCase
