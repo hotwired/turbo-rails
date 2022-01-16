@@ -45,8 +45,9 @@
 # within a real-time path, like a controller or model, since all those updates require a rendering step, which can slow down
 # execution. You don't need to do this for remove, since only the dom id for the model is used.
 #
-# In addition to the four basic actions, you can also use <tt>broadcast_render_later</tt> or
-# <tt>broadcast_render_later_to</tt> to render a turbo stream template with multiple actions.
+# In addition to the four basic actions, you can also use <tt>broadcast_render</tt>,
+# <tt>broadcast_render_to</tt> <tt>broadcast_render_later</tt>, and <tt>broadcast_render_later_to</tt>
+# to render a turbo stream template with multiple actions.
 module Turbo::Broadcastable
   extend ActiveSupport::Concern
 
@@ -275,9 +276,7 @@ module Turbo::Broadcastable
     broadcast_action_later_to self, action: action, target: target, **rendering
   end
 
-
-  # Render a turbo stream template asynchronously with this broadcastable model passed as the local variable using a
-  # <tt>Turbo::Streams::BroadcastJob</tt>. Example:
+  # Render a turbo stream template with this broadcastable model passed as the local variable. Example:
   #
   #   # Template: entries/_entry.turbo_stream.erb
   #   <%= turbo_stream.remove entry %>
@@ -289,7 +288,26 @@ module Turbo::Broadcastable
   #   <turbo-stream action="remove" target="entry_5"></turbo-stream>
   #   <turbo-stream action="append" target="entries"><template><div id="entry_5">My Entry</div></template></turbo-stream>
   #
-  # ...to the stream named "entry:5"
+  # ...to the stream named "entry:5".
+  #
+  # Note that rendering inline via this method will cause template rendering to happen synchronously. That is usually not
+  # desireable for model callbacks, certainly not if those callbacks are inside of a transaction. Most of the time you should
+  # be using `broadcast_render_later`, unless you specifically know why synchronous rendering is needed.
+  def broadcast_render(**rendering)
+    broadcast_render_to self, **rendering
+  end
+
+  # Same as <tt>broadcast_render</tt> but run with the added option of naming the stream using the passed
+  # <tt>streamables</tt>.
+  #
+  # Note that rendering inline via this method will cause template rendering to happen synchronously. That is usually not
+  # desireable for model callbacks, certainly not if those callbacks are inside of a transaction. Most of the time you should
+  # be using `broadcast_render_later_to`, unless you specifically know why synchronous rendering is needed.
+  def broadcast_render_to(*streamables, **rendering)
+    Turbo::StreamsChannel.broadcast_render_to(*streamables, **broadcast_rendering_with_defaults(rendering))
+  end
+
+  # Same as <tt>broadcast_action_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
   def broadcast_render_later(**rendering)
     broadcast_render_later_to self, **rendering
   end
