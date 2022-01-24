@@ -3,7 +3,9 @@ def run_turbo_install_template(path)
 end
 
 def redis_installed?
-  system('which redis-server > /dev/null')
+  Gem.win_platform? ?
+    system('where redis-server > NUL 2>&1') : 
+    system('which redis-server > /dev/null')
 end
 
 def switch_on_redis_if_available
