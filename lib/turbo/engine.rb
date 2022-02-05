@@ -16,8 +16,8 @@ module Turbo
       #{root}/app/jobs
     )
 
-    initializer "turbo.no_action_cable" do
-      Rails.autoloaders.once.do_not_eager_load(Dir["#{root}/app/channels/turbo/*_channel.rb"]) unless defined?(ActionCable)
+    initializer "turbo.no_action_cable", before: :set_eager_load_paths do
+      config.eager_load_paths.delete("#{root}/app/channels") unless defined?(ActionCable)
     end
 
     # If you don't want to precompile Turbo's assets (eg. because you're using webpack),
