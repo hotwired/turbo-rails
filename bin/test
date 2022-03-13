@@ -10,8 +10,8 @@ puts "Installing JavaScript dependencies"
 puts "Building JavaScript"
 `yarn build`
 
-puts "Migrating test database"
-`cd test/dummy; RAILS_ENV=test ./bin/rails db:migrate db:test:prepare`
+puts "Preparing test database"
+`cd test/dummy; ./bin/rails db:test:prepare`
 
 require "bundler/setup"
 require "rails/plugin/test"
