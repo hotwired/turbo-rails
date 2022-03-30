@@ -9,6 +9,7 @@ jobs:
           - "3.0"
         rails-version:
           - "6.1"
+          - "7.0"
           - "main"
         continue-on-error: [ false ]
 
