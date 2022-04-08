@@ -224,7 +224,7 @@ class Turbo::Streams::TagBuilder
     action_all :prepend, targets, content, **rendering, &block
   end
 
-  # Preped to the <body> tag of the document either the <tt>content</tt> passed in or a
+  # Prepend to the <body> tag of the document either the <tt>content</tt> passed in or a
   # rendering result determined by the <tt>rendering</tt> keyword arguments, the content in the block,
   # or the rendering of the content as a record. Examples:
   #
