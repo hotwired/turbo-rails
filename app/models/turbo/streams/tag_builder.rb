@@ -182,6 +182,20 @@ class Turbo::Streams::TagBuilder
     action_all :append, targets, content, **rendering, &block
   end
 
+  # Append to the <body> tag of the document either the <tt>content</tt> passed in or a
+  # rendering result determined by the <tt>rendering</tt> keyword arguments, the content in the block,
+  # or the rendering of the content as a record. Examples:
+  #
+  #   <%= turbo_stream.append_body "<div class='modal'>Append this at the bottom of the body tag</div>" %>
+  #   <%= turbo_stream.append_body modal %>
+  #   <%= turbo_stream.append_body partial: "modals/new_modal", locals: { model: clearance } %>
+  #   <%= turbo_stream.append_body do %>
+  #     <div class='modal'>Append this at the bottom of the body tag</div>
+  #   <% end %>
+  def append_body(content = nil, **rendering, &block)
+    action_all :append, "body", content, **rendering, &block)
+  end
+
   # Prepend to the target in the dom identified with <tt>target</tt> either the <tt>content</tt> passed in or a
   # rendering result determined by the <tt>rendering</tt> keyword arguments or the content in the block,
   # or the rendering of the content as a record. Examples:
@@ -208,6 +222,20 @@ class Turbo::Streams::TagBuilder
   #   <% end %>
   def prepend_all(targets, content = nil, **rendering, &block)
     action_all :prepend, targets, content, **rendering, &block
+  end
+
+  # Preped to the <body> tag of the document either the <tt>content</tt> passed in or a
+  # rendering result determined by the <tt>rendering</tt> keyword arguments, the content in the block,
+  # or the rendering of the content as a record. Examples:
+  #
+  #   <%= turbo_stream.prepend_body "<div class='modal'>Append this at the top of the body tag</div>" %>
+  #   <%= turbo_stream.prepend_body modal %>
+  #   <%= turbo_stream.prepend_body partial: "modals/new_modal", locals: { model: clearance } %>
+  #   <%= turbo_stream.prepend_body do %>
+  #     <div class='modal'>Append this at the top of the body tag</div>
+  #   <% end %>
+  def prepend_body(content = nil, **rendering, &block)
+    action_all :prepend, "body", content, **rendering, &block)
   end
 
   # Send an action of the type <tt>name</tt> to <tt>target</tt>. Options described in the concrete methods.
