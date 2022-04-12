@@ -28,6 +28,12 @@ module Turbo
     # end
     PRECOMPILE_ASSETS = %w( turbo.js turbo.min.js turbo.min.js.map )
 
+    initializer "turbo.configs" do
+      config.after_initialize do |app|
+        Turbo.draw_routes = app.config.turbo.draw_routes != false
+      end
+    end
+
     initializer "turbo.assets" do
       if Rails.application.config.respond_to?(:assets)
         Rails.application.config.assets.precompile += PRECOMPILE_ASSETS
