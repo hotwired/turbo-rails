@@ -38,7 +38,6 @@ jobs:
 
       - name: Run tests
         run: |
-          bin/rails db:test:prepare
           bin/test test/**/*_test.rb
       - name: Fail when generated changes are not checked-in
         run: |
