@@ -7,6 +7,10 @@ class MessagesController < ApplicationController
     @messages = Message.all
   end
 
+  def echo
+    @messages = []
+  end
+
   def create
     respond_to do |format|
       format.html { redirect_to message_url(id: 1) }

@@ -44,6 +44,11 @@ module Turbo::StreamsHelper
   # or a class name):
   #
   #   <%= turbo_stream_from "room", channel: RoomChannel %>
+  #
+  # It is also possible to pass additional parameters to the channel by passing them through `data` attributes:
+  #
+  #   <%= turbo_stream_from "room", channel: RoomChannel, data: {room_name: "room #1"} %>
+  #
   def turbo_stream_from(*streamables, **attributes)
     attributes[:channel] = attributes[:channel]&.to_s || "Turbo::StreamsChannel"
     attributes[:"signed-stream-name"] = Turbo::StreamsChannel.signed_stream_name(streamables)

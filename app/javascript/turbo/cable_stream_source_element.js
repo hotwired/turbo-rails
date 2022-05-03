@@ -1,5 +1,6 @@
 import { connectStreamSource, disconnectStreamSource } from "@hotwired/turbo"
 import { subscribeTo } from "./cable"
+import snakeize from "./snakeize"
 
 class TurboCableStreamSourceElement extends HTMLElement {
   async connectedCallback() {
@@ -20,7 +21,7 @@ class TurboCableStreamSourceElement extends HTMLElement {
   get channel() {
     const channel = this.getAttribute("channel")
     const signed_stream_name = this.getAttribute("signed-stream-name")
-    return { channel, signed_stream_name }
+    return { channel, signed_stream_name, ...snakeize({ ...this.dataset }) }
   }
 }
 
