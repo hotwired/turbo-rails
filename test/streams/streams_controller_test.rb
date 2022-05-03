@@ -37,11 +37,14 @@ class Turbo::StreamsControllerTest < ActionDispatch::IntegrationTest
 
     patch message_path(id: 1), as: :turbo_stream
 
+    assert_turbo_stream action: :replace, targets: "#message_4" do
+      assert_select 'template', 'Something fourth'
+    end
     assert_dom_equal <<~HTML, @response.body
       <turbo-stream action="remove" targets="#message_1"></turbo-stream>
       <turbo-stream action="replace" targets="#message_1"><template>#{render(message_1)}</template></turbo-stream>
       <turbo-stream action="replace" targets="#message_1"><template>Something else</template></turbo-stream>
-      <turbo-stream action="replace" targets="#message_5"><template>Something fifth</template></turbo-stream>
+      <turbo-stream action="replace" targets="#message_4"><template>Something fourth</template></turbo-stream>
       <turbo-stream action="replace" targets="#message_5"><template>#{render(message_5)}</template></turbo-stream>
       <turbo-stream action="append" targets="#messages"><template>#{render(message_1)}</template></turbo-stream>
       <turbo-stream action="append" targets="#messages"><template>#{render(message_5)}</template></turbo-stream>
