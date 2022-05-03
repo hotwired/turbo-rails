@@ -1,8 +1,6 @@
 require "application_system_test_case"
 
 class BroadcastsTest < ApplicationSystemTestCase
-  setup { Message.delete_all }
-
   include ActionCable::TestHelper
 
   test "Message broadcasts Turbo Streams" do

@@ -1,13 +1,10 @@
+# Configure Rails Environment
 ENV["RAILS_ENV"] = "test"
 
-require "minitest/autorun"
-require "rails"
-require "rails/test_help"
-require "byebug"
-
-require_relative "dummy/config/environment"
-
+require_relative "../test/dummy/config/environment"
 ActiveRecord::Migrator.migrations_paths = [File.expand_path("../test/dummy/db/migrate", __dir__)]
+require "rails/test_help"
+
 ActionCable.server.config.logger = Logger.new(STDOUT) if ENV["VERBOSE"]
 
 module ActionViewTestCaseExtensions

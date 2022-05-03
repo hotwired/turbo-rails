@@ -1,4 +1,4 @@
-require "turbo_test"
+require "test_helper"
 
 class Turbo::FrameRequestControllerTest < ActionDispatch::IntegrationTest
   test "frame requests are rendered without a layout" do
