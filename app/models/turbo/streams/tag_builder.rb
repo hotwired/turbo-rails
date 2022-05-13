@@ -50,7 +50,7 @@ class Turbo::Streams::TagBuilder
     action_all :remove, targets, allow_inferred_rendering: false
   end
 
-  # Replace the <tt>target</tt> in the dom with the either the <tt>content</tt> passed in, a rendering result determined
+  # Replace the <tt>target</tt> in the dom with either the <tt>content</tt> passed in, a rendering result determined
   # by the <tt>rendering</tt> keyword arguments, the content in the block, or the rendering of the target as a record. Examples:
   #
   #   <%= turbo_stream.replace "clearance_5", "<div id='clearance_5'>Replace the dom target identified by clearance_5</div>" %>
@@ -63,7 +63,7 @@ class Turbo::Streams::TagBuilder
     action :replace, target, content, **rendering, &block
   end
 
-  # Replace the <tt>targets</tt> in the dom with the either the <tt>content</tt> passed in, a rendering result determined
+  # Replace the <tt>targets</tt> in the dom with either the <tt>content</tt> passed in, a rendering result determined
   # by the <tt>rendering</tt> keyword arguments, the content in the block, or the rendering of the target as a record. Examples:
   #
   #   <%= turbo_stream.replace_all ".clearance_item", "<div class='clearance_item'>Replace the dom target identified by the class clearance_item</div>" %>
@@ -128,7 +128,7 @@ class Turbo::Streams::TagBuilder
     action_all :after, targets, content, **rendering, &block
   end
 
-  # Update the <tt>target</tt> in the dom with the either the <tt>content</tt> passed in or a rendering result determined
+  # Update the <tt>target</tt> in the dom with either the <tt>content</tt> passed in or a rendering result determined
   # by the <tt>rendering</tt> keyword arguments, the content in the block, or the rendering of the target as a record. Examples:
   #
   #   <%= turbo_stream.update "clearance_5", "Update the content of the dom target identified by clearance_5" %>
@@ -141,7 +141,7 @@ class Turbo::Streams::TagBuilder
     action :update, target, content, **rendering, &block
   end
 
-  # Update the <tt>targets</tt> in the dom with the either the <tt>content</tt> passed in or a rendering result determined
+  # Update the <tt>targets</tt> in the dom with either the <tt>content</tt> passed in or a rendering result determined
   # by the <tt>rendering</tt> keyword arguments, the content in the block, or the rendering of the targets as a record. Examples:
   #
   #   <%= turbo_stream.update_all "clearance_item", "Update the content of the dom target identified by the class clearance_item" %>
