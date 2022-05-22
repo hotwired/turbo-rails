@@ -1,6 +1,6 @@
 {
   "name": "@hotwired/turbo-rails",
-  "version": "7.1.1",
+  "version": "7.1.2",
   "description": "The speed of a single-page web application without having to write any JavaScript",
   "module": "app/javascript/turbo/index.js",
   "main": "app/assets/javascripts/turbo.js",
