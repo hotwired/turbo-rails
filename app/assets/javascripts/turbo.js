@@ -327,7 +327,7 @@ function interpolate(strings, values) {
 }
 
 function uuid() {
-  return Array.from({
+  return Array.apply(null, {
     length: 36
   }).map(((_, i) => {
     if (i == 8 || i == 13 || i == 18 || i == 23) {
@@ -399,7 +399,7 @@ function fetchMethodFromString(method) {
 class FetchRequest {
   constructor(delegate, method, location, body = new URLSearchParams, target = null) {
     this.abortController = new AbortController;
-    this.resolveRequestPromise = _value => {};
+    this.resolveRequestPromise = value => {};
     this.delegate = delegate;
     this.method = method;
     this.headers = this.defaultHeaders;
@@ -601,8 +601,8 @@ class FormSubmission {
     this.fetchRequest = new FetchRequest(this, this.method, this.location, this.body, this.formElement);
     this.mustRedirect = mustRedirect;
   }
-  static confirmMethod(message, _element) {
-    return Promise.resolve(confirm(message));
+  static confirmMethod(message, element) {
+    return confirm(message);
   }
   get method() {
     var _a;
@@ -632,8 +632,7 @@ class FormSubmission {
     return [ ...this.formData ].reduce(((entries, [name, value]) => entries.concat(typeof value == "string" ? [ [ name, value ] ] : [])), []);
   }
   get confirmationMessage() {
-    var _a;
-    return ((_a = this.submitter) === null || _a === void 0 ? void 0 : _a.getAttribute("data-turbo-confirm")) || this.formElement.getAttribute("data-turbo-confirm");
+    return this.formElement.getAttribute("data-turbo-confirm");
   }
   get needsConfirmation() {
     return this.confirmationMessage !== null;
@@ -641,7 +640,7 @@ class FormSubmission {
   async start() {
     const {initialized: initialized, requesting: requesting} = FormSubmissionState;
     if (this.needsConfirmation) {
-      const answer = await FormSubmission.confirmMethod(this.confirmationMessage, this.formElement);
+      const answer = FormSubmission.confirmMethod(this.confirmationMessage, this.formElement);
       if (!answer) {
         return;
       }
@@ -668,7 +667,7 @@ class FormSubmission {
       headers["Accept"] = [ StreamMessage.contentType, headers["Accept"] ].join(", ");
     }
   }
-  requestStarted(_request) {
+  requestStarted(request) {
     var _a;
     this.state = FormSubmissionState.waiting;
     (_a = this.submitter) === null || _a === void 0 ? void 0 : _a.setAttribute("disabled", "");
@@ -715,7 +714,7 @@ class FormSubmission {
     };
     this.delegate.formSubmissionErrored(this, error);
   }
-  requestFinished(_request) {
+  requestFinished(request) {
     var _a;
     this.state = FormSubmissionState.stopped;
     (_a = this.submitter) === null || _a === void 0 ? void 0 : _a.removeAttribute("disabled");
@@ -837,8 +836,8 @@ class FormInterceptor {
 
 class View {
   constructor(delegate, element) {
-    this.resolveRenderPromise = _value => {};
-    this.resolveInterceptionPromise = _value => {};
+    this.resolveRenderPromise = value => {};
+    this.resolveInterceptionPromise = value => {};
     this.delegate = delegate;
     this.element = element;
   }
@@ -902,11 +901,11 @@ class View {
         delete this.renderPromise;
       }
     } else {
-      this.invalidate(renderer.reloadReason);
+      this.invalidate();
     }
   }
-  invalidate(reason) {
-    this.delegate.viewInvalidated(reason);
+  invalidate() {
+    this.delegate.viewInvalidated();
   }
   prepareToRenderSnapshot(renderer) {
     this.markAsPreview(renderer.isPreview);
@@ -1040,9 +1039,6 @@ class Renderer {
   }
   get shouldRender() {
     return true;
-  }
-  get reloadReason() {
-    return;
   }
   prepareToRender() {
     return;
@@ -1185,7 +1181,7 @@ class ProgressBar {
         left: 0;
         height: 3px;
         background: #0076ff;
-        z-index: 2147483647;
+        z-index: 9999;
         transition:
           width ${ProgressBar.animationDuration}ms ease-out,
           opacity ${ProgressBar.animationDuration / 2}ms ${ProgressBar.animationDuration / 2}ms ease-in;
@@ -1251,19 +1247,12 @@ class ProgressBar {
     const element = document.createElement("style");
     element.type = "text/css";
     element.textContent = ProgressBar.defaultCSS;
-    if (this.cspNonce) {
-      element.nonce = this.cspNonce;
-    }
     return element;
   }
   createProgressElement() {
     const element = document.createElement("div");
     element.className = "turbo-progress-bar";
     return element;
-  }
-  get cspNonce() {
-    var _a;
-    return (_a = document.head.querySelector('meta[name="csp-nonce"]')) === null || _a === void 0 ? void 0 : _a.getAttribute("content");
   }
 }
 
@@ -1362,10 +1351,9 @@ function elementWithoutNonce(element) {
 }
 
 class PageSnapshot extends Snapshot {
-  constructor(element, headSnapshot, htmlElement) {
+  constructor(element, headSnapshot) {
     super(element);
     this.headSnapshot = headSnapshot;
-    this.htmlElement = htmlElement;
   }
   static fromHTMLString(html = "") {
     return this.fromDocument(parseHTMLDocument(html));
@@ -1373,11 +1361,11 @@ class PageSnapshot extends Snapshot {
   static fromElement(element) {
     return this.fromDocument(element.ownerDocument);
   }
-  static fromDocument({head: head, body: body, documentElement: documentElement}) {
-    return new this(body, new HeadSnapshot(head), documentElement);
+  static fromDocument({head: head, body: body}) {
+    return new this(body, new HeadSnapshot(head));
   }
   clone() {
-    return new PageSnapshot(this.element.cloneNode(true), this.headSnapshot, this.htmlElement);
+    return new PageSnapshot(this.element.cloneNode(true), this.headSnapshot);
   }
   get headElement() {
     return this.headSnapshot.element;
@@ -1625,7 +1613,7 @@ class Visit {
   requestStarted() {
     this.startRequest();
   }
-  requestPreventedHandlingResponse(_request, _response) {}
+  requestPreventedHandlingResponse(request, response) {}
   async requestSucceededWithResponse(request, response) {
     const responseHTML = await response.responseHTML;
     const {redirected: redirected, statusCode: statusCode} = response;
@@ -1659,7 +1647,7 @@ class Visit {
       });
     }
   }
-  requestErrored(_request, _error) {
+  requestErrored(request, error) {
     this.recordResponse({
       statusCode: SystemStatusCode.networkFailure,
       redirected: false
@@ -1783,32 +1771,27 @@ class BrowserAdapter {
      case SystemStatusCode.networkFailure:
      case SystemStatusCode.timeoutFailure:
      case SystemStatusCode.contentTypeMismatch:
-      return this.reload({
-        reason: "request_failed",
-        context: {
-          statusCode: statusCode
-        }
-      });
+      return this.reload();
 
      default:
       return visit.loadResponse();
     }
   }
-  visitRequestFinished(_visit) {
+  visitRequestFinished(visit) {
     this.progressBar.setValue(1);
     this.hideVisitProgressBar();
   }
-  visitCompleted(_visit) {}
-  pageInvalidated(reason) {
-    this.reload(reason);
+  visitCompleted(visit) {}
+  pageInvalidated() {
+    this.reload();
   }
-  visitFailed(_visit) {}
-  visitRendered(_visit) {}
-  formSubmissionStarted(_formSubmission) {
+  visitFailed(visit) {}
+  visitRendered(visit) {}
+  formSubmissionStarted(formSubmission) {
     this.progressBar.setValue(0);
     this.showFormProgressBarAfterDelay();
   }
-  formSubmissionFinished(_formSubmission) {
+  formSubmissionFinished(formSubmission) {
     this.progressBar.setValue(1);
     this.hideFormProgressBar();
   }
@@ -1834,10 +1817,7 @@ class BrowserAdapter {
       delete this.formProgressBarTimeout;
     }
   }
-  reload(reason) {
-    dispatch("turbo:reload", {
-      detail: reason
-    });
+  reload() {
     window.location.reload();
   }
   get navigator() {
@@ -1919,7 +1899,7 @@ class FrameRedirector {
     this.linkInterceptor.stop();
     this.formInterceptor.stop();
   }
-  shouldInterceptLinkClick(element, _url) {
+  shouldInterceptLinkClick(element, url) {
     return this.shouldRedirect(element);
   }
   linkClickIntercepted(element, url) {
@@ -1977,7 +1957,7 @@ class History {
         }
       }
     };
-    this.onPageLoad = async _event => {
+    this.onPageLoad = async event => {
       await nextMicrotask();
       this.pageLoaded = true;
     };
@@ -2400,27 +2380,12 @@ class ErrorRenderer extends Renderer {
   }
 }
 
-const INTERNAL_ATTRIBUTES = [ "aria-busy", "data-turbo-preview" ];
-
 class PageRenderer extends Renderer {
   get shouldRender() {
     return this.newSnapshot.isVisitable && this.trackedElementsAreIdentical;
   }
-  get reloadReason() {
-    if (!this.newSnapshot.isVisitable) {
-      return {
-        reason: "turbo_visit_control_is_reload"
-      };
-    }
-    if (!this.trackedElementsAreIdentical) {
-      return {
-        reason: "tracked_element_mismatch"
-      };
-    }
-  }
   prepareToRender() {
     this.mergeHead();
-    this.updateHtmlElementAttributes();
   }
   async render() {
     if (this.willRender) {
@@ -2442,24 +2407,11 @@ class PageRenderer extends Renderer {
   get newElement() {
     return this.newSnapshot.element;
   }
-  get newHtmlElement() {
-    return this.newSnapshot.htmlElement;
-  }
   mergeHead() {
     this.copyNewHeadStylesheetElements();
     this.copyNewHeadScriptElements();
     this.removeCurrentHeadProvisionalElements();
     this.copyNewHeadProvisionalElements();
-  }
-  updateHtmlElementAttributes() {
-    for (const attr of document.documentElement.attributes) {
-      if (!this.newElement.hasAttribute(attr.nodeName) && !INTERNAL_ATTRIBUTES.includes(attr.nodeName)) {
-        document.documentElement.removeAttribute(attr.nodeName);
-      }
-    }
-    for (const attr of this.newHtmlElement.attributes) {
-      document.documentElement.setAttribute(attr.nodeName, attr.nodeValue);
-    }
   }
   replaceBody() {
     this.preservingPermanentElements((() => {
@@ -2688,9 +2640,7 @@ class Session {
         historyChanged: true
       });
     } else {
-      this.adapter.pageInvalidated({
-        reason: "turbo_disabled"
-      });
+      this.adapter.pageInvalidated();
     }
   }
   scrollPositionChanged(position) {
@@ -2785,12 +2735,12 @@ class Session {
     const event = this.notifyApplicationBeforeRender(element, resume);
     return !event.defaultPrevented;
   }
-  viewRenderedSnapshot(_snapshot, _isPreview) {
+  viewRenderedSnapshot(snapshot, isPreview) {
     this.view.lastRenderedLocation = this.history.location;
     this.notifyApplicationAfterRender();
   }
-  viewInvalidated(reason) {
-    this.adapter.pageInvalidated(reason);
+  viewInvalidated() {
+    this.adapter.pageInvalidated();
   }
   frameLoaded(frame) {
     this.notifyApplicationAfterFrameLoad(frame);
@@ -2970,7 +2920,6 @@ var Turbo = Object.freeze({
   session: session,
   PageRenderer: PageRenderer,
   PageSnapshot: PageSnapshot,
-  FrameRenderer: FrameRenderer,
   start: start,
   registerAdapter: registerAdapter,
   visit: visit,
@@ -2984,7 +2933,7 @@ var Turbo = Object.freeze({
 
 class FrameController {
   constructor(element) {
-    this.fetchResponseLoaded = _fetchResponse => {};
+    this.fetchResponseLoaded = fetchResponse => {};
     this.currentFetchRequest = null;
     this.resolveVisitPromise = () => {};
     this.connected = false;
@@ -3074,10 +3023,10 @@ class FrameController {
       this.fetchResponseLoaded = () => {};
     }
   }
-  elementAppearedInViewport(_element) {
+  elementAppearedInViewport(element) {
     this.loadSourceURL();
   }
-  shouldInterceptLinkClick(element, _url) {
+  shouldInterceptLinkClick(element, url) {
     if (element.hasAttribute("data-turbo-method")) {
       return false;
     } else {
@@ -3101,13 +3050,13 @@ class FrameController {
     this.prepareHeadersForRequest(fetchRequest.headers, fetchRequest);
     this.formSubmission.start();
   }
-  prepareHeadersForRequest(headers, _request) {
+  prepareHeadersForRequest(headers, request) {
     headers["Turbo-Frame"] = this.id;
   }
-  requestStarted(_request) {
+  requestStarted(request) {
     markAsBusy(this.element);
   }
-  requestPreventedHandlingResponse(_request, _response) {
+  requestPreventedHandlingResponse(request, response) {
     this.resolveVisitPromise();
   }
   async requestSucceededWithResponse(request, response) {
@@ -3122,7 +3071,7 @@ class FrameController {
     console.error(error);
     this.resolveVisitPromise();
   }
-  requestFinished(_request) {
+  requestFinished(request) {
     clearBusyState(this.element);
   }
   formSubmissionStarted({formElement: formElement}) {
@@ -3142,10 +3091,10 @@ class FrameController {
   formSubmissionFinished({formElement: formElement}) {
     clearBusyState(formElement, this.findFrameElement(formElement));
   }
-  allowsImmediateRender(_snapshot, _resume) {
+  allowsImmediateRender(snapshot, resume) {
     return true;
   }
-  viewRenderedSnapshot(_snapshot, _isPreview) {}
+  viewRenderedSnapshot(snapshot, isPreview) {}
   viewInvalidated() {}
   async visit(url) {
     var _a;
@@ -3199,12 +3148,10 @@ class FrameController {
     let element;
     const id = CSS.escape(this.id);
     try {
-      element = activateElement(container.querySelector(`turbo-frame#${id}`), this.currentURL);
-      if (element) {
+      if (element = activateElement(container.querySelector(`turbo-frame#${id}`), this.currentURL)) {
         return element;
       }
-      element = activateElement(container.querySelector(`turbo-frame[src][recurse~=${id}]`), this.currentURL);
-      if (element) {
+      if (element = activateElement(container.querySelector(`turbo-frame[src][recurse~=${id}]`), this.currentURL)) {
         await element.loaded;
         return await this.extractForeignFrameElement(element);
       }
@@ -3251,12 +3198,6 @@ class FrameController {
       return this.element.src;
     }
   }
-  set sourceURL(sourceURL) {
-    this.settingSourceURL = true;
-    this.element.src = sourceURL !== null && sourceURL !== void 0 ? sourceURL : null;
-    this.currentURL = this.element.src;
-    this.settingSourceURL = false;
-  }
   get reloadable() {
     const frame = this.findFrameElement(this.element);
     return frame.hasAttribute("reloadable");
@@ -3268,6 +3209,12 @@ class FrameController {
     } else {
       frame.removeAttribute("reloadable");
     }
+  }
+  set sourceURL(sourceURL) {
+    this.settingSourceURL = true;
+    this.element.src = sourceURL !== null && sourceURL !== void 0 ? sourceURL : null;
+    this.currentURL = this.element.src;
+    this.settingSourceURL = false;
   }
   get loadingStyle() {
     return this.element.loading;
@@ -3389,7 +3336,7 @@ class StreamElement extends HTMLElement {
   get duplicateChildren() {
     var _a;
     const existingChildren = this.targetElements.flatMap((e => [ ...e.children ])).filter((c => !!c.id));
-    const newChildrenIds = [ ...((_a = this.templateContent) === null || _a === void 0 ? void 0 : _a.children) || [] ].filter((c => !!c.id)).map((c => c.id));
+    const newChildrenIds = [ ...(_a = this.templateContent) === null || _a === void 0 ? void 0 : _a.children ].filter((c => !!c.id)).map((c => c.id));
     return existingChildren.filter((c => newChildrenIds.includes(c.id)));
   }
   get performAction() {
@@ -3472,8 +3419,7 @@ customElements.define("turbo-stream", StreamElement);
   let element = document.currentScript;
   if (!element) return;
   if (element.hasAttribute("data-turbo-suppress-warning")) return;
-  element = element.parentElement;
-  while (element) {
+  while (element = element.parentElement) {
     if (element == document.body) {
       return console.warn(unindent`
         You are loading Turbo from a <script> element inside the <body> element. This is probably not what you meant to do!
@@ -3486,7 +3432,6 @@ customElements.define("turbo-stream", StreamElement);
         Suppress this warning by adding a "data-turbo-suppress-warning" attribute to: %s
       `, element.outerHTML);
     }
-    element = element.parentElement;
   }
 })();
 
@@ -3496,7 +3441,6 @@ start();
 
 var turbo_es2017Esm = Object.freeze({
   __proto__: null,
-  FrameRenderer: FrameRenderer,
   PageRenderer: PageRenderer,
   PageSnapshot: PageSnapshot,
   clearCache: clearCache,
