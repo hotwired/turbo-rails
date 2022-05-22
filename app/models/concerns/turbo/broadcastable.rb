@@ -66,17 +66,22 @@ module Turbo::Broadcastable
     #     belongs_to :board
     #     broadcasts_to ->(message) { [ message.board, :messages ] }, inserts_by: :prepend, target: "board_messages"
     #   end
-    def broadcasts_to(stream, inserts_by: :append, target: broadcast_target_default)
-      after_create_commit  -> { broadcast_action_later_to stream.try(:call, self) || send(stream), action: inserts_by, target: target.try(:call, self) || target }
-      after_update_commit  -> { broadcast_replace_later_to stream.try(:call, self) || send(stream) }
+    #
+    #   class Message < ApplicationRecord
+    #     belongs_to :board
+    #     broadcasts_to ->(message) { [ message.board, :messages ] }, partial: "messages/custom_message"
+    #   end
+    def broadcasts_to(stream, inserts_by: :append, target: broadcast_target_default, **rendering)
+      after_create_commit  -> { broadcast_action_later_to stream.try(:call, self) || send(stream), action: inserts_by, target: target.try(:call, self) || target, **rendering }
+      after_update_commit  -> { broadcast_replace_later_to stream.try(:call, self) || send(stream), **rendering }
       after_destroy_commit -> { broadcast_remove_to stream.try(:call, self) || send(stream) }
     end
 
     # Same as <tt>#broadcasts_to</tt>, but the designated stream for updates and destroys is automatically set to
     # the current model, for creates - to the model plural name, which can be overriden by passing <tt>stream</tt>.
-    def broadcasts(stream = model_name.plural, inserts_by: :append, target: broadcast_target_default)
-      after_create_commit  -> { broadcast_action_later_to stream, action: inserts_by, target: target.try(:call, self) || target }
-      after_update_commit  -> { broadcast_replace_later }
+    def broadcasts(stream = model_name.plural, inserts_by: :append, target: broadcast_target_default, **rendering)
+      after_create_commit  -> { broadcast_action_later_to stream, action: inserts_by, target: target.try(:call, self) || target, **rendering }
+      after_update_commit  -> { broadcast_replace_later **rendering }
       after_destroy_commit -> { broadcast_remove }
     end
 

@@ -169,7 +169,7 @@ class Turbo::BroadcastableCommentTest < ActionCable::Channel::TestCase
     stream = "#{@article.to_gid_param}:comments"
     target = "article_#{@article.id}_comments"
 
-    assert_broadcast_on stream, turbo_stream_action_tag("append", target: target, template: "<p>comment</p>\n") do
+    assert_broadcast_on stream, turbo_stream_action_tag("append", target: target, template: %(<p class="different">comment</p>\n)) do
       perform_enqueued_jobs do
         @article.comments.create!(body: "comment")
       end
@@ -181,7 +181,7 @@ class Turbo::BroadcastableCommentTest < ActionCable::Channel::TestCase
     stream  = "#{@article.to_gid_param}:comments"
     target  = "comment_#{comment.id}"
 
-    assert_broadcast_on stream, turbo_stream_action_tag("replace", target: target, template: "<p>precise</p>\n") do
+    assert_broadcast_on stream, turbo_stream_action_tag("replace", target: target, template: %(<p class="different">precise</p>\n)) do
       perform_enqueued_jobs do
         comment.update!(body: "precise")
       end
