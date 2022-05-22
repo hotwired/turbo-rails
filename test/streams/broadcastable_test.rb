@@ -134,7 +134,7 @@ class Turbo::BroadcastableArticleTest < ActionCable::Channel::TestCase
   include ActiveJob::TestHelper, Turbo::Streams::ActionHelper
 
   test "creating an article broadcasts to the overriden target with a string" do
-    assert_broadcast_on "body", turbo_stream_action_tag("append", target: "overriden-target", template: "<p>Body</p>\n") do
+    assert_broadcast_on "overriden-stream", turbo_stream_action_tag("append", target: "overriden-target", template: "<p>Body</p>\n") do
       perform_enqueued_jobs do
         Article.create!(body: "Body")
       end
