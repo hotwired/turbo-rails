@@ -72,9 +72,10 @@ module Turbo::Broadcastable
       after_destroy_commit -> { broadcast_remove_to stream.try(:call, self) || send(stream) }
     end
 
-    # Same as <tt>#broadcasts_to</tt>, but the designated stream is automatically set to the current model.
-    def broadcasts(inserts_by: :append, target: broadcast_target_default)
-      after_create_commit  -> { broadcast_action_later action: inserts_by, target: target.try(:call, self) || target }
+    # Same as <tt>#broadcasts_to</tt>, but the designated stream for updates and destroys is automatically set to
+    # the current model, for creates - to the model plural name, which can be overriden by passing <tt>stream</tt>.
+    def broadcasts(stream = model_name.plural, inserts_by: :append, target: broadcast_target_default)
+      after_create_commit  -> { broadcast_action_later_to stream, action: inserts_by, target: target.try(:call, self) || target }
       after_update_commit  -> { broadcast_replace_later }
       after_destroy_commit -> { broadcast_remove }
     end
