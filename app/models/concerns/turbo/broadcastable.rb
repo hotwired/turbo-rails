@@ -66,6 +66,11 @@ module Turbo::Broadcastable
     #     belongs_to :board
     #     broadcasts_to ->(message) { [ message.board, :messages ] }, inserts_by: :prepend, target: "board_messages"
     #   end
+    #
+    #   class Message < ApplicationRecord
+    #     belongs_to :board
+    #     broadcasts_to ->(message) { [ message.board, :messages ] }, partial: "messages/custom_message"
+    #   end
     def broadcasts_to(stream, inserts_by: :append, target: broadcast_target_default, **rendering)
       after_create_commit  -> { broadcast_action_later_to stream.try(:call, self) || send(stream), action: inserts_by, target: target.try(:call, self) || target, **rendering }
       after_update_commit  -> { broadcast_replace_later_to stream.try(:call, self) || send(stream), **rendering }
