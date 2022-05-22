@@ -4,16 +4,7 @@ require "action_cable"
 class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
   include ActiveJob::TestHelper, Turbo::Streams::ActionHelper
 
-  setup do
-    @message = Message.new(id: 1, content: "Hello!")
-    @chat_room = ChatRoom.new(id: 1, name: "Chat Room")
-  end
-
-  test "broadcasting to chat room" do
-    assert_broadcast_on "stream", turbo_stream_action_tag("append", target: "chat_room_1") do
-      @chat_room._run_commit_callbacks
-    end
-  end
+  setup { @message = Message.new(id: 1, content: "Hello!") }
 
   test "broadcasting remove to stream now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("remove", target: "message_1") do
@@ -178,7 +169,7 @@ class Turbo::BroadcastableCommentTest < ActionCable::Channel::TestCase
     stream = "#{@article.to_gid_param}:comments"
     target = "article_#{@article.id}_comments"
 
-    assert_broadcast_on stream, turbo_stream_action_tag("append", target: target, template: "<p>comment</p>\n") do
+    assert_broadcast_on stream, turbo_stream_action_tag("append", target: target, template: %(<p class="different">comment</p>\n)) do
       perform_enqueued_jobs do
         @article.comments.create!(body: "comment")
       end
@@ -190,7 +181,7 @@ class Turbo::BroadcastableCommentTest < ActionCable::Channel::TestCase
     stream  = "#{@article.to_gid_param}:comments"
     target  = "comment_#{comment.id}"
 
-    assert_broadcast_on stream, turbo_stream_action_tag("replace", target: target, template: "<p>precise</p>\n") do
+    assert_broadcast_on stream, turbo_stream_action_tag("replace", target: target, template: %(<p class="different">precise</p>\n)) do
       perform_enqueued_jobs do
         comment.update!(body: "precise")
       end
