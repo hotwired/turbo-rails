@@ -6,34 +6,60 @@ class Turbo::StreamsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to message_path(id: 1)
 
     post messages_path, as: :turbo_stream
-    assert_response :ok
-    assert_turbo_stream action: :append, target: "messages" do |selected|
+    assert_no_turbo_stream action: :update, target: "messages"
+    assert_turbo_stream status: :created, action: :append, target: "messages" do |selected|
       assert_equal "<template>message_1</template>", selected.children.to_html
     end
   end
 
   test "show all turbo actions" do
+    message_1 = Message.new(id: 1, content: "My message")
+    message_5 = Message.new(id: 5, content: "OLLA!")
+
     get message_path(id: 1), as: :turbo_stream
-    assert_dom_equal <<~STREAM, @response.body
+
+    assert_dom_equal <<~HTML, @response.body
       <turbo-stream action="remove" target="message_1"></turbo-stream>
-      <turbo-stream action="replace" target="message_1"><template><p>My message</p></template></turbo-stream>
+      <turbo-stream action="replace" target="message_1"><template>#{render(message_1)}</template></turbo-stream>
       <turbo-stream action="replace" target="message_1"><template>Something else</template></turbo-stream>
       <turbo-stream action="replace" target="message_5"><template>Something fifth</template></turbo-stream>
-      <turbo-stream action="replace" target="message_5"><template><p>OLLA!</p></template></turbo-stream>
-      <turbo-stream action="append" target="messages"><template><p>My message</p></template></turbo-stream>
-      <turbo-stream action="append" target="messages"><template><p>OLLA!</p></template></turbo-stream>
-      <turbo-stream action="prepend" target="messages"><template><p>My message</p></template></turbo-stream>
-      <turbo-stream action="prepend" target="messages"><template><p>OLLA!</p></template></turbo-stream>
-    STREAM
+      <turbo-stream action="replace" target="message_5"><template>#{render(message_5)}</template></turbo-stream>
+      <turbo-stream action="append" target="messages"><template>#{render(message_1)}</template></turbo-stream>
+      <turbo-stream action="append" target="messages"><template>#{render(message_5)}</template></turbo-stream>
+      <turbo-stream action="prepend" target="messages"><template>#{render(message_1)}</template></turbo-stream>
+      <turbo-stream action="prepend" target="messages"><template>#{render(message_5)}</template></turbo-stream>
+    HTML
+  end
+
+  test "update all turbo actions for multiple targets" do
+    message_1 = Message.new(id: 1, content: "My message")
+    message_5 = Message.new(id: 5, content: "OLLA!")
+
+    patch message_path(id: 1), as: :turbo_stream
+
+    assert_turbo_stream action: :replace, targets: "#message_4" do
+      assert_select 'template', 'Something fourth'
+    end
+    assert_dom_equal <<~HTML, @response.body
+      <turbo-stream action="remove" targets="#message_1"></turbo-stream>
+      <turbo-stream action="replace" targets="#message_1"><template>#{render(message_1)}</template></turbo-stream>
+      <turbo-stream action="replace" targets="#message_1"><template>Something else</template></turbo-stream>
+      <turbo-stream action="replace" targets="#message_4"><template>Something fourth</template></turbo-stream>
+      <turbo-stream action="replace" targets="#message_5"><template>#{render(message_5)}</template></turbo-stream>
+      <turbo-stream action="append" targets="#messages"><template>#{render(message_1)}</template></turbo-stream>
+      <turbo-stream action="append" targets="#messages"><template>#{render(message_5)}</template></turbo-stream>
+      <turbo-stream action="prepend" targets="#messages"><template>#{render(message_1)}</template></turbo-stream>
+      <turbo-stream action="prepend" targets="#messages"><template>#{render(message_5)}</template></turbo-stream>
+    HTML
   end
 
   test "includes html format when rendering turbo_stream actions" do
     post posts_path, as: :turbo_stream
-    assert_dom_equal <<~STREAM.chomp, @response.body
+    assert_dom_equal <<~HTML.chomp, @response.body
       <turbo-stream action="update" target="form-area"><template>
         Form
       </template></turbo-stream>
-    STREAM
+    HTML
   end
 
   test "render correct partial for namespaced models" do

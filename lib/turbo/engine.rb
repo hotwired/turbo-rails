@@ -16,13 +16,25 @@ module Turbo
       #{root}/app/jobs
     )
 
+    initializer "turbo.no_action_cable", before: :set_eager_load_paths do
+      config.eager_load_paths.delete("#{root}/app/channels") unless defined?(ActionCable)
+    end
+
+    # If you don't want to precompile Turbo's assets (eg. because you're using webpack),
+    # you can do this in an intiailzer:
+    #
+    # config.after_initialize do
+    #   config.assets.precompile -= Turbo::Engine::PRECOMPILE_ASSETS
+    # end
+    PRECOMPILE_ASSETS = %w( turbo.js turbo.min.js turbo.min.js.map )
+
     initializer "turbo.assets" do
       if Rails.application.config.respond_to?(:assets)
-        Rails.application.config.assets.precompile += %w( turbo )
+        Rails.application.config.assets.precompile += PRECOMPILE_ASSETS
       end
     end
 
-    initializer "turbo.helpers" do
+    initializer "turbo.helpers", before: :load_config_initializers do
       ActiveSupport.on_load(:action_controller_base) do
         include Turbo::Streams::TurboStreamsTagBuilder, Turbo::Frames::FrameRequest, Turbo::Native::Navigation
         helper Turbo::Engine.helpers

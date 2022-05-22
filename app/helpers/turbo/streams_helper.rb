@@ -39,7 +39,20 @@ module Turbo::StreamsHelper
   # The example above will process all turbo streams sent to a stream name like <tt>account:5:entries</tt>
   # (when Current.account.id = 5). Updates to this stream can be sent like
   # <tt>entry.broadcast_append_to entry.account, :entries, target: "entries"</tt>.
-  def turbo_stream_from(*streamables)
-    tag.turbo_cable_stream_source channel: "Turbo::StreamsChannel", "signed-stream-name": Turbo::StreamsChannel.signed_stream_name(streamables)
+  #
+  # Custom channel class name can be passed using <tt>:channel</tt> option (either as a String
+  # or a class name):
+  #
+  #   <%= turbo_stream_from "room", channel: RoomChannel %>
+  #
+  # It is also possible to pass additional parameters to the channel by passing them through `data` attributes:
+  #
+  #   <%= turbo_stream_from "room", channel: RoomChannel, data: {room_name: "room #1"} %>
+  #
+  def turbo_stream_from(*streamables, **attributes)
+    attributes[:channel] = attributes[:channel]&.to_s || "Turbo::StreamsChannel"
+    attributes[:"signed-stream-name"] = Turbo::StreamsChannel.signed_stream_name(streamables)
+
+    tag.turbo_cable_stream_source(**attributes)
   end
 end

@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+$: << File.expand_path("../test", __dir__)
+
+puts "Installing Ruby dependencies"
+`bundle install`
+
+puts "Installing JavaScript dependencies"
+`yarn install`
+
+puts "Building JavaScript"
+`yarn build`
+
+puts "Preparing test database"
+`cd test/dummy; ./bin/rails db:test:prepare`
+
+require "bundler/setup"
+require "rails/plugin/test"

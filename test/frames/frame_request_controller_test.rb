@@ -18,4 +18,14 @@ class Turbo::FrameRequestControllerTest < ActionDispatch::IntegrationTest
 
     assert_not_equal etag_with_frame, etag_without_frame
   end
+
+  test "turbo_frame_request_id returns the Turbo-Frame header value" do
+    turbo_frame_request_id = "test_frame_id"
+
+    get tray_path(id: 1)
+    assert_no_match /#{turbo_frame_request_id}/, @response.body
+
+    get tray_path(id: 1), headers: { "Turbo-Frame" => turbo_frame_request_id }
+    assert_match /#{turbo_frame_request_id}/, @response.body
+  end
 end
