@@ -61,8 +61,10 @@ module Turbo
     end
 
     initializer "turbo.signed_stream_verifier_key" do
-      Turbo.signed_stream_verifier_key = config.turbo.signed_stream_verifier_key ||
-        Rails.application.key_generator.generate_key("turbo/signed_stream_verifier_key")
+      config.after_initialize do
+        Turbo.signed_stream_verifier_key = config.turbo.signed_stream_verifier_key ||
+          Rails.application.key_generator.generate_key("turbo/signed_stream_verifier_key")
+      end
     end
 
     initializer "turbo.test_assertions" do
