@@ -3532,9 +3532,8 @@ class TurboCableStreamSourceElement extends HTMLElement {
 customElements.define("turbo-cable-stream-source", TurboCableStreamSourceElement);
 
 function overrideMethodWithFormmethod({detail: {formSubmission: {fetchRequest: fetchRequest, submitter: submitter}}}) {
-  const formMethod = submitter?.formMethod;
-  if (formMethod && fetchRequest.body.has("_method")) {
-    fetchRequest.body.set("_method", formMethod);
+  if (submitter && submitter.formMethod && fetchRequest.body.has("_method")) {
+    fetchRequest.body.set("_method", submitter.formMethod);
   }
 }
 
