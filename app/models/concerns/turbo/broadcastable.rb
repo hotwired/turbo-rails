@@ -325,7 +325,7 @@ module Turbo::Broadcastable
   end
 
 
-  private
+  private do
     def broadcast_target_default
       self.class.broadcast_target_default
     end
@@ -334,11 +334,14 @@ module Turbo::Broadcastable
       options.tap do |o|
         # Add the current instance into the locals with the element name (which is the un-namespaced name)
         # as the key. This parallels how the ActionView::ObjectRenderer would create a local variable.
-        o[:locals] = (o[:locals] || {}).reverse_merge!(model_name.element.to_sym => self)
+        o[:locals] = (o[:locals] || {})
+        # Conditionally so background rendering can be used for destroyed records.
+        o[:locals].reverse_merge!(model_name.element.to_sym => self) if self.persisted?
         # if the html option is passed in it will skip setting a partial from #to_partial_path
         unless o.include?(:html)
           o[:partial] ||= to_partial_path
         end
       end
     end
+  end
 end
