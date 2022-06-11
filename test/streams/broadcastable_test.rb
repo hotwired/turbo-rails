@@ -145,9 +145,11 @@ class Turbo::BroadcastableArticleTest < ActionCable::Channel::TestCase
     article = Article.create!(body: "Hey")
 
     assert_broadcast_on "ho", turbo_stream_action_tag("replace", target: "article_#{article.id}", template: "<p>Ho</p>\n") do
-      perform_enqueued_jobs do
-        article.update!(body: "Ho")
-      end
+      article.update!(body: "Ho")
+
+      expect(Turbo::Streams::ActionBroadcastJob).to(
+        have_been_enqueued.with(article: article, action: "replace", target: "article_#{article.id}", template: "<p>Ho</p>\n")
+      )
     end
   end
 
@@ -156,6 +158,10 @@ class Turbo::BroadcastableArticleTest < ActionCable::Channel::TestCase
 
     assert_broadcast_on "hey", turbo_stream_action_tag("remove", target: "article_#{article.id}") do
       article.destroy!
+
+      expect(Turbo::Streams::ActionBroadcastJob).to(
+        have_been_enqueued.with(action: "remove", target: "article_#{article.id}")
+      )
     end
   end
 end
