@@ -9,6 +9,20 @@
 # Turbo Frames knows how to fish out the relevant frame regardless.
 #
 # This module is automatically included in <tt>ActionController::Base</tt>.
+#
+# You can override this behavior in <tt>ApplicationController</tt> if you want to have a layout for turbo frame requests:
+#
+#   # app/controllers/articles_controller.rb
+#   class ApplicationController < ActionController::Base
+#     layout -> { "application" if turbo_frame_request? }
+#   end
+#
+# Then, you have to create a layout with the corresponding name. It can be handy for flash messages, for example:
+#
+#   # app/views/layouts/application.turbo_stream.erb
+#   <%= turbo_stream.update('flash', partial: 'layouts/flash') %>
+#
+#   <%= yield %>
 module Turbo::Frames::FrameRequest
   extend ActiveSupport::Concern
 
