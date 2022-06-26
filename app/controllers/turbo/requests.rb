@@ -10,11 +10,11 @@
 #
 # This module is automatically included in <tt>ActionController::Base</tt>.
 #
-# You can override this behavior in <tt>ApplicationController</tt> if you want to have a layout for turbo frame requests:
+# You can override this behavior in <tt>ApplicationController</tt> if you want to have a layout for turbo stream requests:
 #
 #   # app/controllers/articles_controller.rb
 #   class ApplicationController < ActionController::Base
-#     layout -> { "application" if turbo_frame_request? }
+#     layout -> { (turbo_frame_request? && !turbo_stream_request?) ? false : "application" }
 #   end
 #
 # Then, you have to create a layout with the corresponding name. It can be handy for flash messages, for example:
@@ -23,7 +23,7 @@
 #   <%= turbo_stream.update('flash', partial: 'layouts/flash') %>
 #
 #   <%= yield %>
-module Turbo::Frames::FrameRequest
+module Turbo::Requests
   extend ActiveSupport::Concern
 
   included do
@@ -34,6 +34,10 @@ module Turbo::Frames::FrameRequest
   private
     def turbo_frame_request?
       turbo_frame_request_id.present?
+    end
+
+    def turbo_stream_request?
+      request.accept.starts_with?(Mime[:turbo_stream])
     end
 
     def turbo_frame_request_id
