@@ -28,6 +28,7 @@ class Turbo::StreamsControllerTest < ActionDispatch::IntegrationTest
       <turbo-stream action="append" target="messages"><template>#{render(message_5)}</template></turbo-stream>
       <turbo-stream action="prepend" target="messages"><template>#{render(message_1)}</template></turbo-stream>
       <turbo-stream action="prepend" target="messages"><template>#{render(message_5)}</template></turbo-stream>
+      <turbo-stream action="update" target="new_message"><template></template></turbo-stream>
     HTML
   end
 

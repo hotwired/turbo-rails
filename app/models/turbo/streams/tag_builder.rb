@@ -154,6 +154,21 @@ class Turbo::Streams::TagBuilder
     action_all :update, targets, content, **rendering, &block
   end
 
+  # Empty the <tt>target</tt> in the dom by removing its content. Example:
+  #
+  #   <%= turbo_stream.empty Article.new %>
+  #   <%= turbo_stream.empty "new_article" %>
+  def empty(target)
+    action :update, target, ""
+  end
+
+  # Empty the <tt>targets</tt> in the dom by removing their content. Example:
+  #
+  #   <%= turbo_stream.empty_all ".item" %>
+  def empty_all(targets)
+    action_all :update, targets, ""
+  end
+
   # Append to the target in the dom identified with <tt>target</tt> either the <tt>content</tt> passed in or a
   # rendering result determined by the <tt>rendering</tt> keyword arguments, the content in the block,
   # or the rendering of the content as a record. Examples:

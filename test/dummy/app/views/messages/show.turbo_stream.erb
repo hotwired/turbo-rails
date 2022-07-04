@@ -7,3 +7,4 @@
 <%= turbo_stream.append "messages", partial: "messages/message", locals: { message: Message.new(id: 5, content: "OLLA!") } %>
 <%= turbo_stream.prepend "messages", @message %>
 <%= turbo_stream.prepend "messages", partial: "messages/message", locals: { message: Message.new(id: 5, content: "OLLA!") } %>
+<%= turbo_stream.empty "new_message" %>
