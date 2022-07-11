@@ -27,6 +27,18 @@ class BroadcastsTest < ApplicationSystemTestCase
     assert_selector("#message-count", text: Message.count, wait: 10)
   end
 
+  test "New messages update the message count with component" do
+    visit messages_path
+    wait_for_subscriber
+
+    assert_text "Messages"
+    message = Message.create(content: "A new message")
+
+    message.broadcast_update_to(:messages, target: "message-count",
+      object: MessagesCountComponent.new(count: Message.count))
+    assert_selector("#message-count", text: "#{Message.count} messages sent from component", wait: 10)
+  end
+
   test "Users::Profile broadcasts Turbo Streams" do
     visit users_profiles_path
     wait_for_subscriber

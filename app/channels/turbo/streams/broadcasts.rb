@@ -83,6 +83,10 @@ module Turbo::Streams::Broadcasts
 
   private
     def render_format(format, **rendering)
-      ApplicationController.render(formats: [ format ], **rendering)
+      if rendering[:object]
+        ApplicationController.render(rendering[:object], layout: false, formats: [ format ])
+      else
+        ApplicationController.render(**rendering, formats: [ format ])
+      end
     end
 end
