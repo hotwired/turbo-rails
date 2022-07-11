@@ -26,8 +26,8 @@
 # and finally prepend the result of that partial rendering to the target identified with the dom id "clearances"
 # (which is derived by default from the plural model name of the model, but can be overwritten).
 #
-# You can also choose to render html instead of a partial inside of a broadcast
-# you do this by passing the html: option to any broadcast method that accepts the **rendering argument
+# You can also choose to render html or a renderable object instead of a partial inside of a broadcast
+# you do this by passing the html: or object: option to any broadcast method that accepts the **rendering argument
 # 
 #   class Message < ApplicationRecord
 #     belongs_to :user
