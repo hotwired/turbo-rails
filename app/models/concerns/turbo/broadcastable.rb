@@ -54,6 +54,9 @@
 #       end
 #   end
 #
+# You can also choose to render a renderable object instead of a partial inside of a broadcast
+# you do this by passing the renderable: option to any broadcast method that accepts the **rendering argument
+#
 # There are four basic actions you can broadcast: <tt>remove</tt>, <tt>replace</tt>, <tt>append</tt>, and
 # <tt>prepend</tt>. As a rule, you should use the <tt>_later</tt> versions of everything except for remove when broadcasting
 # within a real-time path, like a controller or model, since all those updates require a rendering step, which can slow down
@@ -352,7 +355,7 @@ module Turbo::Broadcastable
 
         if o[:html] || o[:partial]
           return o
-        elsif o[:template]
+        elsif o[:template] || o[:renderable]
           o[:layout] = false
         else
           # if none of these options are passed in, it will set a partial from #to_partial_path

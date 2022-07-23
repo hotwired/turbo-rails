@@ -19,6 +19,30 @@ class BroadcastsTest < ApplicationSystemTestCase
     end
   end
 
+  test "New messages update the message count with component" do
+    visit messages_path
+    wait_for_subscriber
+
+    assert_text "Messages"
+    message = Message.create(content: "A new message")
+
+    message.broadcast_update_to(:messages, target: "message-count",
+      renderable: MessagesCountComponent.new(count: Message.count))
+    assert_selector("#message-count", text: "#{Message.count} messages sent from component", wait: 10)
+  end
+
+  test "Does not render the layout twice when passed a component" do
+    visit messages_path
+    wait_for_subscriber
+
+    assert_text "Messages"
+    message = Message.create(content: "A new message")
+
+    message.broadcast_update_to(:messages, target: "message-count",
+      renderable: MessagesCountComponent.new(count: Message.count))
+    assert_selector("title", count: 1, visible: false, text: "Dummy")
+  end
+
   test "Users::Profile broadcasts Turbo Streams" do
     visit users_profiles_path
     wait_for_stream_to_be_connected
