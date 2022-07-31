@@ -27,6 +27,7 @@ end
 
 group :test do
   gem 'capybara'
+  gem 'capybara_accessible_selectors', github: 'citizensadvice/capybara_accessible_selectors', branch: 'main'
   gem 'rexml'
   gem 'selenium-webdriver'
   gem 'webdrivers'
