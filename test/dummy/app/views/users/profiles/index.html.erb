@@ -1,4 +1,8 @@
 <h1>Users::Profiles</h1>
 
-<%= turbo_stream_from "users_profiles" %>
-<div id="users_profiles"></div>
+<%= render "template_button", content: "Start listening for broadcasts" do %>
+  <%= turbo_stream_from "users_profiles" %>
+<% end %>
+
+<div id="users_profiles">
+</div>
