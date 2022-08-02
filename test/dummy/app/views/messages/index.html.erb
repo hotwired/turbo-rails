@@ -1,9 +1,8 @@
 <h1>Messages</h1>
 
-<span id="message-count">
-  <%= @messages.count %> messages sent
-</span>
+<%= render "template_button", content: "Start listening for broadcasts" do %>
+  <%= turbo_stream_from "messages" %>
+<% end %>
 
-<%= turbo_stream_from "messages" %>
 <div id="messages">
 </div>

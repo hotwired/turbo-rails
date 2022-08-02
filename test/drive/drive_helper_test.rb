@@ -1,4 +1,4 @@
-require "turbo_test"
+require "test_helper"
 
 class Turbo::DriveHelperTest < ActionDispatch::IntegrationTest
   test "opting out of the default cache" do

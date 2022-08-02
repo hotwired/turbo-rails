@@ -15,7 +15,8 @@ class FormSubmissionsTest < ApplicationSystemTestCase
     article = Article.create! body: "My article"
 
     visit edit_article_path(article.id)
-    fill_in("Body", with: "My edit").then { click_on "Submit as PATCH" }
+    fill_in "Body", with: "My edit", fill_options: { clear: :backspace }
+    click_on "Submit as PATCH"
 
     assert_text "Articles"
     assert_text "My edit", count: 1

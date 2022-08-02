@@ -1,0 +1,14 @@
+<button type="button">
+  <%= content %>
+
+  <script>
+    document.currentScript.parentElement.addEventListener("click", ({ currentTarget }) => {
+      for (const template of currentTarget.querySelectorAll("template")) {
+        currentTarget.parentElement.insertBefore(template.content, currentTarget)
+      }
+      currentTarget.remove()
+    })
+  </script>
+
+  <template><%= yield %></template>
+</button>
