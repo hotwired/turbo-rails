@@ -1,4 +1,4 @@
-require "turbo_test"
+require "test_helper"
 require "action_cable"
 
 class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
@@ -88,6 +88,14 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
 
     assert_broadcast_on "stream", turbo_stream_action_tag("prepend", targets: ".message", template: render(options)) do
       Turbo::StreamsChannel.broadcast_action_to "stream", action: "prepend", targets: ".message", **options
+    end
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", targets: ".message", template: "<span>test</span>") do
+      Turbo::StreamsChannel.broadcast_action_to "stream", action: "prepend", targets: ".message", content: "<span>test</span>"
+    end
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", targets: ".message", template: "<span>test</span>") do
+      Turbo::StreamsChannel.broadcast_action_to "stream", action: "prepend", targets: ".message", html: "<span>test</span>"
     end
   end
 

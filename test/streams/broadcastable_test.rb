@@ -1,4 +1,4 @@
-require "turbo_test"
+require "test_helper"
 require "action_cable"
 
 class Turbo::BroadcastableTest < ActionCable::Channel::TestCase

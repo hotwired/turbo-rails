@@ -1,4 +1,4 @@
-require "turbo_test"
+require "test_helper"
 
 class Turbo::StreamsControllerTest < ActionDispatch::IntegrationTest
   test "create with respond to" do

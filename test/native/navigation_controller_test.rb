@@ -1,4 +1,4 @@
-require "turbo_test"
+require "test_helper"
 
 class Turbo::Native::NavigationControllerTest < ActionDispatch::IntegrationTest
   test "recede, resume, or refresh when native or redirect when not" do

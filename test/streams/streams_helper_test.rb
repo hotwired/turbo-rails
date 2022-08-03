@@ -1,4 +1,4 @@
-require "turbo_test"
+require "test_helper"
 
 class TestChannel < ApplicationCable::Channel; end
 

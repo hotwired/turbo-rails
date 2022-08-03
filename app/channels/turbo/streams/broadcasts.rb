@@ -35,7 +35,7 @@ module Turbo::Streams::Broadcasts
 
   def broadcast_action_to(*streamables, action:, target: nil, targets: nil, **rendering)
     broadcast_stream_to(*streamables, content: turbo_stream_action_tag(action, target: target, targets: targets, template:
-      rendering.delete(:content) || (rendering.any? ? render_format(:html, **rendering) : nil)
+      rendering.delete(:content) || rendering.delete(:html) || (rendering.any? ? render_format(:html, **rendering) : nil)
     ))
   end
 

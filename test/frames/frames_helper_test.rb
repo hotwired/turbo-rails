@@ -1,8 +1,6 @@
-require "turbo_test"
+require "test_helper"
 
 class Turbo::FramesHelperTest < ActionView::TestCase
-  setup { Message.delete_all }
-
   test "frame with src" do
     assert_dom_equal %(<turbo-frame src="/trays/1" id="tray"></turbo-frame>), turbo_frame_tag("tray", src: "/trays/1")
   end
