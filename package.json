@@ -13,7 +13,7 @@
     "release": "npm publish && git commit -am \"$npm_package_name v$npm_package_version\" && git push"
   },
   "dependencies": {
-    "@hotwired/turbo": "^7.1.0",
+    "@hotwired/turbo": "hotwired/dev-builds#@hotwired/turbo/28a5dc4",
     "@rails/actioncable": "^7.0"
   },
   "devDependencies": {
