@@ -19,7 +19,7 @@ class Turbo::StreamsControllerTest < ActionDispatch::IntegrationTest
     get message_path(id: 1), as: :turbo_stream
 
     assert_dom_equal <<~HTML, @response.body
-      <turbo-stream action="remove" target="message_1"></turbo-stream>
+      <turbo-stream action="remove" target="message_1"><template></template></turbo-stream>
       <turbo-stream action="replace" target="message_1"><template>#{render(message_1)}</template></turbo-stream>
       <turbo-stream action="replace" target="message_1"><template>Something else</template></turbo-stream>
       <turbo-stream action="replace" target="message_5"><template>Something fifth</template></turbo-stream>
@@ -41,7 +41,7 @@ class Turbo::StreamsControllerTest < ActionDispatch::IntegrationTest
       assert_select 'template', 'Something fourth'
     end
     assert_dom_equal <<~HTML, @response.body
-      <turbo-stream action="remove" targets="#message_1"></turbo-stream>
+      <turbo-stream action="remove" targets="#message_1"><template></template></turbo-stream>
       <turbo-stream action="replace" targets="#message_1"><template>#{render(message_1)}</template></turbo-stream>
       <turbo-stream action="replace" targets="#message_1"><template>Something else</template></turbo-stream>
       <turbo-stream action="replace" targets="#message_4"><template>Something fourth</template></turbo-stream>
