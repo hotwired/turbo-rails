@@ -1,4 +1,6 @@
 class ArticlesController < ApplicationController
+  before_action :assert_param_method!, only: [:update, :destroy]
+
   def index
     @articles = Article.all
   end
@@ -23,9 +25,21 @@ class ArticlesController < ApplicationController
     redirect_to articles_url
   end
 
+  def destroy
+    @article = Article.find params[:id]
+
+    @article.destroy!
+
+    redirect_to articles_url
+  end
+
   private
 
   def article_params
     params.require(:article).permit(:body)
+  end
+
+  def assert_param_method!
+    raise unless params[:_method].present?
   end
 end

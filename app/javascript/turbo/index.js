@@ -1,5 +1,4 @@
 import "./cable_stream_source_element"
-import { overrideMethodWithFormmethod } from "./form_submissions"
 
 import * as Turbo from "@hotwired/turbo"
 export { Turbo }
@@ -7,4 +6,6 @@ export { Turbo }
 import * as cable from "./cable"
 export { cable }
 
-addEventListener("turbo:submit-start", overrideMethodWithFormmethod)
+import { encodeMethodIntoRequestBody } from "./fetch_requests"
+
+addEventListener("turbo:before-fetch-request", encodeMethodIntoRequestBody)
