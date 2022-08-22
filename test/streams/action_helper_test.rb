@@ -15,6 +15,12 @@ class Turbo::ActionHelperTest < ActionCable::Channel::TestCase
     assert_equal stream, turbo_stream_action_tag("append", target: "message_1", template: "Template", hello: "world", foo: "bar")
   end
 
+  test "additional nil attributes" do
+    stream = "<turbo-stream action=\"append\" target=\"message_1\"><template>Template</template></turbo-stream>"
+
+    assert_equal stream, turbo_stream_action_tag("append", target: "message_1", template: "Template", hello: nil, foo: nil)
+  end
+
   test "additional boolean attributes" do
     stream = "<turbo-stream checked=\"checked\" action=\"append\" target=\"message_1\"><template>Template</template></turbo-stream>"
 

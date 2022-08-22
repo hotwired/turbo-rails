@@ -15,9 +15,9 @@ module Turbo::Streams::ActionHelper
     template = action.to_sym == :remove ? "" : tag.template(template.to_s.html_safe)
 
     if target = convert_to_turbo_stream_dom_id(target)
-      tag.turbo_stream(template, **attributes.merge(action: action, target: target).compact)
+      tag.turbo_stream(template, **attributes.merge(action: action, target: target))
     elsif targets = convert_to_turbo_stream_dom_id(targets, include_selector: true)
-      tag.turbo_stream(template, **attributes.merge(action: action, targets: targets).compact)
+      tag.turbo_stream(template, **attributes.merge(action: action, targets: targets))
     else
       raise ArgumentError, "target or targets must be supplied"
     end
