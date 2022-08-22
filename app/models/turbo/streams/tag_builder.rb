@@ -37,7 +37,7 @@ class Turbo::Streams::TagBuilder
   #   <%= turbo_stream.remove "clearance_5" %>
   #   <%= turbo_stream.remove clearance %>
   def remove(target)
-    action :remove, target, allow_inferred_rendering: false
+    action :remove, target: target, allow_inferred_rendering: false
   end
 
   # Removes the <tt>targets</tt> from the dom. The targets can either be a CSS selector string or an object that responds to
@@ -47,7 +47,7 @@ class Turbo::Streams::TagBuilder
   #   <%= turbo_stream.remove_all ".clearance_item" %>
   #   <%= turbo_stream.remove_all clearance %>
   def remove_all(targets)
-    action_all :remove, targets, allow_inferred_rendering: false
+    action_all :remove, targets: targets, allow_inferred_rendering: false
   end
 
   # Replace the <tt>target</tt> in the dom with either the <tt>content</tt> passed in, a rendering result determined
@@ -60,7 +60,7 @@ class Turbo::Streams::TagBuilder
   #     <div id='clearance_5'>Replace the dom target identified by clearance_5</div>
   #   <% end %>
   def replace(target, content = nil, **rendering, &block)
-    action :replace, target, content, **rendering, &block
+    action :replace, target: target, content: content, **rendering, &block
   end
 
   # Replace the <tt>targets</tt> in the dom with either the <tt>content</tt> passed in, a rendering result determined
@@ -73,7 +73,7 @@ class Turbo::Streams::TagBuilder
   #     <div class='.clearance_item'>Replace the dom target identified by the class clearance_item</div>
   #   <% end %>
   def replace_all(targets, content = nil, **rendering, &block)
-    action_all :replace, targets, content, **rendering, &block
+    action_all :replace, targets: targets, content: content, **rendering, &block
   end
 
   # Insert the <tt>content</tt> passed in, a rendering result determined by the <tt>rendering</tt> keyword arguments,
@@ -86,7 +86,7 @@ class Turbo::Streams::TagBuilder
   #     <div id='clearance_4'>Insert before the dom target identified by clearance_5</div>
   #   <% end %>
   def before(target, content = nil, **rendering, &block)
-    action :before, target, content, **rendering, &block
+    action :before, target: target, content: content, **rendering, &block
   end
 
   # Insert the <tt>content</tt> passed in, a rendering result determined by the <tt>rendering</tt> keyword arguments,
@@ -99,7 +99,7 @@ class Turbo::Streams::TagBuilder
   #     <div class='clearance_item'>Insert before the dom target identified by clearance_item</div>
   #   <% end %>
   def before_all(targets, content = nil, **rendering, &block)
-    action_all :before, targets, content, **rendering, &block
+    action_all :before, targets: targets, content: content, **rendering, &block
   end
 
   # Insert the <tt>content</tt> passed in, a rendering result determined by the <tt>rendering</tt> keyword arguments,
@@ -112,7 +112,7 @@ class Turbo::Streams::TagBuilder
   #     <div id='clearance_6'>Insert after the dom target identified by clearance_5</div>
   #   <% end %>
   def after(target, content = nil, **rendering, &block)
-    action :after, target, content, **rendering, &block
+    action :after, target: target, content: content, **rendering, &block
   end
 
   # Insert the <tt>content</tt> passed in, a rendering result determined by the <tt>rendering</tt> keyword arguments,
@@ -125,7 +125,7 @@ class Turbo::Streams::TagBuilder
   #     <div class='clearance_item'>Insert after the dom target identified by the class clearance_item</div>
   #   <% end %>
   def after_all(targets, content = nil, **rendering, &block)
-    action_all :after, targets, content, **rendering, &block
+    action_all :after, targets: targets, content: content, **rendering, &block
   end
 
   # Update the <tt>target</tt> in the dom with either the <tt>content</tt> passed in or a rendering result determined
@@ -138,7 +138,7 @@ class Turbo::Streams::TagBuilder
   #     Update the content of the dom target identified by clearance_5
   #   <% end %>
   def update(target, content = nil, **rendering, &block)
-    action :update, target, content, **rendering, &block
+    action :update, target: target, content: content, **rendering, &block
   end
 
   # Update the <tt>targets</tt> in the dom with either the <tt>content</tt> passed in or a rendering result determined
@@ -151,7 +151,7 @@ class Turbo::Streams::TagBuilder
   #     Update the content of the dom target identified by the class clearance_item
   #   <% end %>
   def update_all(targets, content = nil, **rendering, &block)
-    action_all :update, targets, content, **rendering, &block
+    action_all :update, targets: targets, content: content, **rendering, &block
   end
 
   # Append to the target in the dom identified with <tt>target</tt> either the <tt>content</tt> passed in or a
@@ -165,7 +165,7 @@ class Turbo::Streams::TagBuilder
   #     <div id='clearance_5'>Append this to .clearances</div>
   #   <% end %>
   def append(target, content = nil, **rendering, &block)
-    action :append, target, content, **rendering, &block
+    action :append, target: target, content: content, **rendering, &block
   end
 
   # Append to the targets in the dom identified with <tt>targets</tt> either the <tt>content</tt> passed in or a
@@ -179,7 +179,7 @@ class Turbo::Streams::TagBuilder
   #     <div id='clearance_item'>Append this to .clearances</div>
   #   <% end %>
   def append_all(targets, content = nil, **rendering, &block)
-    action_all :append, targets, content, **rendering, &block
+    action_all :append, targets: targets, content: content, **rendering, &block
   end
 
   # Prepend to the target in the dom identified with <tt>target</tt> either the <tt>content</tt> passed in or a
@@ -193,7 +193,7 @@ class Turbo::Streams::TagBuilder
   #     <div id='clearance_5'>Prepend this to .clearances</div>
   #   <% end %>
   def prepend(target, content = nil, **rendering, &block)
-    action :prepend, target, content, **rendering, &block
+    action :prepend, target: target, content: content, **rendering, &block
   end
 
   # Prepend to the targets in the dom identified with <tt>targets</tt> either the <tt>content</tt> passed in or a
@@ -207,18 +207,18 @@ class Turbo::Streams::TagBuilder
   #     <div class='clearance_item'>Prepend this to .clearances</div>
   #   <% end %>
   def prepend_all(targets, content = nil, **rendering, &block)
-    action_all :prepend, targets, content, **rendering, &block
+    action_all :prepend, targets: targets, content: content, **rendering, &block
   end
 
   # Send an action of the type <tt>name</tt> to <tt>target</tt>. Options described in the concrete methods.
-  def action(name, target, content = nil, allow_inferred_rendering: true, **rendering, &block)
+  def action(name, target: nil, content: nil, allow_inferred_rendering: true, **rendering, &block)
     template = render_template(target, content, allow_inferred_rendering: allow_inferred_rendering, **rendering, &block)
 
     turbo_stream_action_tag name, target: target, template: template
   end
 
   # Send an action of the type <tt>name</tt> to <tt>targets</tt>. Options described in the concrete methods.
-  def action_all(name, targets, content = nil, allow_inferred_rendering: true, **rendering, &block)
+  def action_all(name, targets: nil, content: nil, allow_inferred_rendering: true, **rendering, &block)
     template = render_template(targets, content, allow_inferred_rendering: allow_inferred_rendering, **rendering, &block)
 
     turbo_stream_action_tag name, targets: targets, template: template
@@ -235,8 +235,8 @@ class Turbo::Streams::TagBuilder
         @view_context.capture(&block)
       when rendering.any?
         @view_context.render(formats: [ :html ], **rendering)
-      else
-        render_record(target) if allow_inferred_rendering
+      when allow_inferred_rendering
+        render_record(target)
       end
     end
 
