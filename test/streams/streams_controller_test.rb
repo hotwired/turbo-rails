@@ -77,4 +77,11 @@ class Turbo::StreamsControllerTest < ActionDispatch::IntegrationTest
       <p>Basecamp</p></template></turbo-stream>
     HTML
   end
+
+  test "render object as turbo_stream if it responds to #to_turbo_stream" do
+    get streams_path, as: :turbo_stream
+
+    stream = "<turbo-stream action=\"replace\" target=\"stream_object_1\"><template>Stream Object 1</template></turbo-stream>"
+    assert_dom_equal stream, @response.body
+  end
 end

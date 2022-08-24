@@ -55,11 +55,8 @@ module Turbo
       ActiveSupport.on_load(:action_controller) do
         ActionController::Renderers.add :turbo_stream do |turbo_streams_html, options|
           self.content_type = Mime[:turbo_stream] if media_type.nil?
-          if turbo_streams_html.respond_to?(:to_turbo_stream)
-            turbo_streams_html.to_turbo_stream
-          else
-            turbo_streams_html
-          end
+
+          turbo_streams_html.try(:to_turbo_stream) || turbo_streams_html
         end
       end
     end
