@@ -1,6 +1,16 @@
 require "application_system_test_case"
 
 class FormSubmissionsTest < ApplicationSystemTestCase
+  test "form submission method is encoded as _method" do
+    article = Article.create! body: "My article"
+
+    visit edit_article_path(article.id)
+    click_on "Submit as DELETE"
+
+    assert_text "Articles"
+    assert_no_text "My article"
+  end
+
   test "form submissions override _method when [formmethod] is present" do
     article = Article.create! body: "My article"
 
