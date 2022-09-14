@@ -440,10 +440,6 @@ function getVisitAction(...elements) {
   return isAction(action) ? action : null;
 }
 
-function getBodyElementId() {
-  return getMetaContent("turbo-body");
-}
-
 function getMetaElement(name) {
   return document.querySelector(`meta[name="${name}"]`);
 }
@@ -527,7 +523,9 @@ class FetchRequest {
       return await this.receive(response);
     } catch (error) {
       if (error.name !== "AbortError") {
-        this.delegate.requestErrored(this, error);
+        if (this.willDelegateErrorHandling(error)) {
+          this.delegate.requestErrored(this, error);
+        }
         throw error;
       }
     } finally {
@@ -590,6 +588,17 @@ class FetchRequest {
       target: this.target
     });
     if (event.defaultPrevented) await requestInterception;
+  }
+  willDelegateErrorHandling(error) {
+    const event = dispatch("turbo:fetch-request-error", {
+      target: this.target,
+      cancelable: true,
+      detail: {
+        request: this,
+        error: error
+      }
+    });
+    return !event.defaultPrevented;
   }
 }
 
@@ -804,13 +813,6 @@ class FormSubmission {
       success: false,
       error: error
     };
-    dispatch("turbo:fetch-request-error", {
-      target: this.formElement,
-      detail: {
-        request: request,
-        error: error
-      }
-    });
     this.delegate.formSubmissionErrored(this, error);
   }
   requestFinished(_request) {
@@ -2594,18 +2596,15 @@ class ErrorRenderer extends Renderer {
 }
 
 class PageRenderer extends Renderer {
-  static async renderElement(currentElement, newElement) {
-    await nextEventLoopTick();
+  static renderElement(currentElement, newElement) {
     if (document.body && newElement instanceof HTMLBodyElement) {
-      const currentBody = PageRenderer.getBodyElement(currentElement);
-      const newBody = PageRenderer.getBodyElement(newElement);
-      currentBody.replaceWith(newBody);
+      document.body.replaceWith(newElement);
     } else {
       document.documentElement.appendChild(newElement);
     }
   }
   get shouldRender() {
-    return this.newSnapshot.isVisitable && this.trackedElementsAreIdentical && this.bodyElementMatches;
+    return this.newSnapshot.isVisitable && this.trackedElementsAreIdentical;
   }
   get reloadReason() {
     if (!this.newSnapshot.isVisitable) {
@@ -2616,11 +2615,6 @@ class PageRenderer extends Renderer {
     if (!this.trackedElementsAreIdentical) {
       return {
         reason: "tracked_element_mismatch"
-      };
-    }
-    if (!this.bodyElementMatches) {
-      return {
-        reason: "body_element_mismatch"
       };
     }
   }
@@ -2662,16 +2656,6 @@ class PageRenderer extends Renderer {
   }
   get trackedElementsAreIdentical() {
     return this.currentHeadSnapshot.trackedElementSignature == this.newHeadSnapshot.trackedElementSignature;
-  }
-  get bodyElementMatches() {
-    return PageRenderer.getBodyElement(this.newElement) !== null;
-  }
-  static get bodySelector() {
-    const bodyId = getBodyElementId();
-    return bodyId ? `#${bodyId}` : "body";
-  }
-  static getBodyElement(element) {
-    return element.querySelector(this.bodySelector) || element;
   }
   async copyNewHeadStylesheetElements() {
     const loadingElements = [];
@@ -3468,13 +3452,6 @@ class FrameController {
   }
   requestErrored(request, error) {
     console.error(error);
-    dispatch("turbo:fetch-request-error", {
-      target: this.element,
-      detail: {
-        request: request,
-        error: error
-      }
-    });
     this.resolveVisitPromise();
   }
   requestFinished(_request) {
