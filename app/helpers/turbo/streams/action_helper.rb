@@ -19,7 +19,7 @@ module Turbo::Streams::ActionHelper
     elsif targets = convert_to_turbo_stream_dom_id(targets, include_selector: true)
       tag.turbo_stream(template, **attributes.merge(action: action, targets: targets))
     else
-      raise ArgumentError, "target or targets must be supplied"
+      tag.turbo_stream(template, **attributes.merge(action: action))
     end
   end
 
