@@ -3,7 +3,7 @@ export function encodeMethodIntoRequestBody(event) {
     const { target: form, detail: { fetchOptions } } = event
 
     form.addEventListener("turbo:submit-start", ({ detail: { formSubmission: { submitter } } }) => {
-      const method = (submitter && submitter.formMethod) || fetchOptions.body.get("_method") || form.getAttribute("method")
+      const method = (submitter && submitter.formMethod) || (fetchOptions.body && fetchOptions.body.get("_method")) || form.getAttribute("method")
 
       if (!/get/i.test(method)) {
         if (/post/i.test(method)) {
