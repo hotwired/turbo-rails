@@ -1643,8 +1643,7 @@ const defaultOptions = {
   willRender: true,
   updateHistory: true,
   shouldCacheSnapshot: true,
-  acceptsStreamResponse: false,
-  initiator: document.documentElement
+  acceptsStreamResponse: false
 };
 
 var SystemStatusCode;
@@ -1657,6 +1656,7 @@ var SystemStatusCode;
 
 class Visit {
   constructor(delegate, location, restorationIdentifier, options = {}) {
+    this.identifier = uuid();
     this.timingMetrics = {};
     this.followedRedirect = false;
     this.historyChanged = false;
@@ -1668,11 +1668,7 @@ class Visit {
     this.delegate = delegate;
     this.location = location;
     this.restorationIdentifier = restorationIdentifier || uuid();
-    this.promise = new Promise(((resolve, reject) => this.resolvingFunctions = {
-      resolve: resolve,
-      reject: reject
-    }));
-    const {action: action, historyChanged: historyChanged, referrer: referrer, snapshotHTML: snapshotHTML, response: response, visitCachedSnapshot: visitCachedSnapshot, willRender: willRender, updateHistory: updateHistory, shouldCacheSnapshot: shouldCacheSnapshot, acceptsStreamResponse: acceptsStreamResponse, initiator: initiator} = Object.assign(Object.assign({}, defaultOptions), options);
+    const {action: action, historyChanged: historyChanged, referrer: referrer, snapshotHTML: snapshotHTML, response: response, visitCachedSnapshot: visitCachedSnapshot, willRender: willRender, updateHistory: updateHistory, shouldCacheSnapshot: shouldCacheSnapshot, acceptsStreamResponse: acceptsStreamResponse} = Object.assign(Object.assign({}, defaultOptions), options);
     this.action = action;
     this.historyChanged = historyChanged;
     this.referrer = referrer;
@@ -1685,7 +1681,6 @@ class Visit {
     this.scrolled = !willRender;
     this.shouldCacheSnapshot = shouldCacheSnapshot;
     this.acceptsStreamResponse = acceptsStreamResponse;
-    this.initiator = initiator;
   }
   get adapter() {
     return this.delegate.adapter;
@@ -1717,7 +1712,6 @@ class Visit {
       }
       this.cancelRender();
       this.state = VisitState.canceled;
-      this.resolvingFunctions.reject();
     }
   }
   complete() {
@@ -1729,14 +1723,12 @@ class Visit {
         this.adapter.visitCompleted(this);
         this.delegate.visitCompleted(this);
       }
-      this.resolvingFunctions.resolve();
     }
   }
   fail() {
     if (this.state == VisitState.started) {
       this.state = VisitState.failed;
       this.adapter.visitFailed(this);
-      this.resolvingFunctions.reject();
     }
   }
   changeHistory() {
@@ -1752,7 +1744,7 @@ class Visit {
     if (this.hasPreloadedResponse()) {
       this.simulateRequest();
     } else if (this.shouldIssueRequest() && !this.request) {
-      this.request = new FetchRequest(this, FetchMethod.get, this.location, undefined, this.initiator);
+      this.request = new FetchRequest(this, FetchMethod.get, this.location);
       this.request.perform();
     }
   }
@@ -1997,7 +1989,7 @@ class BrowserAdapter {
     this.session = session;
   }
   visitProposedToLocation(location, options) {
-    return this.navigator.startVisit(location, (options === null || options === void 0 ? void 0 : options.restorationIdentifier) || uuid(), options);
+    this.navigator.startVisit(location, (options === null || options === void 0 ? void 0 : options.restorationIdentifier) || uuid(), options);
   }
   visitStarted(visit) {
     this.location = visit.location;
@@ -2256,15 +2248,12 @@ class Navigator {
     this.delegate = delegate;
   }
   proposeVisit(location, options = {}) {
-    if (this.delegate.allowsVisitingLocation(location, options)) {
+    if (this.delegate.allowsVisitingLocationWithAction(location, options.action)) {
       if (locationIsVisitable(location, this.view.snapshot.rootLocation)) {
-        return this.delegate.visitProposedToLocation(location, options);
+        this.delegate.visitProposedToLocation(location, options);
       } else {
         window.location.href = location.toString();
-        return Promise.resolve();
       }
-    } else {
-      return Promise.reject();
     }
   }
   startVisit(locatable, restorationIdentifier, options = {}) {
@@ -2274,7 +2263,6 @@ class Navigator {
       referrer: this.location
     }, options));
     this.currentVisit.start();
-    return this.currentVisit.promise;
   }
   submitForm(form, submitter) {
     this.stop();
@@ -2902,9 +2890,9 @@ class Session {
     const frameElement = options.frame ? document.getElementById(options.frame) : null;
     if (frameElement instanceof FrameElement) {
       frameElement.src = location.toString();
-      return frameElement.loaded;
+      frameElement.loaded;
     } else {
-      return this.navigator.proposeVisit(expandURL(location), options);
+      this.navigator.proposeVisit(expandURL(location), options);
     }
   }
   connectStreamSource(source) {
@@ -2960,16 +2948,15 @@ class Session {
     const acceptsStreamResponse = link.hasAttribute("data-turbo-stream");
     this.visit(location.href, {
       action: action,
-      acceptsStreamResponse: acceptsStreamResponse,
-      initiator: link
+      acceptsStreamResponse: acceptsStreamResponse
     });
   }
-  allowsVisitingLocation(location, options = {}) {
-    return this.locationWithActionIsSamePage(location, options.action) || this.applicationAllowsVisitingLocation(location, options);
+  allowsVisitingLocationWithAction(location, action) {
+    return this.locationWithActionIsSamePage(location, action) || this.applicationAllowsVisitingLocation(location);
   }
   visitProposedToLocation(location, options) {
     extendURLWithDeprecatedProperties(location);
-    return this.adapter.visitProposedToLocation(location, options);
+    this.adapter.visitProposedToLocation(location, options);
   }
   visitStarted(visit) {
     if (!visit.acceptsStreamResponse) {
@@ -2977,7 +2964,7 @@ class Session {
     }
     extendURLWithDeprecatedProperties(visit.location);
     if (!visit.silent) {
-      this.notifyApplicationAfterVisitingLocation(visit.location, visit.action, visit.initiator);
+      this.notifyApplicationAfterVisitingLocation(visit.location, visit.action);
     }
   }
   visitCompleted(visit) {
@@ -3044,8 +3031,8 @@ class Session {
     const event = this.notifyApplicationAfterClickingLinkToLocation(link, location, ev);
     return !event.defaultPrevented;
   }
-  applicationAllowsVisitingLocation(location, options = {}) {
-    const event = this.notifyApplicationBeforeVisitingLocation(location, options.initiator);
+  applicationAllowsVisitingLocation(location) {
+    const event = this.notifyApplicationBeforeVisitingLocation(location);
     return !event.defaultPrevented;
   }
   notifyApplicationAfterClickingLinkToLocation(link, location, event) {
@@ -3058,18 +3045,16 @@ class Session {
       cancelable: true
     });
   }
-  notifyApplicationBeforeVisitingLocation(location, element) {
+  notifyApplicationBeforeVisitingLocation(location) {
     return dispatch("turbo:before-visit", {
-      target: element,
       detail: {
         url: location.href
       },
       cancelable: true
     });
   }
-  notifyApplicationAfterVisitingLocation(location, action, element) {
+  notifyApplicationAfterVisitingLocation(location, action) {
     return dispatch("turbo:visit", {
-      target: element,
       detail: {
         url: location.href,
         action: action
@@ -3236,7 +3221,7 @@ function registerAdapter(adapter) {
 }
 
 function visit(location, options) {
-  return session.visit(location, options);
+  session.visit(location, options);
 }
 
 function connectStreamSource(source) {
