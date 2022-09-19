@@ -63,4 +63,10 @@ class Turbo::ActionHelperTest < ActionCable::Channel::TestCase
 
     assert_equal stream, turbo_stream_action_tag("append", target: "message_1", template: "Template", class: { "stream": true, "another-stream": true, "no-stream": false })
   end
+
+  test "renders if no 'target' and no 'targets' attributes are provided" do
+    action = assert_nothing_raised { turbo_stream_action_tag("my_custom_action") }
+
+    assert_equal "<turbo-stream action=\"my_custom_action\"><template></template></turbo-stream>", action
+  end
 end
