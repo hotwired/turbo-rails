@@ -1,3 +1,3 @@
 module Turbo
-  VERSION = "1.2.0.beta2"
+  VERSION = "1.3.0"
 end
