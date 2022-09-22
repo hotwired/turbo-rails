@@ -2115,8 +2115,8 @@ class FrameRedirector {
     this.linkClickObserver.stop();
     this.formSubmitObserver.stop();
   }
-  willFollowLinkToLocation(element) {
-    return this.shouldRedirect(element);
+  willFollowLinkToLocation(element, location, event) {
+    return this.shouldRedirect(element) && this.frameAllowsVisitingLocation(element, location, event);
   }
   followedLinkToLocation(element, url) {
     const frame = this.findFrameElement(element);
@@ -2132,6 +2132,17 @@ class FrameRedirector {
     if (frame) {
       frame.delegate.formSubmitted(element, submitter);
     }
+  }
+  frameAllowsVisitingLocation(target, {href: url}, originalEvent) {
+    const event = dispatch("turbo:click", {
+      target: target,
+      detail: {
+        url: url,
+        originalEvent: originalEvent
+      },
+      cancelable: true
+    });
+    return !event.defaultPrevented;
   }
   shouldSubmit(form, submitter) {
     var _a;
@@ -3395,8 +3406,8 @@ class FrameController {
     const frame = this.findFrameElement(link);
     if (frame) form.setAttribute("data-turbo-frame", frame.id);
   }
-  willFollowLinkToLocation(element) {
-    return this.shouldInterceptNavigation(element);
+  willFollowLinkToLocation(element, location, event) {
+    return this.shouldInterceptNavigation(element) && this.frameAllowsVisitingLocation(element, location, event);
   }
   followedLinkToLocation(element, location) {
     this.navigateFrame(element, location.href);
@@ -3659,6 +3670,17 @@ class FrameController {
     const meta = this.element.ownerDocument.querySelector(`meta[name="turbo-root"]`);
     const root = (_a = meta === null || meta === void 0 ? void 0 : meta.content) !== null && _a !== void 0 ? _a : "/";
     return expandURL(root);
+  }
+  frameAllowsVisitingLocation(target, {href: url}, originalEvent) {
+    const event = dispatch("turbo:click", {
+      target: target,
+      detail: {
+        url: url,
+        originalEvent: originalEvent
+      },
+      cancelable: true
+    });
+    return !event.defaultPrevented;
   }
   isIgnoringChangesTo(attributeName) {
     return this.ignoredAttributes.has(attributeName);
