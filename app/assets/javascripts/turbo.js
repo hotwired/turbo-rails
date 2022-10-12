@@ -97,11 +97,7 @@ class FrameElement extends HTMLElement {
     this.delegate.disconnect();
   }
   reload() {
-    const {src: src} = this;
-    this.removeAttribute("complete");
-    this.src = null;
-    this.src = src;
-    return this.loaded;
+    return this.delegate.sourceURLReloaded();
   }
   attributeChangedCallback(name) {
     if (name == "loading") {
@@ -936,6 +932,7 @@ class FormSubmitObserver {
         const submitter = event.submitter || undefined;
         if (form && submissionDoesNotDismissDialog(form, submitter) && submissionDoesNotTargetIFrame(form, submitter) && this.delegate.willSubmitForm(form, submitter)) {
           event.preventDefault();
+          event.stopImmediatePropagation();
           this.delegate.formSubmitted(form, submitter);
         }
       }
@@ -1076,6 +1073,47 @@ class FrameView extends View {
   }
 }
 
+class LinkInterceptor {
+  constructor(delegate, element) {
+    this.clickBubbled = event => {
+      if (this.respondsToEventTarget(event.target)) {
+        this.clickEvent = event;
+      } else {
+        delete this.clickEvent;
+      }
+    };
+    this.linkClicked = event => {
+      if (this.clickEvent && this.respondsToEventTarget(event.target) && event.target instanceof Element) {
+        if (this.delegate.shouldInterceptLinkClick(event.target, event.detail.url, event.detail.originalEvent)) {
+          this.clickEvent.preventDefault();
+          event.preventDefault();
+          this.delegate.linkClickIntercepted(event.target, event.detail.url, event.detail.originalEvent);
+        }
+      }
+      delete this.clickEvent;
+    };
+    this.willVisit = _event => {
+      delete this.clickEvent;
+    };
+    this.delegate = delegate;
+    this.element = element;
+  }
+  start() {
+    this.element.addEventListener("click", this.clickBubbled);
+    document.addEventListener("turbo:click", this.linkClicked);
+    document.addEventListener("turbo:before-visit", this.willVisit);
+  }
+  stop() {
+    this.element.removeEventListener("click", this.clickBubbled);
+    document.removeEventListener("turbo:click", this.linkClicked);
+    document.removeEventListener("turbo:before-visit", this.willVisit);
+  }
+  respondsToEventTarget(target) {
+    const element = target instanceof Element ? target : target instanceof Node ? target.parentElement : null;
+    return element && element.closest("turbo-frame, html") == this.element;
+  }
+}
+
 class LinkClickObserver {
   constructor(delegate, eventTarget) {
     this.started = false;
@@ -1134,13 +1172,13 @@ function doesNotTargetIFrame(anchor) {
 class FormLinkClickObserver {
   constructor(delegate, element) {
     this.delegate = delegate;
-    this.linkClickObserver = new LinkClickObserver(this, element);
+    this.linkInterceptor = new LinkClickObserver(this, element);
   }
   start() {
-    this.linkClickObserver.start();
+    this.linkInterceptor.start();
   }
   stop() {
-    this.linkClickObserver.stop();
+    this.linkInterceptor.stop();
   }
   willFollowLinkToLocation(link, location, originalEvent) {
     return this.delegate.willSubmitFormLinkToLocation(link, location, originalEvent) && link.hasAttribute("data-turbo-method");
@@ -1668,10 +1706,11 @@ class Visit {
     this.delegate = delegate;
     this.location = location;
     this.restorationIdentifier = restorationIdentifier || uuid();
-    const {action: action, historyChanged: historyChanged, referrer: referrer, snapshotHTML: snapshotHTML, response: response, visitCachedSnapshot: visitCachedSnapshot, willRender: willRender, updateHistory: updateHistory, shouldCacheSnapshot: shouldCacheSnapshot, acceptsStreamResponse: acceptsStreamResponse} = Object.assign(Object.assign({}, defaultOptions), options);
+    const {action: action, historyChanged: historyChanged, referrer: referrer, snapshot: snapshot, snapshotHTML: snapshotHTML, response: response, visitCachedSnapshot: visitCachedSnapshot, willRender: willRender, updateHistory: updateHistory, shouldCacheSnapshot: shouldCacheSnapshot, acceptsStreamResponse: acceptsStreamResponse} = Object.assign(Object.assign({}, defaultOptions), options);
     this.action = action;
     this.historyChanged = historyChanged;
     this.referrer = referrer;
+    this.snapshot = snapshot;
     this.snapshotHTML = snapshotHTML;
     this.response = response;
     this.isSamePage = this.delegate.locationWithActionIsSamePage(this.location, this.action);
@@ -1956,7 +1995,7 @@ class Visit {
   }
   cacheSnapshot() {
     if (!this.snapshotCached) {
-      this.view.cacheSnapshot().then((snapshot => snapshot && this.visitCachedSnapshot(snapshot)));
+      this.view.cacheSnapshot(this.snapshot).then((snapshot => snapshot && this.visitCachedSnapshot(snapshot)));
       this.snapshotCached = true;
     }
   }
@@ -2065,11 +2104,11 @@ class BrowserAdapter {
     }
   }
   reload(reason) {
+    var _a;
     dispatch("turbo:reload", {
       detail: reason
     });
-    if (!this.location) return;
-    window.location.href = this.location.toString();
+    window.location.href = ((_a = this.location) === null || _a === void 0 ? void 0 : _a.toString()) || window.location.href;
   }
   get navigator() {
     return this.session.navigator;
@@ -2104,24 +2143,24 @@ class FrameRedirector {
   constructor(session, element) {
     this.session = session;
     this.element = element;
-    this.linkClickObserver = new LinkClickObserver(this, element);
+    this.linkInterceptor = new LinkInterceptor(this, element);
     this.formSubmitObserver = new FormSubmitObserver(this, element);
   }
   start() {
-    this.linkClickObserver.start();
+    this.linkInterceptor.start();
     this.formSubmitObserver.start();
   }
   stop() {
-    this.linkClickObserver.stop();
+    this.linkInterceptor.stop();
     this.formSubmitObserver.stop();
   }
-  willFollowLinkToLocation(element, location, event) {
-    return this.shouldRedirect(element) && this.frameAllowsVisitingLocation(element, location, event);
+  shouldInterceptLinkClick(element, _location, _event) {
+    return this.shouldRedirect(element);
   }
-  followedLinkToLocation(element, url) {
+  linkClickIntercepted(element, url, event) {
     const frame = this.findFrameElement(element);
     if (frame) {
-      frame.delegate.followedLinkToLocation(element, url);
+      frame.delegate.linkClickIntercepted(element, url, event);
     }
   }
   willSubmitForm(element, submitter) {
@@ -2132,17 +2171,6 @@ class FrameRedirector {
     if (frame) {
       frame.delegate.formSubmitted(element, submitter);
     }
-  }
-  frameAllowsVisitingLocation(target, {href: url}, originalEvent) {
-    const event = dispatch("turbo:click", {
-      target: target,
-      detail: {
-        url: url,
-        originalEvent: originalEvent
-      },
-      cancelable: true
-    });
-    return !event.defaultPrevented;
   }
   shouldSubmit(form, submitter) {
     var _a;
@@ -2777,10 +2805,10 @@ class PageView extends View {
   clearSnapshotCache() {
     this.snapshotCache.clear();
   }
-  async cacheSnapshot() {
-    if (this.shouldCacheSnapshot) {
+  async cacheSnapshot(snapshot = this.snapshot) {
+    if (snapshot.isCacheable) {
       this.delegate.viewWillCacheSnapshot();
-      const {snapshot: snapshot, lastRenderedLocation: location} = this;
+      const {lastRenderedLocation: location} = this;
       await nextEventLoopTick();
       const cachedSnapshot = snapshot.clone();
       this.snapshotCache.put(location, cachedSnapshot);
@@ -2792,9 +2820,6 @@ class PageView extends View {
   }
   get snapshot() {
     return PageSnapshot.fromElement(this.element);
-  }
-  get shouldCacheSnapshot() {
-    return this.snapshot.isCacheable;
   }
 }
 
@@ -3305,7 +3330,7 @@ class FrameController {
     this.view = new FrameView(this, this.element);
     this.appearanceObserver = new AppearanceObserver(this, this.element);
     this.formLinkClickObserver = new FormLinkClickObserver(this, this.element);
-    this.linkClickObserver = new LinkClickObserver(this, this.element);
+    this.linkInterceptor = new LinkInterceptor(this, this.element);
     this.restorationIdentifier = uuid();
     this.formSubmitObserver = new FormSubmitObserver(this, this.element);
   }
@@ -3318,7 +3343,7 @@ class FrameController {
         this.loadSourceURL();
       }
       this.formLinkClickObserver.start();
-      this.linkClickObserver.start();
+      this.linkInterceptor.start();
       this.formSubmitObserver.start();
     }
   }
@@ -3327,7 +3352,7 @@ class FrameController {
       this.connected = false;
       this.appearanceObserver.stop();
       this.formLinkClickObserver.stop();
-      this.linkClickObserver.stop();
+      this.linkInterceptor.stop();
       this.formSubmitObserver.stop();
     }
   }
@@ -3344,6 +3369,15 @@ class FrameController {
     if (this.loadingStyle == FrameLoadingStyle.eager || this.hasBeenLoaded) {
       this.loadSourceURL();
     }
+  }
+  sourceURLReloaded() {
+    const {src: src} = this.element;
+    this.ignoringChangesToAttribute("complete", (() => {
+      this.element.removeAttribute("complete");
+    }));
+    this.element.src = null;
+    this.element.src = src;
+    return this.element.loaded;
   }
   completeChanged() {
     if (this.isIgnoringChangesTo("complete")) return;
@@ -3400,17 +3434,17 @@ class FrameController {
     this.loadSourceURL();
   }
   willSubmitFormLinkToLocation(link) {
-    return link.closest("turbo-frame") == this.element && this.shouldInterceptNavigation(link);
+    return this.shouldInterceptNavigation(link);
   }
   submittedFormLinkToLocation(link, _location, form) {
     const frame = this.findFrameElement(link);
     if (frame) form.setAttribute("data-turbo-frame", frame.id);
   }
-  willFollowLinkToLocation(element, location, event) {
-    return this.shouldInterceptNavigation(element) && this.frameAllowsVisitingLocation(element, location, event);
+  shouldInterceptLinkClick(element, _location, _event) {
+    return this.shouldInterceptNavigation(element);
   }
-  followedLinkToLocation(element, location) {
-    this.navigateFrame(element, location.href);
+  linkClickIntercepted(element, location) {
+    this.navigateFrame(element, location);
   }
   willSubmitForm(element, submitter) {
     return element.closest("turbo-frame") == this.element && this.shouldInterceptNavigation(element, submitter);
@@ -3458,7 +3492,7 @@ class FrameController {
   }
   formSubmissionSucceededWithResponse(formSubmission, response) {
     const frame = this.findFrameElement(formSubmission.formElement, formSubmission.submitter);
-    this.proposeVisitIfNavigatedWithAction(frame, formSubmission.formElement, formSubmission.submitter);
+    frame.delegate.proposeVisitIfNavigatedWithAction(frame, formSubmission.formElement, formSubmission.submitter);
     frame.delegate.loadResponse(response);
   }
   formSubmissionFailedWithResponse(formSubmission, fetchResponse) {
@@ -3508,14 +3542,14 @@ class FrameController {
   }
   navigateFrame(element, url, submitter) {
     const frame = this.findFrameElement(element, submitter);
-    this.proposeVisitIfNavigatedWithAction(frame, element, submitter);
+    this.pageSnapshot = PageSnapshot.fromElement(frame).clone();
+    frame.delegate.proposeVisitIfNavigatedWithAction(frame, element, submitter);
     this.withCurrentNavigationElement(element, (() => {
       frame.src = url;
     }));
   }
   proposeVisitIfNavigatedWithAction(frame, element, submitter) {
     this.action = getVisitAction(submitter, element, frame);
-    this.frame = frame;
     if (isAction(this.action)) {
       const {visitCachedSnapshot: visitCachedSnapshot} = frame.delegate;
       frame.delegate.fetchResponseLoaded = fetchResponse => {
@@ -3532,7 +3566,8 @@ class FrameController {
             visitCachedSnapshot: visitCachedSnapshot,
             willRender: false,
             updateHistory: false,
-            restorationIdentifier: this.restorationIdentifier
+            restorationIdentifier: this.restorationIdentifier,
+            snapshot: this.pageSnapshot
           };
           if (this.action) options.action = this.action;
           session.visit(frame.src, options);
@@ -3541,9 +3576,9 @@ class FrameController {
     }
   }
   changeHistory() {
-    if (this.action && this.frame) {
+    if (this.action) {
       const method = getHistoryMethodForAction(this.action);
-      session.history.update(method, expandURL(this.frame.src || ""), this.restorationIdentifier);
+      session.history.update(method, expandURL(this.element.src || ""), this.restorationIdentifier);
     }
   }
   willHandleFrameMissingFromResponse(fetchResponse) {
@@ -3670,17 +3705,6 @@ class FrameController {
     const meta = this.element.ownerDocument.querySelector(`meta[name="turbo-root"]`);
     const root = (_a = meta === null || meta === void 0 ? void 0 : meta.content) !== null && _a !== void 0 ? _a : "/";
     return expandURL(root);
-  }
-  frameAllowsVisitingLocation(target, {href: url}, originalEvent) {
-    const event = dispatch("turbo:click", {
-      target: target,
-      detail: {
-        url: url,
-        originalEvent: originalEvent
-      },
-      cancelable: true
-    });
-    return !event.defaultPrevented;
   }
   isIgnoringChangesTo(attributeName) {
     return this.ignoredAttributes.has(attributeName);
