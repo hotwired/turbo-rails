@@ -32,7 +32,7 @@ module Turbo
         }
 
         script = []
-        script << "Turbo.clearCache()"
+        script << "Turbo.cache.clear()"
         script << "Turbo.visit(#{location.to_json}, #{visit_options.to_json})"
 
         self.status = 200
