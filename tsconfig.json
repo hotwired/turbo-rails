@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "lib": [ "dom", "dom.iterable", "esnext" ],
+    "module": "es2020",
+    "moduleResolution": "node",
+    "noUnusedLocals": true,
+    "rootDir": "app/javascript/turbo",
+    "strict": false,
+    "target": "es2017",
+    "noEmit": true,
+    "removeComments": true,
+    "skipLibCheck": true,
+  },
+  "exclude": [ "dist" ]
+}

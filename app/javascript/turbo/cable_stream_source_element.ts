@@ -3,6 +3,8 @@ import { subscribeTo } from "./cable"
 import snakeize from "./snakeize"
 
 class TurboCableStreamSourceElement extends HTMLElement {
+  declare subscription: Awaited<ReturnType<typeof subscribeTo>>
+
   async connectedCallback() {
     connectStreamSource(this)
     this.subscription = await subscribeTo(this.channel, { received: this.dispatchMessageEvent.bind(this) })
@@ -13,7 +15,7 @@ class TurboCableStreamSourceElement extends HTMLElement {
     if (this.subscription) this.subscription.unsubscribe()
   }
 
-  dispatchMessageEvent(data) {
+  dispatchMessageEvent(data: any) {
     const event = new MessageEvent("message", { data })
     return this.dispatchEvent(event)
   }

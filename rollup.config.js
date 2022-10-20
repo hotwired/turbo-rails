@@ -1,10 +1,11 @@
 import resolve from "@rollup/plugin-node-resolve"
+import typescript from "@rollup/plugin-typescript"
 import { terser } from "rollup-plugin-terser"
 import pkg from "./package.json"
 
 export default [
   {
-    input: pkg.module,
+    input: "app/javascript/turbo/index.ts",
     output: {
       file: pkg.main,
       format: "es",
@@ -12,6 +13,7 @@ export default [
     },
     plugins: [
       resolve(),
+      typescript(),
       terser({
         mangle: false,
         compress: false,
@@ -22,9 +24,8 @@ export default [
       })
     ]
   },
-
   {
-    input: pkg.module,
+    input: "app/javascript/turbo/index.ts",
     output: {
       file: "app/assets/javascripts/turbo.min.js",
       format: "es",
@@ -33,6 +34,7 @@ export default [
     },
     plugins: [
       resolve(),
+      typescript(),
       terser({
         mangle: true,
         compress: true

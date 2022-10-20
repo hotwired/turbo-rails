@@ -17,15 +17,15 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-export default function walk (obj) {
+export default function walk (obj: any): any {
     if (!obj || typeof obj !== 'object') return obj;
     if (obj instanceof Date || obj instanceof RegExp) return obj;
     if (Array.isArray(obj)) return obj.map(walk);
     return Object.keys(obj).reduce(function (acc, key) {
-        var camel = key[0].toLowerCase() + key.slice(1).replace(/([A-Z]+)/g, function (m, x) {
+        var camel = key[0].toLowerCase() + key.slice(1).replace(/([A-Z]+)/g, function (_m, x) {
             return '_' + x.toLowerCase();
         });
         acc[camel] = walk(obj[key]);
         return acc;
-    }, {});
+    }, {} as any);
 };
