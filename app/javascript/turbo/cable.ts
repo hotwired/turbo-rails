@@ -16,7 +16,7 @@ export function setConsumer(newConsumer: Consumer) {
 }
 
 export async function createConsumer() {
-  const { createConsumer } = await import(/* webpackChunkName: "actioncable" */ "@rails/actioncable/src")
+  const { createConsumer } = await import(/* webpackChunkName: "actioncable" */ "@rails/actioncable")
   return (createConsumer as (typeof ActionCableCreateConsumer))()
 }
 

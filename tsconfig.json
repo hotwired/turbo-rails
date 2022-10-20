@@ -6,11 +6,11 @@
     "moduleResolution": "node",
     "noUnusedLocals": true,
     "rootDir": "app/javascript/turbo",
-    "strict": false,
+    "strict": true,
     "target": "es2017",
     "noEmit": true,
-    "removeComments": true,
     "skipLibCheck": true,
+    "removeComments": false
   },
   "exclude": [ "dist" ]
 }

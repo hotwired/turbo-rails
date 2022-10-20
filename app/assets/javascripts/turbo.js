@@ -3958,7 +3958,7 @@ function setConsumer(newConsumer) {
 
 async function createConsumer() {
   const {createConsumer: createConsumer} = await Promise.resolve().then((function() {
-    return index;
+    return actioncable_esm;
   }));
   return createConsumer();
 }
@@ -4564,20 +4564,20 @@ function getConfig(name) {
   }
 }
 
-var index = Object.freeze({
+var actioncable_esm = Object.freeze({
   __proto__: null,
   Connection: Connection,
   ConnectionMonitor: ConnectionMonitor,
   Consumer: Consumer,
   INTERNAL: INTERNAL,
   Subscription: Subscription,
-  Subscriptions: Subscriptions,
   SubscriptionGuarantor: SubscriptionGuarantor,
+  Subscriptions: Subscriptions,
   adapters: adapters,
-  createWebSocketURL: createWebSocketURL,
-  logger: logger,
   createConsumer: createConsumer$1,
-  getConfig: getConfig
+  createWebSocketURL: createWebSocketURL,
+  getConfig: getConfig,
+  logger: logger
 });
 
 export { turbo_es2017Esm as Turbo, cable };
