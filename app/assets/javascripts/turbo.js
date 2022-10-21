@@ -1883,6 +1883,7 @@ class Visit {
       this.render((async () => {
         this.cacheSnapshot();
         this.performScroll();
+        this.changeHistory();
         this.adapter.visitRendered(this);
       }));
     }
@@ -2296,7 +2297,6 @@ class Navigator {
     }
   }
   startVisit(locatable, restorationIdentifier, options = {}) {
-    this.lastVisit = this.currentVisit;
     this.stop();
     this.currentVisit = new Visit(this, expandURL(locatable), restorationIdentifier, Object.assign({
       referrer: this.location
@@ -2383,12 +2383,10 @@ class Navigator {
     this.delegate.visitCompleted(visit);
   }
   locationWithActionIsSamePage(location, action) {
-    var _a;
     const anchor = getAnchor(location);
-    const lastLocation = ((_a = this.lastVisit) === null || _a === void 0 ? void 0 : _a.location) || this.view.lastRenderedLocation;
-    const currentAnchor = getAnchor(lastLocation);
+    const currentAnchor = getAnchor(this.view.lastRenderedLocation);
     const isRestorationToTop = action === "restore" && typeof anchor === "undefined";
-    return action !== "replace" && getRequestURL(location) === getRequestURL(lastLocation) && (isRestorationToTop || anchor != null && anchor !== currentAnchor);
+    return action !== "replace" && getRequestURL(location) === getRequestURL(this.view.lastRenderedLocation) && (isRestorationToTop || anchor != null && anchor !== currentAnchor);
   }
   visitScrolledToSamePageLocation(oldURL, newURL) {
     this.delegate.visitScrolledToSamePageLocation(oldURL, newURL);
