@@ -32,7 +32,7 @@ Turbo reinvents the old HTML technique of frames without any of the drawbacks th
 
 It also makes it dead easy to carve a single page into smaller pieces that can all live on their own cache timeline. While the bulk of the page might easily be cached between users, a small personalized toolbar perhaps cannot. With Turbo::Frames, you can designate the toolbar as a frame, which will be **lazy-loaded automatically** by the publicly-cached root page. This means simpler pages, easier caching schemes with fewer dependent keys, and all without needing to write a lick of custom JavaScript.
 
-This gem provides a `turbo_frame_tag` helper to create those frame.
+This gem provides a `turbo_frame_tag` helper to create those frames.
 
 For instance:
 ```erb
