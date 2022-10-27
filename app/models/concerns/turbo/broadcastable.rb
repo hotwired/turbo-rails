@@ -28,7 +28,7 @@
 #
 # You can also choose to render html instead of a partial inside of a broadcast
 # you do this by passing the html: option to any broadcast method that accepts the **rendering argument
-# 
+#
 #   class Message < ApplicationRecord
 #     belongs_to :user
 #
@@ -39,7 +39,7 @@
 #         broadcast_update_to(user, :messages, target: "message-count", html: "<p> #{user.messages.count} </p>")
 #       end
 #   end
-# 
+#
 # There are four basic actions you can broadcast: <tt>remove</tt>, <tt>replace</tt>, <tt>append</tt>, and
 # <tt>prepend</tt>. As a rule, you should use the <tt>_later</tt> versions of everything except for remove when broadcasting
 # within a real-time path, like a controller or model, since all those updates require a rendering step, which can slow down
@@ -72,16 +72,16 @@ module Turbo::Broadcastable
     #     broadcasts_to ->(message) { [ message.board, :messages ] }, partial: "messages/custom_message"
     #   end
     def broadcasts_to(stream, inserts_by: :append, target: broadcast_target_default, **rendering)
-      after_create_commit  -> { broadcast_action_later_to stream.try(:call, self) || send(stream), action: inserts_by, target: target.try(:call, self) || target, **rendering }
-      after_update_commit  -> { broadcast_replace_later_to stream.try(:call, self) || send(stream), **rendering }
-      after_destroy_commit -> { broadcast_remove_to stream.try(:call, self) || send(stream) }
+      after_create_commit  -> { broadcast_action_later_to(stream.try(:call, self) || send(stream), action: inserts_by, target: target.try(:call, self) || target, **rendering) }
+      after_update_commit  -> { broadcast_replace_later_to(stream.try(:call, self) || send(stream), **rendering) }
+      after_destroy_commit -> { broadcast_remove_to(stream.try(:call, self) || send(stream)) }
     end
 
     # Same as <tt>#broadcasts_to</tt>, but the designated stream for updates and destroys is automatically set to
     # the current model, for creates - to the model plural name, which can be overriden by passing <tt>stream</tt>.
     def broadcasts(stream = model_name.plural, inserts_by: :append, target: broadcast_target_default, **rendering)
-      after_create_commit  -> { broadcast_action_later_to stream, action: inserts_by, target: target.try(:call, self) || target, **rendering }
-      after_update_commit  -> { broadcast_replace_later **rendering }
+      after_create_commit  -> { broadcast_action_later_to(stream, action: inserts_by, target: target.try(:call, self) || target, **rendering) }
+      after_update_commit  -> { broadcast_replace_later(**rendering) }
       after_destroy_commit -> { broadcast_remove }
     end
 
