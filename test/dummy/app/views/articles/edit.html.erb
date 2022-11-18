@@ -1,5 +1,9 @@
 <h1>Edit Article</h1>
 
+<form action="<%= articles_path %>">
+  <button>articles#index</button>
+</form>
+
 <%= form_with model: @article, url: article_path(@article.id) do |form| %>
   <%= form.label :body %>
   <%= form.text_area :body %>
