@@ -43,7 +43,7 @@ class BroadcastsTest < ApplicationSystemTestCase
 
     assert_no_button "Start listening for broadcasts"
 
-    Timeout.timeout(Capybara.default_max_wait_time) { wait_for_subscriber }
+    assert_selector :element, "turbo-cable-stream-source", visible: false
   end
 
   def assert_broadcasts_text(text, to:, &block)
@@ -52,19 +52,5 @@ class BroadcastsTest < ApplicationSystemTestCase
     [text, to].yield_self(&block)
 
     within(:element, id: to) { assert_text text }
-  end
-
-  def wait_for_subscriber
-    loop do
-      subscriber_map = ActionCable.server.pubsub.instance_variable_get(:@subscriber_map)
-      if subscriber_map.is_a?(ActionCable::SubscriptionAdapter::SubscriberMap)
-        subscribers = subscriber_map.instance_variable_get(:@subscribers)
-        sync = subscriber_map.instance_variable_get(:@sync)
-        sync.synchronize do
-          return unless subscribers.empty?
-        end
-      end
-      sleep 0.1
-    end
   end
 end
