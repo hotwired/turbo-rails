@@ -8,4 +8,4 @@ export { cable }
 
 import { encodeMethodIntoRequestBody } from "./fetch_requests"
 
-addEventListener("turbo:before-fetch-request", encodeMethodIntoRequestBody)
+addEventListener("turbo:before-fetch-request", <EventListener>encodeMethodIntoRequestBody)

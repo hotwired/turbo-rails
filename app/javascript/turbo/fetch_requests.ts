@@ -1,36 +1,54 @@
 import type { TurboBeforeFetchRequestEvent, TurboSubmitStartEvent } from '@hotwired/turbo'
 
-export function encodeMethodIntoRequestBody(event: Event) {
-  let ev = event as TurboBeforeFetchRequestEvent
-  if (ev.target instanceof HTMLFormElement) {
-    const { target: form, detail: { fetchOptions } } = ev
+export function encodeMethodIntoRequestBody(event: TurboBeforeFetchRequestEvent) {
+  if (event.target instanceof HTMLFormElement) {
+    const { target: form, detail: { fetchOptions } } = event
 
-    form.addEventListener("turbo:submit-start", ev => {
-      const { detail: { formSubmission: { submitter } } } = ev as TurboSubmitStartEvent
-      const method = detectSubmitMethod(form, submitter, fetchOptions) || ""
+    form.addEventListener("turbo:submit-start", <EventListener>(({ detail: { formSubmission: { submitter } } }: TurboSubmitStartEvent) => {
+      const body = isBodyInit(fetchOptions.body) ? fetchOptions.body : new URLSearchParams()
+      const method = determineFetchMethod(submitter, body, form)
 
       if (!/get/i.test(method)) {
-        const body = fetchOptions.body as FormData | undefined
         if (/post/i.test(method)) {
-          body?.delete("_method")
+          body.delete("_method")
         } else {
-          body?.set("_method", method)
+          body.set("_method", method)
         }
 
         fetchOptions.method = "post"
       }
-    }, { once: true })
+    }), { once: true })
   }
 }
 
-function detectSubmitMethod(form: HTMLElement, submitter: HTMLElement | undefined, fetchOptions: RequestInit): string | null {
-  const _submitter = submitter as HTMLInputElement | HTMLButtonElement | undefined
-  const body = fetchOptions.body as FormData | undefined
-  if (_submitter && _submitter.formMethod) {
-    return _submitter.formMethod
-  } else if (body?.get("_method")) {
-    return body.get("_method") as string | null
+type FetchBodyData = FormData | URLSearchParams
+
+function determineFetchMethod(submitter: HTMLElement | undefined, body: FetchBodyData, form: HTMLFormElement): string {
+  const formMethod = determineFormMethod(submitter)
+  const overrideMethod = body.get("_method")
+  const method = form.getAttribute("method") || "get"
+
+  if (typeof formMethod == "string") {
+    return formMethod
+  } else if (typeof overrideMethod == "string") {
+    return overrideMethod
   } else {
-    return form.getAttribute("method")
+    return method
   }
+}
+
+function determineFormMethod(submitter: HTMLElement | undefined): string | null {
+  if (submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement) {
+    if (submitter.hasAttribute("formmethod")) {
+      return submitter.formMethod
+    } else {
+      return null
+    }
+  } else {
+    return null
+  }
+}
+
+function isBodyInit(body: BodyInit | null | undefined): body is FetchBodyData {
+  return body instanceof FormData || body instanceof URLSearchParams
 }
