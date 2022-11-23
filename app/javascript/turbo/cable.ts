@@ -3,7 +3,7 @@ import type {
   Mixin,
   createConsumer as ActionCableCreateConsumer,
   ChannelNameWithParams
-} from '@rails/actioncable'
+} from "@rails/actioncable"
 
 let consumer: Consumer | undefined
 

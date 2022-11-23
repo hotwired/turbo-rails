@@ -1,4 +1,4 @@
-import type { TurboBeforeFetchRequestEvent, TurboSubmitStartEvent } from '@hotwired/turbo'
+import type { TurboBeforeFetchRequestEvent, TurboSubmitStartEvent } from "@hotwired/turbo"
 
 export function encodeMethodIntoRequestBody(event: TurboBeforeFetchRequestEvent) {
   if (event.target instanceof HTMLFormElement) {
