@@ -8,7 +8,7 @@ import type {
 let consumer: Consumer | undefined
 
 export async function getConsumer() {
-  return consumer || createConsumer().then(setConsumer)
+  return consumer || setConsumer(await createConsumer())
 }
 
 export function setConsumer(newConsumer: Consumer) {
