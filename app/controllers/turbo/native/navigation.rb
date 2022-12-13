@@ -33,8 +33,10 @@ module Turbo::Native::Navigation
 
   # :nodoc:
   def turbo_native_action_or_redirect(url, action, redirect_type, options = {})
+    native_params = options.delete(:native_params) || {}
+
     if turbo_native_app?
-      redirect_to send("turbo_#{action}_historical_location_url", notice: options[:notice] || options.delete(:native_notice))
+      redirect_to send("turbo_#{action}_historical_location_url", notice: options[:notice], **native_params)
     elsif redirect_type == :back
       redirect_back fallback_location: url, **options
     else
