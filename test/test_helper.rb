@@ -15,6 +15,8 @@ end
 
 class ActiveSupport::TestCase
   include ActiveJob::TestHelper
+
+  parallelize(workers: :number_of_processors, threshold: 2)
 end
 
 class ActionDispatch::IntegrationTest
