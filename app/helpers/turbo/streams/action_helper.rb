@@ -15,18 +15,18 @@ module Turbo::Streams::ActionHelper
     template = action.to_sym == :remove ? "" : tag.template(template.to_s.html_safe)
 
     if target = convert_to_turbo_stream_dom_id(target)
-      tag.turbo_stream(template, **attributes.merge(action: action, target: target))
+      tag.turbo_stream(template, **attributes, action: action, target: target)
     elsif targets = convert_to_turbo_stream_dom_id(targets, include_selector: true)
-      tag.turbo_stream(template, **attributes.merge(action: action, targets: targets))
+      tag.turbo_stream(template, **attributes, action: action, targets: targets)
     else
-      tag.turbo_stream(template, **attributes.merge(action: action))
+      tag.turbo_stream(template, **attributes, action: action)
     end
   end
 
   private
     def convert_to_turbo_stream_dom_id(target, include_selector: false)
       if target.respond_to?(:to_key)
-        [ ("#" if include_selector), ActionView::RecordIdentifier.dom_id(target) ].compact.join
+        "#{"#" if include_selector}#{ActionView::RecordIdentifier.dom_id(target)}"
       else
         target
       end
