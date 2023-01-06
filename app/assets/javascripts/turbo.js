@@ -3949,7 +3949,7 @@ var turbo_es2017Esm = Object.freeze({
 let consumer;
 
 async function getConsumer() {
-  return consumer || setConsumer(createConsumer().then(setConsumer));
+  return consumer || setConsumer(await createConsumer());
 }
 
 function setConsumer(newConsumer) {
@@ -3981,7 +3981,7 @@ function walk(obj) {
   if (obj instanceof Date || obj instanceof RegExp) return obj;
   if (Array.isArray(obj)) return obj.map(walk);
   return Object.keys(obj).reduce((function(acc, key) {
-    var camel = key[0].toLowerCase() + key.slice(1).replace(/([A-Z]+)/g, (function(m, x) {
+    var camel = key[0].toLowerCase() + key.slice(1).replace(/([A-Z]+)/g, (function(_m, x) {
       return "_" + x.toLowerCase();
     }));
     acc[camel] = walk(obj[key]);
@@ -4009,13 +4009,10 @@ class TurboCableStreamSourceElement extends HTMLElement {
   get channel() {
     const channel = this.getAttribute("channel");
     const signed_stream_name = this.getAttribute("signed-stream-name");
-    return {
+    return Object.assign({
       channel: channel,
-      signed_stream_name: signed_stream_name,
-      ...walk({
-        ...this.dataset
-      })
-    };
+      signed_stream_name: signed_stream_name
+    }, walk(Object.assign({}, this.dataset)));
   }
 }
 
