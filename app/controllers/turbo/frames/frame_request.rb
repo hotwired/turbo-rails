@@ -15,6 +15,8 @@ module Turbo::Frames::FrameRequest
   included do
     layout -> { false if turbo_frame_request? }
     etag { :frame if turbo_frame_request? }
+
+    helper_method :turbo_frame_request_id
   end
 
   private
