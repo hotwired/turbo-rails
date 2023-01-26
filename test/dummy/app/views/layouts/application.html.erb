@@ -9,7 +9,7 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body>
+  <body class="<%= "turbo-native" if turbo_native_app? %>">
     <%= yield %>
   </body>
 </html>

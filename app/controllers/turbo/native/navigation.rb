@@ -4,6 +4,12 @@
 #
 # turbo-android handles these actions automatically. You are required to implement the handling on your own for turbo-ios.
 module Turbo::Native::Navigation
+  extend ActiveSupport::Concern
+
+  included do
+    helper_method :turbo_native_app?
+  end
+
   # Turbo Native applications are identified by having the string "Turbo Native" as part of their user agent.
   def turbo_native_app?
     request.user_agent.to_s.match?(/Turbo Native/)
