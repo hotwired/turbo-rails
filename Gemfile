@@ -28,7 +28,6 @@ end
 group :test do
   gem 'capybara'
   gem 'rexml'
-  gem 'selenium-webdriver'
-  gem 'webdrivers'
+  gem 'cuprite', '~> 0.9', require: 'capybara/cuprite'
   gem 'sqlite3'
 end
