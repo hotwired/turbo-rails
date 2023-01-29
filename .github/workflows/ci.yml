@@ -21,6 +21,7 @@ jobs:
 
     env:
       RAILS_VERSION: "${{ matrix.rails-version }}"
+      PARALLEL_WORKERS: 1
 
     name: ${{ format('Tests (Ruby {0}, Rails {1})', matrix.ruby-version, matrix.rails-version) }}
     runs-on: ubuntu-latest
@@ -32,6 +33,7 @@ jobs:
       - name: Install Ruby
         uses: ruby/setup-ruby@v1
         with:
+          rubygems: 3.3.13
           ruby-version: ${{ matrix.ruby-version }}
           bundler-cache: true
 
