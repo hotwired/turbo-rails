@@ -33,9 +33,10 @@ module Turbo::Streams::Broadcasts
     broadcast_action_to(*streamables, action: :prepend, **opts)
   end
 
-  def broadcast_action_to(*streamables, action:, target: nil, targets: nil, **rendering)
+  def broadcast_action_to(*streamables, action:, target: nil, targets: nil, attributes: {}, **rendering)
     broadcast_stream_to(*streamables, content: turbo_stream_action_tag(action, target: target, targets: targets, template:
-      rendering.delete(:content) || rendering.delete(:html) || (rendering.any? ? render_format(:html, **rendering) : nil)
+      rendering.delete(:content) || rendering.delete(:html) || (rendering[:render] != false && rendering.any? ? render_format(:html, **rendering) : nil),
+      **attributes
     ))
   end
 
@@ -63,9 +64,9 @@ module Turbo::Streams::Broadcasts
     broadcast_action_later_to(*streamables, action: :prepend, **opts)
   end
 
-  def broadcast_action_later_to(*streamables, action:, target: nil, targets: nil, **rendering)
+  def broadcast_action_later_to(*streamables, action:, target: nil, targets: nil, attributes: {}, **rendering)
     Turbo::Streams::ActionBroadcastJob.perform_later \
-      stream_name_from(streamables), action: action, target: target, targets: targets, **rendering
+      stream_name_from(streamables), action: action, target: target, targets: targets, attributes: attributes, **rendering
   end
 
   def broadcast_render_to(*streamables, **rendering)

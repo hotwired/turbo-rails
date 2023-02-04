@@ -249,13 +249,13 @@ module Turbo::Broadcastable
   #   # Sends <turbo-stream action="prepend" target="clearances"><template><div id="clearance_5">My Clearance</div></template></turbo-stream>
   #   # to the stream named "identity:2:clearances"
   #   clearance.broadcast_action_to examiner.identity, :clearances, action: :prepend, target: "clearances"
-  def broadcast_action_to(*streamables, action:, target: broadcast_target_default, **rendering)
-    Turbo::StreamsChannel.broadcast_action_to(*streamables, action: action, target: target, **broadcast_rendering_with_defaults(rendering))
+  def broadcast_action_to(*streamables, action:, target: broadcast_target_default, attributes: {}, **rendering)
+    Turbo::StreamsChannel.broadcast_action_to(*streamables, action: action, target: target, attributes: attributes, **broadcast_rendering_with_defaults(rendering))
   end
 
   # Same as <tt>#broadcast_action_to</tt>, but the designated stream is automatically set to the current model.
-  def broadcast_action(action, target: broadcast_target_default, **rendering)
-    broadcast_action_to self, action: action, target: target, **rendering
+  def broadcast_action(action, target: broadcast_target_default, attributes: {}, **rendering)
+    broadcast_action_to self, action: action, target: target, attributes: attributes, **rendering
   end
 
 
@@ -300,13 +300,13 @@ module Turbo::Broadcastable
   end
 
   # Same as <tt>broadcast_action_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
-  def broadcast_action_later_to(*streamables, action:, target: broadcast_target_default, **rendering)
-    Turbo::StreamsChannel.broadcast_action_later_to(*streamables, action: action, target: target, **broadcast_rendering_with_defaults(rendering))
+  def broadcast_action_later_to(*streamables, action:, target: broadcast_target_default, attributes: {}, **rendering)
+    Turbo::StreamsChannel.broadcast_action_later_to(*streamables, action: action, target: target, attributes: attributes, **broadcast_rendering_with_defaults(rendering))
   end
 
   # Same as <tt>#broadcast_action_later_to</tt>, but the designated stream is automatically set to the current model.
-  def broadcast_action_later(action:, target: broadcast_target_default, **rendering)
-    broadcast_action_later_to self, action: action, target: target, **rendering
+  def broadcast_action_later(action:, target: broadcast_target_default, attributes: {}, **rendering)
+    broadcast_action_later_to self, action: action, target: target, attributes: attributes, **rendering
   end
 
   # Render a turbo stream template with this broadcastable model passed as the local variable. Example:
@@ -367,6 +367,8 @@ module Turbo::Broadcastable
           return o
         elsif o[:template] || o[:renderable]
           o[:layout] = false
+        elsif o[:render] == false
+          return o
         else
           # if none of these options are passed in, it will set a partial from #to_partial_path
           o[:partial] ||= to_partial_path
