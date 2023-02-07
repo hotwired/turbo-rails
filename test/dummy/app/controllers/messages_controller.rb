@@ -1,4 +1,6 @@
 class MessagesController < ApplicationController
+  escape_turbo_frame only: :index
+
   def show
     @message = Message.new(id: 1, content: "My message")
   end

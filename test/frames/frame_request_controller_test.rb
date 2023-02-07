@@ -45,6 +45,14 @@ class Turbo::FrameRequestControllerTest < ActionDispatch::IntegrationTest
     assert_match /#{turbo_frame_request_id}/, @response.body
   end
 
+  test "escape_turbo_frame sets the turbo-visit-control header for frame requests" do
+    get messages_path
+    assert_select "meta[name=turbo-visit-control]", count: 0
+
+    get messages_path, headers: { "Turbo-Frame" => "true" }
+    assert_select "meta[name=turbo-visit-control][content=reload]"
+  end
+
   private
     def with_prepended_view_path(path, &block)
       previous_view_paths = ApplicationController.view_paths

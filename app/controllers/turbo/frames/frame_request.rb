@@ -25,6 +25,17 @@ module Turbo::Frames::FrameRequest
     etag { :frame if turbo_frame_request? }
   end
 
+  class_methods do
+    # Force the page to cause a full page reload if sent in response to a frame request.
+    #
+    # Consider using `escape_turbo_frame` if you have pages that should always be shown in full, but which may be sent
+    # as the response to a frame request in certain situations. The classic example of this is where an expired session
+    # results in a redirect to a login page.
+    def escape_turbo_frame(...)
+      before_action(:escape_turbo_frame, ...)
+    end
+  end
+
   private
     def turbo_frame_request?
       turbo_frame_request_id.present?
@@ -32,5 +43,9 @@ module Turbo::Frames::FrameRequest
 
     def turbo_frame_request_id
       request.headers["Turbo-Frame"]
+    end
+
+    def escape_turbo_frame
+      @_escape_turbo_frame = true if turbo_frame_request?
     end
 end
