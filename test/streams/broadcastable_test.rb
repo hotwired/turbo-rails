@@ -36,6 +36,12 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "broadcasting update to stream now with template option" do
+    assert_broadcast_on "stream", turbo_stream_action_tag("update", target: "message_1", template: render("messages/index", layout: false)) do
+      @message.broadcast_update_to "stream", template: "messages/index"
+    end
+  end
+
   test "broadcasting update now" do
     assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("update", target: "message_1", template: render(@message)) do
       @message.broadcast_update
