@@ -7,8 +7,7 @@ class MessagesController < ApplicationController
     @messages = Message.all
   end
 
-  def echo
-    @messages = []
+  def section
   end
 
   def create
