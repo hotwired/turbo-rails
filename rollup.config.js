@@ -27,7 +27,7 @@ export default [
     input: pkg.module,
     output: {
       file: "app/assets/javascripts/turbo.min.js",
-      format: "es",
+      format: "esm",
       inlineDynamicImports: true,
       sourcemap: true
     },
