@@ -7,7 +7,7 @@ export default [
     input: pkg.module,
     output: {
       file: pkg.main,
-      format: "es",
+      format: "esm",
       inlineDynamicImports: true
     },
     plugins: [
