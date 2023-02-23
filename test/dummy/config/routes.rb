@@ -7,6 +7,7 @@ Rails.application.routes.draw do
   end
   resources :trays
   resources :posts
+  resources :notifications
   namespace :users do
     resources :profiles
   end

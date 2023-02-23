@@ -77,4 +77,14 @@ class Turbo::StreamsControllerTest < ActionDispatch::IntegrationTest
       <p>Basecamp</p></template></turbo-stream>
     HTML
   end
+
+  test "render a renderable object" do
+    post notifications_path, as: :turbo_stream
+
+    assert_dom_equal <<~HTML.strip, @response.body
+      <turbo-stream action="append" target="notifications"><template><div class='notification'>
+        <p>Example notification</p>
+      </div></template></turbo-stream>
+    HTML
+  end
 end
