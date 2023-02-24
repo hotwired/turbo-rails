@@ -204,3 +204,25 @@ class Turbo::BroadcastableCommentTest < ActionCable::Channel::TestCase
     end
   end
 end
+
+class Turbo::BroadcastableLocalizedTest < ActionCable::Channel::TestCase
+  include ActiveJob::TestHelper, Turbo::Streams::ActionHelper
+
+  setup { @message = Message.new(id: 1, content: "Hello!") }
+
+  test "broadcast render localized" do
+    Turbo.with_localized_broadcasts do
+      assert_broadcast_on [@message.to_gid_param, :nb].join(":"), turbo_stream_action_tag("replace", target: "message_1", template: "Ha det!") do
+        @message.broadcast_render
+      end
+    end
+  end
+
+  test "broadcast action localized" do
+    Turbo.with_localized_broadcasts do
+      assert_broadcast_on [@message.to_gid_param, :en].join(":"), turbo_stream_action_tag("prepend", target: "messages", template: render(@message)) do
+        @message.broadcast_action "prepend"
+      end
+    end
+  end
+end

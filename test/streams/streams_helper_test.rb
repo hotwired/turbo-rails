@@ -33,4 +33,19 @@ class Turbo::StreamsHelperTest < ActionView::TestCase
       turbo_stream_from("messages", channel: "NonExistentChannel", data: {payload: 1})
   end
 
+  test "with localization" do
+    Turbo.with_localized_broadcasts do
+      I18n.with_locale(:en) do
+        assert_dom_equal \
+          %(<turbo-cable-stream-source channel="LocalizedChannel" signed-stream-name="#{Turbo::StreamsChannel.signed_stream_name("messages:en")}"></turbo-cable-stream-source>),
+          turbo_stream_from("messages", channel: "LocalizedChannel")
+      end
+
+      I18n.with_locale(:nb) do
+        assert_dom_equal \
+          %(<turbo-cable-stream-source channel="LocalizedChannel" signed-stream-name="#{Turbo::StreamsChannel.signed_stream_name("messages:nb")}"></turbo-cable-stream-source>),
+          turbo_stream_from("messages", channel: "LocalizedChannel")
+      end
+    end
+  end
 end

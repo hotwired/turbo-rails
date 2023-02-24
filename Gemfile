@@ -12,6 +12,7 @@ end
 
 gem "rails", rails_constraint
 gem "sprockets-rails"
+gem "i18n"
 
 gem 'rake'
 gem 'byebug'

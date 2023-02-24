@@ -1,0 +1,7 @@
+nb:
+  hello: "Hei verden"
+  goodbye: Ha det!
+  admin:
+    companies:
+      company:
+        name: "Firma:"

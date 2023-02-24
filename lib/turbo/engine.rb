@@ -51,6 +51,12 @@ module Turbo
       Mime::Type.register "text/vnd.turbo-stream.html", :turbo_stream
     end
 
+    initializer "turbo.localized_broadcasts" do
+      config.after_initialize do
+        Turbo.localized_broadcasts = config.turbo.localized_broadcasts
+      end
+    end
+
     initializer "turbo.renderer" do
       ActiveSupport.on_load(:action_controller) do
         ActionController::Renderers.add :turbo_stream do |turbo_streams_html, options|
