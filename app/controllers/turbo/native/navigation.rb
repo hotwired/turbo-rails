@@ -1,6 +1,8 @@
 # Turbo is built to work with native navigation principles and present those alongside what's required for the web. When you
 # have Turbo Native clients running (see the Turbo iOS and Turbo Android projects for details), you can respond to native
 # requests with three dedicated responses: <tt>recede</tt>, <tt>resume</tt>, <tt>refresh</tt>.
+#
+# turbo-android handles these actions automatically. You are require to implement the handling on your own for turbo-ios.
 module Turbo::Native::Navigation
   # Turbo Native applications are identified by having the string "Turbo Native" as part of their user agent.
   def turbo_native_app?
