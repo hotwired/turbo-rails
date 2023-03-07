@@ -37,4 +37,10 @@ class Turbo::FramesHelperTest < ActionView::TestCase
   test "block style" do
     assert_dom_equal(%(<turbo-frame id="tray"><p>tray!</p></turbo-frame>), turbo_frame_tag("tray") { tag.p("tray!") })
   end
+
+  test "frame with action" do
+    record = Message.create(id: "1")
+
+    assert_dom_equal %(<turbo-frame src="/messages/1" id="message" data-turbo-action="advance"></turbo-frame>), turbo_frame_tag("message", src: record, action: "advance")
+  end
 end
