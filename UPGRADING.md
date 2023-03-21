@@ -1,3 +1,39 @@
+# Upgrading from previous Turbo Rails versions
+
+## Key digest changes in 1.1.1
+
+Prior to version 1.1.1, Turbo Rails inadvertently caused applications to use SHA1 when deriving application secrets,
+even if another digest class was specified in `config.active_support.key_generator_hash_digest_class`. Starting with
+Rails 7, new applications default to SHA256 for key generation, and so are more likely to be affected by this.
+
+This behavior was [fixed][1] in Turbo Rails 1.1.1. As a result, upgrading from an older version can cause an unexpected
+change to application secrets.
+
+For applications that use ActiveStorage, this causes a change to the secret used by its message verifier, which will make
+assets previously stored by the application [inaccessible][2].
+
+If your application is affected by this, you can use a key rotation to ensure the old asset digests remain readable.
+Placing the following code inside `config/initializers` will add the necessary rotation:
+
+```ruby
+Rails.application.config.after_initialize do |app|
+  key_generator = ActiveSupport::KeyGenerator.new app.secret_key_base,
+    iterations: 1000,
+    hash_digest_class: OpenSSL::Digest::SHA1
+
+  app.message_verifier("ActiveStorage").rotate(key_generator.generate_key("ActiveStorage"))
+end
+```
+
+Alternatively, you can configure the application to continue using SHA1-based secrets, by overriding the default:
+
+```ruby
+config.active_support.key_generator_hash_digest_class = OpenSSL::Digest::SHA1
+```
+
+[1]: https://github.com/hotwired/turbo-rails/pull/335
+[2]: https://github.com/hotwired/turbo-rails/issues/340
+
 # Upgrading from Rails UJS / Turbolinks to Turbo
 
 Turbo supersedes the functionality offered by Rails UJS to turn links and form submissions into XMLHttpRequests, so if you're making a complete switch from Rails UJS / Turbolinks to Turbo, you should ensure that you have `config.action_view.form_with_generates_remote_forms = false` set in your `config/application.rb`. But not all applications can upgrade in one jump, and may need to have Rails UJS coexist alongside Turbo. Here are the steps you need to follow:

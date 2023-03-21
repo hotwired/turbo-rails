@@ -7,7 +7,7 @@ export default [
     input: "dist/index.js",
     output: {
       file: pkg.main,
-      format: "es",
+      format: "esm",
       inlineDynamicImports: true
     },
     plugins: [
@@ -26,7 +26,7 @@ export default [
     input: "dist/index.js",
     output: {
       file: "app/assets/javascripts/turbo.min.js",
-      format: "es",
+      format: "esm",
       inlineDynamicImports: true,
       sourcemap: true
     },

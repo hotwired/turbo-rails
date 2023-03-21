@@ -39,10 +39,10 @@ class Turbo::FrameRequestControllerTest < ActionDispatch::IntegrationTest
     turbo_frame_request_id = "test_frame_id"
 
     get tray_path(id: 1)
-    assert_no_match /#{turbo_frame_request_id}/, @response.body
+    assert_no_match(/#{turbo_frame_request_id}/, @response.body)
 
     get tray_path(id: 1), headers: { "Turbo-Frame" => turbo_frame_request_id }
-    assert_match /#{turbo_frame_request_id}/, @response.body
+    assert_match(/#{turbo_frame_request_id}/, @response.body)
   end
 
   private
