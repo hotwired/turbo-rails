@@ -35,7 +35,16 @@ function determineFetchMethod(submitter, body, form) {
 
 function determineFormMethod(submitter) {
   if (submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement) {
-    if (submitter.hasAttribute("formmethod")) {
+    // Rails 7 ActionView::Helpers::FormBuilder#button method has an override
+    // for formmethod if the button does not have name or value attributes
+    // set, which is the default. This means that if you use <%= f.button
+    // formmethod: :delete %>, it will generate a <button name="_method"
+    // value="delete" formmethod="post">. Therefore, if the submitter's name
+    // is already _method, it's value attribute already contains the desired
+    // method.
+    if (submitter.name === '_method') {
+      return submitter.value
+    } else if (submitter.hasAttribute("formmethod")) {
       return submitter.formMethod
     } else {
       return null

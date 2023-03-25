@@ -10,6 +10,10 @@
 
   <button>Submit as PATCH</button>
   <button formmethod="post" formaction="<%= articles_path %>">Submit as POST</button>
+
+  <%# In Rails 7, there's an override of formaction, so `form.button formaction: destroy_all_articles_path, formmethod: :delete` would generate the HTML below. In Rails 6, the override of `formaction` does not exist yet, so we generate the HTML manually.  %>
+  <button name="_method" type="submit" formaction="<%= destroy_all_articles_path %>" formmethod="post" value="delete">Delete all articles</button>
+
 <% end %>
 
 <%= link_to "Submit as DELETE", article_path(@article.id), data: { turbo_method: :delete } %>
