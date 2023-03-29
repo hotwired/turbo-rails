@@ -251,7 +251,7 @@ class Turbo::Streams::TagBuilder
   end
 
   # Send an action of the type <tt>name</tt> to <tt>target</tt>. Options described in the concrete methods.
-  def action(name = nil, target = nil, content = nil, targets: nil, allow_inferred_rendering: true, **kwargs, &block)
+  def action(name = nil, target = nil, content = nil, targets: nil, allow_inferred_rendering: true, attributes: {}, **kwargs, &block)
     name = name || kwargs[:name]
     target = target || kwargs[:target]
     content = content || kwargs[:content]
@@ -259,7 +259,7 @@ class Turbo::Streams::TagBuilder
     rendering = extract_rendering_options(**kwargs)
     template = render_template(target || targets, content, allow_inferred_rendering: allow_inferred_rendering, **rendering, &block)
 
-    turbo_stream_action_tag name, target: target, targets: targets, template: template
+    turbo_stream_action_tag name, target: target, targets: targets, template: template, **attributes
   end
 
   # Send an action of the type <tt>name</tt> to <tt>targets</tt>. Options described in the concrete methods.
