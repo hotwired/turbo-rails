@@ -1,4 +1,18 @@
 module Turbo::FramesHelper
+  # Returns a Turbo Frame id that can be used to modify a rendered Frame with
+  # Turbo Streams
+  #
+  # === Example
+  #
+  #   <%# app/views/articles/show.html.erb %>
+  #   <%= turbo_frame_tag(Article.find(1), "comments") %>
+  #
+  #   <%# app/views/comments/create.turbo_stream.erb %>
+  #   <%= turbo_stream.append turbo_frame_dom_id(Article.find(1), "comments"), @comment %>
+  def turbo_frame_dom_id(*ids)
+    ids.map { |id| id.respond_to?(:to_key) ? ActionView::RecordIdentifier.dom_id(id) : id }.join("_")
+  end
+
   # Returns a frame tag that can either be used simply to encapsulate frame content or as a lazy-loading container that starts empty but
   # fetches the URL supplied in the +src+ attribute.
   #
@@ -36,9 +50,8 @@ module Turbo::FramesHelper
   #   <%= turbo_frame_tag(Article.find(1), Comment.new) %>
   #   # => <turbo-frame id="article_1_new_comment"></turbo-frame>
   def turbo_frame_tag(*ids, src: nil, target: nil, **attributes, &block)
-    id = ids.map { |id| id.respond_to?(:to_key) ? ActionView::RecordIdentifier.dom_id(id) : id }.join("_")
     src = url_for(src) if src.present?
 
-    tag.turbo_frame(**attributes.merge(id: id, src: src, target: target).compact, &block)
+    tag.turbo_frame(**attributes.merge(id: turbo_frame_dom_id(*ids), src: src, target: target).compact, &block)
   end
 end
