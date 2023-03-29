@@ -17,6 +17,14 @@ class Turbo::Streams::TagBuilder::AfterTest < TagBuilderTestCase
     assert_dom_equal stream_all, turbo_stream.after_all("messages", content: "After")
   end
 
+  test "after with target and content as kwargs" do
+    stream_one = %(<turbo-stream action="after" target="messages"><template>After</template></turbo-stream>)
+    stream_all = %(<turbo-stream action="after" targets="messages"><template>After</template></turbo-stream>)
+
+    assert_dom_equal stream_one, turbo_stream.after(target: "messages", content: "After")
+    assert_dom_equal stream_all, turbo_stream.after(targets: "messages", content: "After")
+  end
+
   test "after with target as arg and partial kwarg" do
     stream_one = %(<turbo-stream action="after" target="messages"><template><p>After</p>
 </template></turbo-stream>)
