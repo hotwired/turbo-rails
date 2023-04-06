@@ -37,6 +37,7 @@ class Turbo::StreamsControllerTest < ActionDispatch::IntegrationTest
 
     patch message_path(id: 1), as: :turbo_stream
 
+    assert_turbo_stream action: :replace, count: 4
     assert_turbo_stream action: :replace, targets: "#message_4" do
       assert_select 'template', 'Something fourth'
     end
