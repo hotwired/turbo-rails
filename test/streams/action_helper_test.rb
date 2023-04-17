@@ -3,6 +3,22 @@ require "test_helper"
 class Turbo::ActionHelperTest < ActionCable::Channel::TestCase
   include Turbo::Streams::ActionHelper
 
+  test "target responds to #to_key" do
+    message = Message.new(id: 1)
+
+    stream = "<turbo-stream action=\"append\" target=\"message_1\"><template></template></turbo-stream>"
+
+    assert_equal stream, turbo_stream_action_tag("append", target: message)
+  end
+
+  test "target passed as array of dom_id arguments" do
+    message = Message.new(id: 1)
+
+    stream = "<turbo-stream action=\"append\" target=\"special_message_1\"><template></template></turbo-stream>"
+
+    assert_equal stream, turbo_stream_action_tag("append", target: [message, :special])
+  end
+
   test "no template" do
     stream = "<turbo-stream action=\"append\" target=\"message_1\"><template></template></turbo-stream>"
 
