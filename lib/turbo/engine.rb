@@ -1,5 +1,4 @@
 require "rails/engine"
-require "turbo/test_assertions"
 
 module Turbo
   class Engine < Rails::Engine
@@ -69,7 +68,15 @@ module Turbo
 
     initializer "turbo.test_assertions" do
       ActiveSupport.on_load(:active_support_test_case) do
+        require "turbo/test_assertions"
+
         include Turbo::TestAssertions
+      end
+
+      ActiveSupport.on_load(:action_dispatch_integration_test) do
+        require "turbo/test_assertions/integration_test_assertions"
+
+        include Turbo::TestAssertions::IntegrationTestAssertions
       end
     end
 
