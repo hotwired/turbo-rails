@@ -6,7 +6,7 @@ class Turbo::StreamsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to message_path(id: 1)
 
     post messages_path, as: :turbo_stream
-    assert_no_turbo_stream action: :update, target: "messages"
+    assert_no_turbo_stream status: :created, action: :update, target: "messages"
     assert_turbo_stream status: :created, action: :append, target: "messages" do |selected|
       assert_equal "<template>message_1</template>", selected.children.to_html
     end
