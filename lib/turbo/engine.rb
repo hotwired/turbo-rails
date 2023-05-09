@@ -33,6 +33,12 @@ module Turbo
       end
     end
 
+    initializer "turbo.configs" do
+      config.after_initialize do |app|
+        Turbo.draw_routes = app.config.turbo.draw_routes != false
+      end
+    end
+
     initializer "turbo.helpers", before: :load_config_initializers do
       ActiveSupport.on_load(:action_controller_base) do
         include Turbo::Streams::TurboStreamsTagBuilder, Turbo::Frames::FrameRequest, Turbo::Native::Navigation
