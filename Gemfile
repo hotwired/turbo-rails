@@ -26,7 +26,13 @@ group :development, :test do
 end
 
 group :test do
-  gem 'capybara'
+  kw =
+    if RUBY_VERSION.start_with? '3'
+      {git: 'https://github.com/teamcapybara/capybara.git', ref: '43e32a8495'}
+    else
+      {}
+    end
+  gem 'capybara', **kw
   gem 'rexml'
   gem 'selenium-webdriver'
   gem 'webdrivers'
