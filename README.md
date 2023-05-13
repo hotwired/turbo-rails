@@ -139,6 +139,7 @@ The [`Turbo::TestAssertions`](./lib/turbo/test_assertions.rb) concern provides T
 
 The [`Turbo::TestAssertions::IntegrationTestAssertions`](./lib/turbo/test_assertions/integration_test_assertions.rb) are built on top of `Turbo::TestAssertions`, and add support for passing a `status:` keyword. They are automatically included in [`ActionDispatch::IntegrationTest`](https://edgeguides.rubyonrails.org/testing.html#integration-testing).
 
+The [`Turbo::Broadcastable::TestHelper`](./lib/turbo/broadcastable/test_helper.rb) concern provides Action Cable-aware test helpers that assert that `<turbo-stream>` elements were or were not broadcast over Action Cable. They are not automatically included. To use them in your tests, make sure to `include Turbo::Broadcastable::TestHelper`.
 
 ## Development
 

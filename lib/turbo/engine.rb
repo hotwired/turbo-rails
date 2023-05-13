@@ -75,6 +75,7 @@ module Turbo
     initializer "turbo.test_assertions" do
       ActiveSupport.on_load(:active_support_test_case) do
         require "turbo/test_assertions"
+        require "turbo/broadcastable/test_helper"
 
         include Turbo::TestAssertions
       end
