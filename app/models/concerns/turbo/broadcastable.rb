@@ -54,8 +54,18 @@
 #       end
 #   end
 #
-# You can also choose to render a renderable object instead of a partial inside of a broadcast
-# you do this by passing the renderable: option to any broadcast method that accepts the **rendering argument
+# If you want to render a renderable object you can use the `renderable:` option.
+#
+#   class Message < ApplicationRecord
+#     belongs_to :user
+#
+#     after_create_commit :update_message
+#
+#     private
+#       def update_message
+#         broadcast_replace_to(user, :message, target: "message", renderable: MessageComponent.new)
+#       end
+#   end
 #
 # There are four basic actions you can broadcast: <tt>remove</tt>, <tt>replace</tt>, <tt>append</tt>, and
 # <tt>prepend</tt>. As a rule, you should use the <tt>_later</tt> versions of everything except for remove when broadcasting
