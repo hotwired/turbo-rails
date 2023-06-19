@@ -1,10 +1,10 @@
 class MessagesCountComponent
-  def initialize(count:)
-    @count = count
+  def initialize(text)
+    @text = text
   end
 
-  def render_in(_view_context)
-    "#{@count} messages sent from component"
+  def render_in(view_context)
+    "<div class='test-message'>#{@text}</div>".html_safe
   end
 
   def format

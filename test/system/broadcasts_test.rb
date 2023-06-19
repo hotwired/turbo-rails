@@ -19,27 +19,21 @@ class BroadcastsTest < ApplicationSystemTestCase
     end
   end
 
-  test "New messages update the message count with component" do
+  test "Message broadcasts with renderable: render option" do
     visit messages_path
-    wait_for_subscriber
+    wait_for_stream_to_be_connected
 
-    assert_text "Messages"
-    message = Message.create(content: "A new message")
-
-    message.broadcast_update_to(:messages, target: "message-count",
-      renderable: MessagesCountComponent.new(count: Message.count))
-    assert_selector("#message-count", text: "#{Message.count} messages sent from component", wait: 10)
+    assert_broadcasts_text "Test message", to: :messages do |text, target|
+      Message.create(content: "Ignored").broadcast_append_to(target, renderable: MessagesCountComponent.new(text))
+    end
   end
 
   test "Does not render the layout twice when passed a component" do
     visit messages_path
-    wait_for_subscriber
+    wait_for_stream_to_be_connected
 
-    assert_text "Messages"
-    message = Message.create(content: "A new message")
+    Message.create(content: "Ignored").broadcast_append_to(:messages, renderable: MessagesCountComponent.new("test"))
 
-    message.broadcast_update_to(:messages, target: "message-count",
-      renderable: MessagesCountComponent.new(count: Message.count))
     assert_selector("title", count: 1, visible: false, text: "Dummy")
   end
 
