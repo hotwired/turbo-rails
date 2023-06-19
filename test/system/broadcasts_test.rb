@@ -24,7 +24,7 @@ class BroadcastsTest < ApplicationSystemTestCase
     wait_for_stream_to_be_connected
 
     assert_broadcasts_text "Test message", to: :messages do |text, target|
-      Message.create(content: "Ignored").broadcast_append_to(target, renderable: MessagesCountComponent.new(text))
+      Message.create(content: "Ignored").broadcast_append_to(target, renderable: MessageComponent.new(text))
     end
   end
 
@@ -32,7 +32,7 @@ class BroadcastsTest < ApplicationSystemTestCase
     visit messages_path
     wait_for_stream_to_be_connected
 
-    Message.create(content: "Ignored").broadcast_append_to(:messages, renderable: MessagesCountComponent.new("test"))
+    Message.create(content: "Ignored").broadcast_append_to(:messages, renderable: MessageComponent.new("test"))
 
     assert_selector("title", count: 1, visible: false, text: "Dummy")
   end

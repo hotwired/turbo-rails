@@ -1,4 +1,4 @@
-class MessagesCountComponent
+class MessageComponent
   def initialize(text)
     @text = text
   end
