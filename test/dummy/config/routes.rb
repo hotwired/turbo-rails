@@ -1,5 +1,7 @@
 Rails.application.routes.draw do
-  resources :articles
+  resources :articles do
+    delete :destroy_all, on: :collection
+  end
   resources :messages do
     collection do
       get :section
