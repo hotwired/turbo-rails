@@ -55,6 +55,37 @@ When the user will click on the `Edit this todo` link, as direct response to thi
 
 [See documentation](https://turbo.hotwired.dev/handbook/frames).
 
+### A note on custom layouts
+
+In order to render turbo frame requests without the application layout, Turbo registers a custom [layout method](https://api.rubyonrails.org/classes/ActionView/Layouts/ClassMethods.html#method-i-layout). 
+If your application uses custom layout resolution, you have to make sure to return `false` for turbo frame requests:
+
+```ruby
+layout :custom_layout
+
+def custom_layout
+  return false if turbo_frame_request?
+  
+  # ... your custom layout logic
+```
+
+If you are using a custom, but "static" layout,
+
+```ruby
+layout "some_static_layout"
+```
+
+you **have** to change it to a layout method in order to conditionally return `false` for turbo frame requests:
+
+```ruby
+layout :custom_layout
+
+def custom_layout
+  return false if turbo_frame_request?
+  
+  "some_static_layout"
+```
+
 ## Come Alive with Turbo Streams
 
 Partial page updates that are **delivered asynchronously over a web socket connection** is the hallmark of modern, reactive web applications. With Turbo Streams, you can get all of that modern goodness using the existing server-side HTML you're already rendering to deliver the first page load. With a set of simple CRUD container tags, you can send HTML fragments over the web socket (or in response to direct interactions), and see the page change in response to new data. Again, **no need to construct an entirely separate API**, **no need to wrangle JSON**, **no need to reimplement the HTML construction in JavaScript**. Take the HTML you're already making, wrap it in an update tag, and, voila, your page comes alive.
