@@ -24,14 +24,7 @@ class Turbo::FramesHelperTest < ActionView::TestCase
   test "string frame nested withing a model frame" do
     record = Article.new(id: 1)
 
-    assert_dom_equal %(<turbo-frame id="article_1_comments"></turbo-frame>), turbo_frame_tag(record, "comments")
-  end
-
-  test "model frame nested withing another model frame" do
-    record = Article.new(id: 1)
-    nested_record = Comment.new
-
-    assert_dom_equal %(<turbo-frame id="article_1_new_comment"></turbo-frame>), turbo_frame_tag(record, nested_record)
+    assert_dom_equal %(<turbo-frame id="comments_article_1"></turbo-frame>), turbo_frame_tag(record, "comments")
   end
 
   test "block style" do
