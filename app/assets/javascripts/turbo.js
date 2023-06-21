@@ -4177,7 +4177,9 @@ function determineFetchMethod(submitter, body, form) {
 
 function determineFormMethod(submitter) {
   if (submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement) {
-    if (submitter.hasAttribute("formmethod")) {
+    if (submitter.name === "_method") {
+      return submitter.value;
+    } else if (submitter.hasAttribute("formmethod")) {
       return submitter.formMethod;
     } else {
       return null;
