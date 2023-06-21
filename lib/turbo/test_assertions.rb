@@ -19,6 +19,8 @@ module Turbo
     #   the value will be transformed by calling <tt>dom_id</tt>
     # * <tt>:targets</tt> [String] matches the element's <tt>[targets]</tt>
     #   attribute
+    # * <tt>:count</tt> [Integer] indicates how many turbo streams are expected.
+    #   Defaults to <tt>1</tt>.
     #
     #   Given the following HTML fragment:
     #
@@ -43,11 +45,11 @@ module Turbo
     #       assert_select "template p", text: "Hello!"
     #     end
     #
-    def assert_turbo_stream(action:, target: nil, targets: nil, &block)
+    def assert_turbo_stream(action:, target: nil, targets: nil, count: 1, &block)
       selector =  %(turbo-stream[action="#{action}"])
       selector << %([target="#{target.respond_to?(:to_key) ? dom_id(target) : target}"]) if target
       selector << %([targets="#{targets}"]) if targets
-      assert_select selector, count: 1, &block
+      assert_select selector, count: count, &block
     end
 
     # Assert that the rendered fragment of HTML does not contain a `<turbo-stream>`
