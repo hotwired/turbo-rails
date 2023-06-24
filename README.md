@@ -18,7 +18,7 @@ Whereas Turbolinks previously just dealt with links, Turbo can now also process 
 Turbo Drive can be disabled on a per-element basis by annotating the element or any of its ancestors with `data-turbo="false"`. If you want Turbo Drive to be disabled by default, then you can adjust your import like this:
 
 ```js
-import { Turbo } from "@hotwired/turbo-rails"
+import "@hotwired/turbo-rails"
 Turbo.session.drive = false
 ```
 
