@@ -15,6 +15,10 @@ module Turbo
       #{root}/app/jobs
     )
 
+    initializer "turbo.no_active_job", before: :set_eager_load_paths do
+      config.eager_load_paths.delete("#{root}/app/jobs") unless defined?(ActiveJob)
+    end
+
     initializer "turbo.no_action_cable", before: :set_eager_load_paths do
       config.eager_load_paths.delete("#{root}/app/channels") unless defined?(ActionCable)
     end
