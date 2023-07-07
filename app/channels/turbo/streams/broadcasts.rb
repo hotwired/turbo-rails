@@ -64,6 +64,8 @@ module Turbo::Streams::Broadcasts
   end
 
   def broadcast_action_later_to(*streamables, action:, target: nil, targets: nil, **rendering)
+    target = convert_to_turbo_stream_dom_id(target)
+    targets = convert_to_turbo_stream_dom_id(targets, include_selector: true)
     Turbo::Streams::ActionBroadcastJob.perform_later \
       stream_name_from(streamables), action: action, target: target, targets: targets, **rendering
   end
