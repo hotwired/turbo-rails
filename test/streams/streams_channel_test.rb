@@ -236,6 +236,36 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "broadcasting action later with ActiveModel array target" do
+    options = { partial: "messages/message", locals: { message: "hello!" } }
+
+    message = Message.new(id: 42)
+    target = [message, "opt"]
+    expected_target = "opt_message_42"
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: expected_target, template: render(options)) do
+      perform_enqueued_jobs do
+        Turbo::StreamsChannel.broadcast_action_later_to \
+          "stream", action: "prepend", target: target, **options
+      end
+    end
+  end
+
+  test "broadcasting action later with multiple ActiveModel targets" do
+    options = { partial: "messages/message", locals: { message: "hello!" } }
+
+    one = Message.new(id: 1)
+    targets = [one, "messages"]
+    expected_targets = "#messages_message_1"
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", targets: expected_targets, template: render(options)) do
+      perform_enqueued_jobs do
+        Turbo::StreamsChannel.broadcast_action_later_to \
+          "stream", action: "prepend", targets: targets, **options
+      end
+    end
+  end
+
   test "broadcasting render now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("replace", target: "message_1", template: "Goodbye!") do
       Turbo::StreamsChannel.broadcast_render_to "stream", partial: "messages/message"
