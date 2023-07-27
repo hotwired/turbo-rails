@@ -122,19 +122,19 @@ class Turbo::Broadcastable::TestHelper::AssertTurboStreamBroadcastsTest < Active
   end
 
   test "#assert_turbo_stream_broadcasts fails when no broadcasts happened on a stream name" do
-    assert_raises MiniTest::Assertion do
+    assert_raises Minitest::Assertion do
       assert_turbo_stream_broadcasts "messages"
     end
   end
 
   test "#assert_turbo_stream_broadcasts with a count: optional fails when no broadcasts happened on a stream name" do
-    singular_failure = assert_raises MiniTest::Assertion do
+    singular_failure = assert_raises Minitest::Assertion do
       assert_turbo_stream_broadcasts "messages", count: 1
     end
 
     assert_includes singular_failure.message, %(1 Turbo Stream broadcast on "messages")
 
-    plural_failure = assert_raises MiniTest::Assertion do
+    plural_failure = assert_raises Minitest::Assertion do
       assert_turbo_stream_broadcasts "messages", count: 2
     end
 
@@ -187,7 +187,7 @@ class Turbo::Broadcastable::TestHelper::AssertTurboStreamBroadcastsTest < Active
   end
 
   test "#assert_turbo_stream_broadcasts fails when no broadcasts happened on a stream name from a block" do
-    assert_raises MiniTest::Assertion do
+    assert_raises Minitest::Assertion do
       assert_turbo_stream_broadcasts "messages" do
         # no-op
       end
@@ -225,7 +225,7 @@ class Turbo::Broadcastable::TestHelper::AssertNoTurboStreamBroadcastsTest < Acti
   test "#assert_no_turbo_stream_broadcasts fails when when a broadcast happened on a stream name" do
     message = Message.new(id: 1)
 
-    assert_raises MiniTest::Assertion do
+    assert_raises Minitest::Assertion do
       message.broadcast_remove_to "messages"
 
       assert_no_turbo_stream_broadcasts "messages"
@@ -235,7 +235,7 @@ class Turbo::Broadcastable::TestHelper::AssertNoTurboStreamBroadcastsTest < Acti
   test "#assert_no_turbo_stream_broadcasts fails when when a broadcast happened on a stream name from a block" do
     message = Message.new(id: 1)
 
-    assert_raises MiniTest::Assertion do
+    assert_raises Minitest::Assertion do
       assert_no_turbo_stream_broadcasts "messages" do
         message.broadcast_remove_to "messages"
       end
@@ -245,7 +245,7 @@ class Turbo::Broadcastable::TestHelper::AssertNoTurboStreamBroadcastsTest < Acti
   test "#assert_no_turbo_stream_broadcasts fails when when a broadcast happened on a stream object" do
     message = Message.new(id: 1)
 
-    assert_raises MiniTest::Assertion do
+    assert_raises Minitest::Assertion do
       message.broadcast_remove
 
       assert_no_turbo_stream_broadcasts message
@@ -255,7 +255,7 @@ class Turbo::Broadcastable::TestHelper::AssertNoTurboStreamBroadcastsTest < Acti
   test "#assert_no_turbo_stream_broadcasts fails when when a broadcast happened on a stream object from a block" do
     message = Message.new(id: 1)
 
-    assert_raises MiniTest::Assertion do
+    assert_raises Minitest::Assertion do
       assert_no_turbo_stream_broadcasts message do
         message.broadcast_remove
       end
