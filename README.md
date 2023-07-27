@@ -58,7 +58,7 @@ When the user will click on the `Edit this todo` link, as direct response to thi
 ### A note on custom layouts
 
 In order to render turbo frame requests without the application layout, Turbo registers a custom [layout method](https://api.rubyonrails.org/classes/ActionView/Layouts/ClassMethods.html#method-i-layout). 
-If your application uses custom layout resolution, you have to make sure to return `""turbo_rails/frame"` (or `false` for TurboRails < 1.4.0) for turbo frame requests:
+If your application uses custom layout resolution, you have to make sure to return `"turbo_rails/frame"` (or `false` for TurboRails < 1.4.0) for turbo frame requests:
 
 ```ruby
 layout :custom_layout
