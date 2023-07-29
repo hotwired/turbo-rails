@@ -18,7 +18,7 @@ Whereas Turbolinks previously just dealt with links, Turbo can now also process 
 Turbo Drive can be disabled on a per-element basis by annotating the element or any of its ancestors with `data-turbo="false"`. If you want Turbo Drive to be disabled by default, then you can adjust your import like this:
 
 ```js
-import { Turbo } from "@hotwired/turbo-rails"
+import "@hotwired/turbo-rails"
 Turbo.session.drive = false
 ```
 
@@ -54,6 +54,37 @@ For instance:
 When the user will click on the `Edit this todo` link, as direct response to this direct user interaction, the turbo frame will be replaced with the one in the `edit.html.erb` page automatically.
 
 [See documentation](https://turbo.hotwired.dev/handbook/frames).
+
+### A note on custom layouts
+
+In order to render turbo frame requests without the application layout, Turbo registers a custom [layout method](https://api.rubyonrails.org/classes/ActionView/Layouts/ClassMethods.html#method-i-layout). 
+If your application uses custom layout resolution, you have to make sure to return `"turbo_rails/frame"` (or `false` for TurboRails < 1.4.0) for turbo frame requests:
+
+```ruby
+layout :custom_layout
+
+def custom_layout
+  return "turbo_rails/frame" if turbo_frame_request?
+  
+  # ... your custom layout logic
+```
+
+If you are using a custom, but "static" layout,
+
+```ruby
+layout "some_static_layout"
+```
+
+you **have** to change it to a layout method in order to conditionally return `false` for turbo frame requests:
+
+```ruby
+layout :custom_layout
+
+def custom_layout
+  return "turbo_rails/frame" if turbo_frame_request?
+  
+  "some_static_layout"
+```
 
 ## Come Alive with Turbo Streams
 
@@ -101,6 +132,14 @@ You can watch [the video introduction to Hotwire](https://hotwired.dev/#screenca
 
 Turbo can coexist with Rails UJS, but you need to take a series of upgrade steps to make it happen. See [the upgrading guide](https://github.com/hotwired/turbo-rails/blob/main/UPGRADING.md).
 
+## Testing
+
+
+The [`Turbo::TestAssertions`](./lib/turbo/test_assertions.rb) concern provides Turbo Stream test helpers that assert the presence or absence of `<turbo-stream>` elements in a rendered fragment of HTML. `Turbo::TestAssertions` are automatically included in [`ActiveSupport::TestCase`](https://edgeapi.rubyonrails.org/classes/ActiveSupport/TestCase.html) and depend on the presence of [`rails-dom-testing`](https://github.com/rails/rails-dom-testing/) assertions.
+
+The [`Turbo::TestAssertions::IntegrationTestAssertions`](./lib/turbo/test_assertions/integration_test_assertions.rb) are built on top of `Turbo::TestAssertions`, and add support for passing a `status:` keyword. They are automatically included in [`ActionDispatch::IntegrationTest`](https://edgeguides.rubyonrails.org/testing.html#integration-testing).
+
+The [`Turbo::Broadcastable::TestHelper`](./lib/turbo/broadcastable/test_helper.rb) concern provides Action Cable-aware test helpers that assert that `<turbo-stream>` elements were or were not broadcast over Action Cable. They are not automatically included. To use them in your tests, make sure to `include Turbo::Broadcastable::TestHelper`.
 
 ## Development
 

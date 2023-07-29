@@ -19,6 +19,24 @@ class BroadcastsTest < ApplicationSystemTestCase
     end
   end
 
+  test "Message broadcasts with renderable: render option" do
+    visit messages_path
+    wait_for_stream_to_be_connected
+
+    assert_broadcasts_text "Test message", to: :messages do |text, target|
+      Message.create(content: "Ignored").broadcast_append_to(target, renderable: MessageComponent.new(text))
+    end
+  end
+
+  test "Does not render the layout twice when passed a component" do
+    visit messages_path
+    wait_for_stream_to_be_connected
+
+    Message.create(content: "Ignored").broadcast_append_to(:messages, renderable: MessageComponent.new("test"))
+
+    assert_selector("title", count: 1, visible: false, text: "Dummy")
+  end
+
   test "Users::Profile broadcasts Turbo Streams" do
     visit users_profiles_path
     wait_for_stream_to_be_connected

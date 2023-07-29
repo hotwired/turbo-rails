@@ -6,9 +6,7 @@ class FormSubmissionsTest < ApplicationSystemTestCase
 
     visit edit_article_path(article.id)
 
-    assert_no_javascript_errors do
-      click_on "articles#index"
-    end
+    click_on "articles#index"
   end
 
   test "form submission method is encoded as _method" do

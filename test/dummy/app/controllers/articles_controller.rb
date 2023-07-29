@@ -33,6 +33,11 @@ class ArticlesController < ApplicationController
     redirect_to articles_url
   end
 
+  def destroy_all
+    Article.destroy_all
+    redirect_to articles_url, status: :see_other
+  end
+
   private
 
   def article_params

@@ -3,6 +3,8 @@ require "turbo/engine"
 module Turbo
   extend ActiveSupport::Autoload
 
+  mattr_accessor :draw_routes, default: true
+
   class << self
     attr_writer :signed_stream_verifier_key
 

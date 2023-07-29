@@ -1,5 +1,4 @@
 require "rails/engine"
-require "turbo/test_assertions"
 
 module Turbo
   class Engine < Rails::Engine
@@ -31,6 +30,12 @@ module Turbo
     initializer "turbo.assets" do
       if Rails.application.config.respond_to?(:assets)
         Rails.application.config.assets.precompile += PRECOMPILE_ASSETS
+      end
+    end
+
+    initializer "turbo.configs" do
+      config.after_initialize do |app|
+        Turbo.draw_routes = app.config.turbo.draw_routes != false
       end
     end
 
@@ -69,7 +74,16 @@ module Turbo
 
     initializer "turbo.test_assertions" do
       ActiveSupport.on_load(:active_support_test_case) do
+        require "turbo/test_assertions"
+        require "turbo/broadcastable/test_helper"
+
         include Turbo::TestAssertions
+      end
+
+      ActiveSupport.on_load(:action_dispatch_integration_test) do
+        require "turbo/test_assertions/integration_test_assertions"
+
+        include Turbo::TestAssertions::IntegrationTestAssertions
       end
     end
 
