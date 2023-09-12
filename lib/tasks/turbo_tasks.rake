@@ -4,7 +4,7 @@ end
 
 def redis_installed?
   Gem.win_platform? ?
-    system('where redis-server > NUL 2>&1') : 
+    system('where redis-server > NUL 2>&1') :
     system('which redis-server > /dev/null')
 end
 
@@ -16,11 +16,21 @@ def switch_on_redis_if_available
   end
 end
 
+def using_bun?
+  Rails.root.join("bun.lockb").exist? || (tool_exists?('bun') && !Rails.root.join("yarn.lock").exist?)
+end
+
+def tool_exists?(tool)
+  system "command -v #{tool} > /dev/null"
+end
+
 namespace :turbo do
   desc "Install Turbo into the app"
   task :install do
     if Rails.root.join("config/importmap.rb").exist?
       Rake::Task["turbo:install:importmap"].invoke
+    elsif Rails.root.join("package.json").exist? && using_bun?
+      Rake::Task["turbo:install:bun"].invoke
     elsif Rails.root.join("package.json").exist?
       Rake::Task["turbo:install:node"].invoke
     else
@@ -38,6 +48,12 @@ namespace :turbo do
     desc "Install Turbo into the app with webpacker"
     task :node do
       run_turbo_install_template "turbo_with_node"
+      switch_on_redis_if_available
+    end
+
+    desc "Install Turbo into the app with bun"
+    task :bun do
+      run_turbo_install_template "turbo_with_bun"
       switch_on_redis_if_available
     end
 
