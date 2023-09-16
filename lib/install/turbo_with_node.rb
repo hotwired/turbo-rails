@@ -6,4 +6,8 @@ else
 end
 
 say "Install Turbo"
-run "yarn add @hotwired/turbo-rails"
+if Rails.root.join("bun.config.js")).exist?
+  run "bun add @hotwired/turbo-rails"
+else
+  run "yarn add @hotwired/turbo-rails"
+end
