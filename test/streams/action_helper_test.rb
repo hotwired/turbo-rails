@@ -85,4 +85,17 @@ class Turbo::ActionHelperTest < ActionCable::Channel::TestCase
 
     assert_equal "<turbo-stream action=\"my_custom_action\"><template></template></turbo-stream>", action
   end
+
+  test "turbo stream refresh tag" do
+    action = turbo_stream_refresh_tag
+
+    assert_equal "<turbo-stream action=\"refresh\"></turbo-stream>", action
+  end
+
+  test "turbo stream refresh tag that carries the current request id" do
+    Turbo.current_request_id = "123"
+    action = turbo_stream_refresh_tag
+
+    assert_equal "<turbo-stream request-id=\"123\" action=\"refresh\"></turbo-stream>", action
+  end
 end

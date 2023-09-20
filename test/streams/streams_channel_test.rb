@@ -169,7 +169,21 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
           "stream", targets: ".message", **options
       end
     end
+  end
 
+  test "broadcasting refresh later" do
+    assert_broadcast_on "stream", turbo_stream_refresh_tag do
+      perform_enqueued_jobs do
+        Turbo::StreamsChannel.broadcast_refresh_later_to "stream"
+      end
+    end
+
+    Turbo.current_request_id = "123"
+    assert_broadcast_on "stream", turbo_stream_refresh_tag do
+      perform_enqueued_jobs do
+        Turbo::StreamsChannel.broadcast_refresh_later_to "stream"
+      end
+    end
   end
 
   test "broadcasting action later" do
