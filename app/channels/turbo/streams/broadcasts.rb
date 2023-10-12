@@ -34,9 +34,10 @@ module Turbo::Streams::Broadcasts
   end
 
   def broadcast_action_to(*streamables, action:, target: nil, targets: nil, **rendering)
-    broadcast_stream_to(*streamables, content: turbo_stream_action_tag(action, target: target, targets: targets, template:
-      rendering.delete(:content) || rendering.delete(:html) || (rendering.any? ? render_format(:html, **rendering) : nil)
-    ))
+    broadcasts_with_locale(*streamables) do
+      turbo_stream_action_tag(action, target: target, targets: targets, template:
+        rendering.delete(:content) || rendering.delete(:html) || (rendering.any? ? render_format(:html, **rendering) : nil))
+    end
   end
 
   def broadcast_replace_later_to(*streamables, **opts)
@@ -69,7 +70,9 @@ module Turbo::Streams::Broadcasts
   end
 
   def broadcast_render_to(*streamables, **rendering)
-    broadcast_stream_to(*streamables, content: render_format(:turbo_stream, **rendering))
+    broadcasts_with_locale(*streamables) do
+      render_format(:turbo_stream, **rendering)
+    end
   end
 
   def broadcast_render_later_to(*streamables, **rendering)
@@ -84,5 +87,24 @@ module Turbo::Streams::Broadcasts
   private
     def render_format(format, **rendering)
       ApplicationController.render(formats: [ format ], **rendering)
+    end
+
+    def broadcasts_with_locale(*streamables, &content_block)
+      broadcasts = []
+
+      if Turbo.localized_broadcasts
+        I18n.available_locales.each do |locale|
+          locale_streamable = streamables.clone.push(locale)
+          I18n.with_locale(locale) do
+            broadcasts << [locale_streamable, content_block.call]
+          end
+        end
+      else
+        broadcasts << [streamables, content_block.call]
+      end
+
+      broadcasts.each do |streamable, content|
+        broadcast_stream_to(streamable, content: content)
+      end
     end
 end

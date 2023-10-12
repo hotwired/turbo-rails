@@ -14,6 +14,7 @@ Gem::Specification.new do |s|
   s.add_dependency "activejob", ">= 6.0.0"
   s.add_dependency "actionpack", ">= 6.0.0"
   s.add_dependency "railties", ">= 6.0.0"
+  s.add_dependency "i18n", ">= 1.6", "< 2"
 
   s.files = Dir["{app,config,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
 end

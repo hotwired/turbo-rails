@@ -50,6 +50,8 @@ module Turbo::StreamsHelper
   #   <%= turbo_stream_from "room", channel: RoomChannel, data: {room_name: "room #1"} %>
   #
   def turbo_stream_from(*streamables, **attributes)
+    streamables.push(I18n.locale) if Turbo.localized_broadcasts
+
     attributes[:channel] = attributes[:channel]&.to_s || "Turbo::StreamsChannel"
     attributes[:"signed-stream-name"] = Turbo::StreamsChannel.signed_stream_name(streamables)
 

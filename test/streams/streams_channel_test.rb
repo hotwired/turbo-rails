@@ -210,4 +210,14 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
       Turbo::StreamsChannel.broadcast_stream_to "stream", content: "direct"
     end
   end
+
+  test "broadcasting localized render later" do
+    Turbo.with_localized_broadcasts do
+      assert_broadcast_on "stream:nb", turbo_stream_action_tag("replace", target: "message_1", template: "Ha det!") do
+        perform_enqueued_jobs do
+          Turbo::StreamsChannel.broadcast_render_later_to "stream", partial: "messages/message"
+        end
+      end
+    end
+  end
 end
