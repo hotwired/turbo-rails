@@ -37,6 +37,28 @@ class BroadcastsTest < ApplicationSystemTestCase
     assert_selector("title", count: 1, visible: false, text: "Dummy")
   end
 
+  test "Message broadcast append later with renderable: render option" do
+    visit messages_path
+    wait_for_stream_to_be_connected
+  
+    perform_enqueued_jobs do
+      assert_broadcasts_text "Test message", to: :messages do |text, target|
+        Message.create(content: "Ignored").broadcast_append_later_to(target, renderable: MessageComponent.new(text))
+      end
+    end
+  end
+  
+  test "Message broadcast prepend later with renderable: render option" do
+    visit messages_path
+    wait_for_stream_to_be_connected
+  
+    perform_enqueued_jobs do
+      assert_broadcasts_text "Test message", to: :messages do |text, target|
+        Message.create(content: "Ignored").broadcast_prepend_later_to(target, renderable: MessageComponent.new(text))
+      end
+    end
+  end
+
   test "Users::Profile broadcasts Turbo Streams" do
     visit users_profiles_path
     wait_for_stream_to_be_connected
