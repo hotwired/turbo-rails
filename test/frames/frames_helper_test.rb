@@ -21,6 +21,12 @@ class Turbo::FramesHelperTest < ActionView::TestCase
     assert_dom_equal %(<turbo-frame id="message_1"></turbo-frame>), turbo_frame_tag(record)
   end
 
+  test "frame with Array argument" do
+    target = [1, 2, "string"]
+
+    assert_dom_equal %(<turbo-frame id="1_2_string"></turbo-frame>), turbo_frame_tag(target)
+  end
+
   test "string frame nested withing a model frame" do
     record = Article.new(id: 1)
 
