@@ -64,6 +64,11 @@ module Turbo::Streams::Broadcasts
   end
 
   def broadcast_action_later_to(*streamables, action:, target: nil, targets: nil, **rendering)
+    # Serialize the renderable object if it is present.
+    if rendering[:renderable]
+      rendering[:html] = rendering.delete(:renderable).render_in(self)
+    end
+
     Turbo::Streams::ActionBroadcastJob.perform_later \
       stream_name_from(streamables), action: action, target: target, targets: targets, **rendering
   end
