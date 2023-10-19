@@ -108,6 +108,70 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "broadcasting action with attributes" do
+    assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("prepend", target: "messages", template: render(@message), "data-foo" => "bar") do
+      @message.broadcast_action "prepend", target: "messages", attributes: { "data-foo" => "bar" }
+    end
+  end
+
+  test "broadcasting action with no rendering" do
+    assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("prepend", target: "messages", template: nil) do
+      @message.broadcast_action "prepend", target: "messages", render: false
+    end
+  end
+
+  test "broadcasting action to with attributes" do
+    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "messages", template: render(@message), "data-foo" => "bar") do
+      @message.broadcast_action_to "stream", action: "prepend", attributes: { "data-foo" => "bar" }
+    end
+  end
+
+  test "broadcasting action to with no rendering" do
+    assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "messages", template: nil) do
+      @message.broadcast_action_to "stream", action: "prepend", render: false
+    end
+  end
+
+  test "broadcasting action later to with attributes" do
+    @message.save!
+    
+    assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("prepend", target: "messages", template: render(@message), "data-foo" => "bar") do
+      perform_enqueued_jobs do
+        @message.broadcast_action_later_to @message, action: "prepend", target: "messages", attributes: { "data-foo" => "bar" }
+      end
+    end
+  end
+
+  test "broadcasting action later to with no rendering" do
+    @message.save!
+
+    assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("prepend", target: "messages", template: nil) do
+      perform_enqueued_jobs do
+        @message.broadcast_action_later_to @message, action: "prepend", target: "messages", render: false
+      end
+    end
+  end
+
+  test "broadcasting action later with attributes" do
+    @message.save!
+
+    assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("prepend", target: "messages", template: render(@message), "data-foo" => "bar") do
+      perform_enqueued_jobs do
+        @message.broadcast_action_later action: "prepend", target: "messages", attributes: { "data-foo" => "bar" }
+      end
+    end
+  end
+
+  test "broadcasting action later with no rendering" do
+    @message.save!
+    
+    assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("prepend", target: "messages", template: nil) do
+      perform_enqueued_jobs do
+        @message.broadcast_action_later action: "prepend", target: "messages", render: false
+      end
+    end
+  end
+
   test "render correct local name in partial for namespaced models" do
     @profile = Users::Profile.new(id: 1, name: "Ryan")
     assert_broadcast_on @profile.to_param, turbo_stream_action_tag("replace", target: "users_profile_1", template: "<p>Ryan</p>\n") do
