@@ -3355,12 +3355,21 @@ class MorphRenderer extends Renderer {
     idiomorph.morph(currentElement, newElement, {
       morphStyle: morphStyle,
       callbacks: {
+        beforeNodeAdded: this.#shouldAddElement,
         beforeNodeMorphed: this.#shouldMorphElement,
-        beforeNodeRemoved: this.#shouldRemoveElement,
-        afterNodeMorphed: this.#reloadStimulusControllers
+        beforeNodeRemoved: this.#shouldRemoveElement
       }
     });
   }
+  #shouldAddElement=node => !(node.id && node.hasAttribute("data-turbo-permanent") && document.getElementById(node.id));
+  #shouldMorphElement=node => {
+    if (node instanceof HTMLElement) {
+      return !node.hasAttribute("data-turbo-permanent") && (this.isMorphingTurboFrame || !this.#isRemoteFrame(node));
+    } else {
+      return true;
+    }
+  };
+  #shouldRemoveElement=node => this.#shouldMorphElement(node);
   #reloadRemoteFrames() {
     this.#remoteFrames().forEach((frame => {
       if (this.#isRemoteFrame(frame)) {
@@ -3386,27 +3395,11 @@ class MorphRenderer extends Renderer {
     });
     this.#morphElements(currentElement, newElement.children, "innerHTML");
   };
-  #shouldRemoveElement=node => this.#shouldMorphElement(node);
-  #shouldMorphElement=node => {
-    if (node instanceof HTMLElement) {
-      return !node.hasAttribute("data-turbo-permanent") && (this.isMorphingTurboFrame || !this.#isRemoteFrame(node));
-    } else {
-      return true;
-    }
-  };
-  #reloadStimulusControllers=async node => {
-    if (node instanceof HTMLElement && node.hasAttribute("data-controller")) {
-      const originalAttribute = node.getAttribute("data-controller");
-      node.removeAttribute("data-controller");
-      await nextAnimationFrame();
-      node.setAttribute("data-controller", originalAttribute);
-    }
-  };
   #isRemoteFrame(element) {
     return element.nodeName.toLowerCase() === "turbo-frame" && element.src;
   }
   #remoteFrames() {
-    return document.querySelectorAll("turbo-frame[src]");
+    return Array.from(document.querySelectorAll("turbo-frame[src]")).filter((frame => !frame.closest("[data-turbo-permanent]")));
   }
 }
 
@@ -4161,38 +4154,6 @@ const deprecatedLocationPropertyDescriptors = {
   }
 };
 
-const StreamActions = {
-  after() {
-    this.targetElements.forEach((e => e.parentElement?.insertBefore(this.templateContent, e.nextSibling)));
-  },
-  append() {
-    this.removeDuplicateTargetChildren();
-    this.targetElements.forEach((e => e.append(this.templateContent)));
-  },
-  before() {
-    this.targetElements.forEach((e => e.parentElement?.insertBefore(this.templateContent, e)));
-  },
-  prepend() {
-    this.removeDuplicateTargetChildren();
-    this.targetElements.forEach((e => e.prepend(this.templateContent)));
-  },
-  remove() {
-    this.targetElements.forEach((e => e.remove()));
-  },
-  replace() {
-    this.targetElements.forEach((e => e.replaceWith(this.templateContent)));
-  },
-  update() {
-    this.targetElements.forEach((targetElement => {
-      targetElement.innerHTML = "";
-      targetElement.append(this.templateContent);
-    }));
-  },
-  refresh() {
-    session.refresh(this.baseURI, this.requestId);
-  }
-};
-
 const session = new Session;
 
 const {cache: cache, navigator: navigator$1} = session;
@@ -4256,8 +4217,7 @@ var Turbo = Object.freeze({
   clearCache: clearCache,
   setProgressBarDelay: setProgressBarDelay,
   setConfirmMethod: setConfirmMethod,
-  setFormMode: setFormMode,
-  StreamActions: StreamActions
+  setFormMode: setFormMode
 });
 
 class TurboFrameMissingError extends Error {}
@@ -4715,6 +4675,38 @@ function activateElement(element, currentURL) {
     }
   }
 }
+
+const StreamActions = {
+  after() {
+    this.targetElements.forEach((e => e.parentElement?.insertBefore(this.templateContent, e.nextSibling)));
+  },
+  append() {
+    this.removeDuplicateTargetChildren();
+    this.targetElements.forEach((e => e.append(this.templateContent)));
+  },
+  before() {
+    this.targetElements.forEach((e => e.parentElement?.insertBefore(this.templateContent, e)));
+  },
+  prepend() {
+    this.removeDuplicateTargetChildren();
+    this.targetElements.forEach((e => e.prepend(this.templateContent)));
+  },
+  remove() {
+    this.targetElements.forEach((e => e.remove()));
+  },
+  replace() {
+    this.targetElements.forEach((e => e.replaceWith(this.templateContent)));
+  },
+  update() {
+    this.targetElements.forEach((targetElement => {
+      targetElement.innerHTML = "";
+      targetElement.append(this.templateContent);
+    }));
+  },
+  refresh() {
+    session.refresh(this.baseURI, this.requestId);
+  }
+};
 
 class StreamElement extends HTMLElement {
   static async renderElement(newElement) {
