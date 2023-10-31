@@ -108,6 +108,20 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "broadcasting refresh later is debounced" do
+    assert_broadcast_on @message.to_gid_param, turbo_stream_refresh_tag do
+      assert_broadcasts(@message.to_gid_param, 1) do
+        perform_enqueued_jobs do
+          assert_no_changes -> { Thread.current.keys.size } do
+            # Not leaking thread variables once the debounced code executes
+            3.times { @message.broadcast_refresh_later }
+            Turbo::StreamsChannel.refresh_debouncer_for(@message).wait
+          end
+        end
+      end
+    end
+  end
+
   test "broadcasting action to stream now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "messages", template: render(@message)) do
       @message.broadcast_action_to "stream", action: "prepend"
@@ -146,7 +160,7 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
 
   test "broadcasting action later to with attributes" do
     @message.save!
-    
+
     assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("prepend", target: "messages", template: render(@message), "data-foo" => "bar") do
       perform_enqueued_jobs do
         @message.broadcast_action_later_to @message, action: "prepend", target: "messages", attributes: { "data-foo" => "bar" }
@@ -176,7 +190,7 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
 
   test "broadcasting action later with no rendering" do
     @message.save!
-    
+
     assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("prepend", target: "messages", template: nil) do
       perform_enqueued_jobs do
         @message.broadcast_action_later action: "prepend", target: "messages", render: false

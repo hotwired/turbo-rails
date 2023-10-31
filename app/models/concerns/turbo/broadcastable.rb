@@ -354,12 +354,12 @@ module Turbo::Broadcastable
     broadcast_prepend_later_to self, target: target, **rendering
   end
 
-  def broadcast_refresh_later_to(*streamables, target: broadcast_target_default, **rendering)
-    Turbo::StreamsChannel.broadcast_refresh_later_to(*streamables, target: target, **broadcast_rendering_with_defaults(rendering).merge(request_id: Turbo.current_request_id)) unless suppressed_turbo_broadcasts?
+  def broadcast_refresh_later_to(*streamables)
+    Turbo::StreamsChannel.broadcast_refresh_later_to(*streamables, request_id: Turbo.current_request_id) unless suppressed_turbo_broadcasts?
   end
 
-  def broadcast_refresh_later(target: broadcast_target_default, **rendering)
-    broadcast_refresh_later_to self, target: target, **rendering
+  def broadcast_refresh_later
+    broadcast_refresh_later_to self
   end
 
   # Same as <tt>broadcast_action_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.

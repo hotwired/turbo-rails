@@ -35,8 +35,8 @@ module Turbo::Streams::ActionHelper
     end
   end
 
-  def turbo_stream_refresh_tag(**attributes)
-    turbo_stream_action_tag(:refresh, **{ "request-id": Turbo.current_request_id }.compact, **attributes)
+  def turbo_stream_refresh_tag(request_id: Turbo.current_request_id, **attributes)
+    turbo_stream_action_tag(:refresh, **{ "request-id": request_id }.compact, **attributes)
   end
 
   private
