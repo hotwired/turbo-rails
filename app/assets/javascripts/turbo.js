@@ -322,6 +322,14 @@ function dispatch(eventName, {target: target, cancelable: cancelable, detail: de
   return event;
 }
 
+function nextRepaint() {
+  if (document.visibilityState === "hidden") {
+    return nextEventLoopTick();
+  } else {
+    return nextAnimationFrame();
+  }
+}
+
 function nextAnimationFrame() {
   return new Promise((resolve => requestAnimationFrame((() => resolve()))));
 }
@@ -1889,10 +1897,11 @@ class Visit {
   get silent() {
     return this.isSamePage;
   }
-  start() {
+  async start() {
     if (this.state == VisitState.initialized) {
       this.recordTimingMetric(TimingMetric.visitStart);
       this.state = VisitState.started;
+      this.cachedSnapshot = await this.getCachedSnapshot();
       this.adapter.visitStarted(this);
       this.delegate.visitStarted(this);
     }
@@ -1998,12 +2007,11 @@ class Visit {
       return PageSnapshot.fromHTMLString(this.snapshotHTML);
     }
   }
-  async hasCachedSnapshot() {
-    return await this.getCachedSnapshot() != null;
+  hasCachedSnapshot() {
+    return this.cachedSnapshot != null;
   }
   async loadCachedSnapshot() {
-    const snapshot = await this.getCachedSnapshot();
-    if (snapshot) {
+    if (this.cachedSnapshot) {
       const isPreview = await this.shouldIssueRequest();
       this.render((async () => {
         this.cacheSnapshot();
@@ -2011,7 +2019,7 @@ class Visit {
           this.adapter.visitRendered(this);
         } else {
           if (this.view.renderPromise) await this.view.renderPromise;
-          await this.renderPageSnapshot(snapshot, isPreview);
+          await this.renderPageSnapshot(this.cachedSnapshot, isPreview);
           this.adapter.visitRendered(this);
           if (!isPreview) {
             this.complete();
@@ -2144,7 +2152,7 @@ class Visit {
     if (this.isSamePage) {
       return false;
     } else if (this.action === "restore") {
-      return !await this.hasCachedSnapshot();
+      return !this.hasCachedSnapshot();
     } else {
       return this.willRender;
     }
@@ -2187,7 +2195,11 @@ class BrowserAdapter {
     this.session = session;
   }
   visitProposedToLocation(location, options) {
-    this.navigator.startVisit(location, options?.restorationIdentifier || uuid(), options);
+    if (locationIsVisitable(location, this.navigator.rootLocation)) {
+      this.navigator.startVisit(location, options?.restorationIdentifier || uuid(), options);
+    } else {
+      window.location.href = location.toString();
+    }
   }
   visitStarted(visit) {
     this.location = visit.location;
@@ -2456,11 +2468,7 @@ class Navigator {
   }
   proposeVisit(location, options = {}) {
     if (this.delegate.allowsVisitingLocationWithAction(location, options.action)) {
-      if (locationIsVisitable(location, this.view.snapshot.rootLocation)) {
-        this.delegate.visitProposedToLocation(location, options);
-      } else {
-        window.location.href = location.toString();
-      }
+      this.delegate.visitProposedToLocation(location, options);
     }
   }
   startVisit(locatable, restorationIdentifier, options = {}) {
@@ -2469,7 +2477,7 @@ class Navigator {
       referrer: this.location,
       ...options
     });
-    this.currentVisit.start();
+    return this.currentVisit.start();
   }
   submitForm(form, submitter) {
     this.stop();
@@ -2491,6 +2499,9 @@ class Navigator {
   }
   get view() {
     return this.delegate.view;
+  }
+  get rootLocation() {
+    return this.view.snapshot.rootLocation;
   }
   get history() {
     return this.delegate.history;
@@ -4725,7 +4736,7 @@ class StreamElement extends HTMLElement {
     return this.renderPromise ??= (async () => {
       const event = this.beforeRenderEvent;
       if (this.dispatchEvent(event)) {
-        await nextAnimationFrame();
+        await nextRepaint();
         await event.detail.render(this);
       }
     })();
