@@ -13,14 +13,14 @@ module ActionViewTestCaseExtensions
   end
 end
 
-class ActiveSupport::TestCase
+ActiveSupport.on_load :active_support_test_case do
   include ActiveJob::TestHelper
 end
 
-class ActionDispatch::IntegrationTest
+ActiveSupport.on_load :action_dispatch_integration_test do
   include ActionViewTestCaseExtensions
 end
 
-class ActionCable::Channel::TestCase
-  include ActionViewTestCaseExtensions
+ActiveSupport.on_load :action_cable_channel do
+  ActionCable::Channel::TestCase.include ActionViewTestCaseExtensions
 end
