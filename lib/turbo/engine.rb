@@ -16,7 +16,15 @@ module Turbo
     )
 
     initializer "turbo.no_action_cable", before: :set_eager_load_paths do
-      config.eager_load_paths.delete("#{root}/app/channels") unless defined?(ActionCable)
+      unless defined?(ActionCable)
+        if Rails.autoloaders.zeitwerk_enabled?
+          Rails.autoloaders.once.do_not_eager_load("#{root}/app/channels")
+        else
+          # The purpose of this else clause is to support the classic autoloader
+          # in Rails 6.x applications. Can be deleted if the gem dependency is upgraded to Rails 7 or above.
+          config.eager_load_paths.delete("#{root}/app/channels")
+        end
+      end
     end
 
     # If you don't want to precompile Turbo's assets (eg. because you're using webpack),
