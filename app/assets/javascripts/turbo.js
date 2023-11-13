@@ -2543,7 +2543,9 @@ class Navigator {
       } else {
         await this.view.renderPage(snapshot, false, true, this.currentVisit);
       }
-      this.view.scrollToTop();
+      if (!snapshot.shouldPreserveScrollPosition) {
+        this.view.scrollToTop();
+      }
       this.view.clearSnapshotCache();
     }
   }
@@ -3737,7 +3739,7 @@ class PageView extends View {
     return this.snapshotCache.get(location);
   }
   isPageRefresh(visit) {
-    return visit && this.lastRenderedLocation.href === visit.location.href;
+    return !visit || this.lastRenderedLocation.href === visit.location.href;
   }
   get snapshot() {
     return PageSnapshot.fromElement(this.element);
