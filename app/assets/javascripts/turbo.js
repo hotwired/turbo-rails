@@ -1,7 +1,19 @@
-/*!
-Turbo 7.3.0
-Copyright © 2023 37signals LLC
- */
+(function() {
+  if (window.Reflect === undefined || window.customElements === undefined || window.customElements.polyfillWrapFlushCallback) {
+    return;
+  }
+  const BuiltInHTMLElement = HTMLElement;
+  const wrapperForTheName = {
+    HTMLElement: function HTMLElement() {
+      return Reflect.construct(BuiltInHTMLElement, [], this.constructor);
+    }
+  };
+  window.HTMLElement = wrapperForTheName["HTMLElement"];
+  HTMLElement.prototype = BuiltInHTMLElement.prototype;
+  HTMLElement.prototype.constructor = HTMLElement;
+  Object.setPrototypeOf(HTMLElement, BuiltInHTMLElement);
+})();
+
 (function(prototype) {
   if (typeof prototype.requestSubmit == "function") return;
   prototype.requestSubmit = function(submitter) {
@@ -32,7 +44,7 @@ const submittersByForm = new WeakMap;
 function findSubmitterFromClickTarget(target) {
   const element = target instanceof Element ? target : target instanceof Node ? target.parentElement : null;
   const candidate = element ? element.closest("input, button") : null;
-  return candidate?.type == "submit" ? candidate : null;
+  return (candidate === null || candidate === void 0 ? void 0 : candidate.type) == "submit" ? candidate : null;
 }
 
 function clickCaptured(event) {
@@ -45,13 +57,10 @@ function clickCaptured(event) {
 (function() {
   if ("submitter" in Event.prototype) return;
   let prototype = window.Event.prototype;
-  if ("SubmitEvent" in window) {
-    const prototypeOfSubmitEvent = window.SubmitEvent.prototype;
-    if (/Apple Computer/.test(navigator.vendor) && !("submitter" in prototypeOfSubmitEvent)) {
-      prototype = prototypeOfSubmitEvent;
-    } else {
-      return;
-    }
+  if ("SubmitEvent" in window && /Apple Computer/.test(navigator.vendor)) {
+    prototype = window.SubmitEvent.prototype;
+  } else if ("SubmitEvent" in window) {
+    return;
   }
   addEventListener("click", clickCaptured, true);
   Object.defineProperty(prototype, "submitter", {
@@ -63,19 +72,20 @@ function clickCaptured(event) {
   });
 })();
 
-const FrameLoadingStyle = {
-  eager: "eager",
-  lazy: "lazy"
-};
+var FrameLoadingStyle;
+
+(function(FrameLoadingStyle) {
+  FrameLoadingStyle["eager"] = "eager";
+  FrameLoadingStyle["lazy"] = "lazy";
+})(FrameLoadingStyle || (FrameLoadingStyle = {}));
 
 class FrameElement extends HTMLElement {
-  static delegateConstructor=undefined;
-  loaded=Promise.resolve();
   static get observedAttributes() {
     return [ "disabled", "complete", "loading", "src" ];
   }
   constructor() {
     super();
+    this.loaded = Promise.resolve();
     this.delegate = new FrameElement.delegateConstructor(this);
   }
   connectedCallback() {
@@ -106,16 +116,6 @@ class FrameElement extends HTMLElement {
       this.setAttribute("src", value);
     } else {
       this.removeAttribute("src");
-    }
-  }
-  get refresh() {
-    return this.getAttribute("refresh");
-  }
-  set refresh(value) {
-    if (value) {
-      this.setAttribute("refresh", value);
-    } else {
-      this.removeAttribute("refresh");
     }
   }
   get loading() {
@@ -155,7 +155,8 @@ class FrameElement extends HTMLElement {
     return this.ownerDocument === document && !this.isPreview;
   }
   get isPreview() {
-    return this.ownerDocument?.documentElement?.hasAttribute("data-turbo-preview");
+    var _a, _b;
+    return (_b = (_a = this.ownerDocument) === null || _a === void 0 ? void 0 : _a.documentElement) === null || _b === void 0 ? void 0 : _b.hasAttribute("data-turbo-preview");
   }
 }
 
@@ -182,8 +183,8 @@ function getAnchor(url) {
   }
 }
 
-function getAction$1(form, submitter) {
-  const action = submitter?.getAttribute("formaction") || form.getAttribute("action") || form.action;
+function getAction(form, submitter) {
+  const action = (submitter === null || submitter === void 0 ? void 0 : submitter.getAttribute("formaction")) || form.getAttribute("action") || form.action;
   return expandURL(action);
 }
 
@@ -322,14 +323,6 @@ function dispatch(eventName, {target: target, cancelable: cancelable, detail: de
   return event;
 }
 
-function nextRepaint() {
-  if (document.visibilityState === "hidden") {
-    return nextEventLoopTick();
-  } else {
-    return nextAnimationFrame();
-  }
-}
-
 function nextAnimationFrame() {
   return new Promise((resolve => requestAnimationFrame((() => resolve()))));
 }
@@ -377,7 +370,7 @@ function uuid() {
 }
 
 function getAttribute(attributeName, ...elements) {
-  for (const value of elements.map((element => element?.getAttribute(attributeName)))) {
+  for (const value of elements.map((element => element === null || element === void 0 ? void 0 : element.getAttribute(attributeName)))) {
     if (typeof value == "string") return value;
   }
   return null;
@@ -463,38 +456,21 @@ function setMetaContent(name, content) {
 }
 
 function findClosestRecursively(element, selector) {
+  var _a;
   if (element instanceof Element) {
-    return element.closest(selector) || findClosestRecursively(element.assignedSlot || element.getRootNode()?.host, selector);
+    return element.closest(selector) || findClosestRecursively(element.assignedSlot || ((_a = element.getRootNode()) === null || _a === void 0 ? void 0 : _a.host), selector);
   }
 }
 
-function elementIsFocusable(element) {
-  const inertDisabledOrHidden = "[inert], :disabled, [hidden], details:not([open]), dialog:not([open])";
-  return !!element && element.closest(inertDisabledOrHidden) == null && typeof element.focus == "function";
-}
+var FetchMethod;
 
-function queryAutofocusableElement(elementOrDocumentFragment) {
-  return Array.from(elementOrDocumentFragment.querySelectorAll("[autofocus]")).find(elementIsFocusable);
-}
-
-async function around(callback, reader) {
-  const before = reader();
-  callback();
-  await nextAnimationFrame();
-  const after = reader();
-  return [ before, after ];
-}
-
-function fetch(url, options = {}) {
-  const modifiedHeaders = new Headers(options.headers || {});
-  const requestUID = uuid();
-  window.Turbo.session.recentRequests.add(requestUID);
-  modifiedHeaders.append("X-Turbo-Request-Id", requestUID);
-  return window.fetch(url, {
-    ...options,
-    headers: modifiedHeaders
-  });
-}
+(function(FetchMethod) {
+  FetchMethod[FetchMethod["get"] = 0] = "get";
+  FetchMethod[FetchMethod["post"] = 1] = "post";
+  FetchMethod[FetchMethod["put"] = 2] = "put";
+  FetchMethod[FetchMethod["patch"] = 3] = "patch";
+  FetchMethod[FetchMethod["delete"] = 4] = "delete";
+})(FetchMethod || (FetchMethod = {}));
 
 function fetchMethodFromString(method) {
   switch (method.toLowerCase()) {
@@ -515,81 +491,16 @@ function fetchMethodFromString(method) {
   }
 }
 
-const FetchMethod = {
-  get: "get",
-  post: "post",
-  put: "put",
-  patch: "patch",
-  delete: "delete"
-};
-
-function fetchEnctypeFromString(encoding) {
-  switch (encoding.toLowerCase()) {
-   case FetchEnctype.multipart:
-    return FetchEnctype.multipart;
-
-   case FetchEnctype.plain:
-    return FetchEnctype.plain;
-
-   default:
-    return FetchEnctype.urlEncoded;
-  }
-}
-
-const FetchEnctype = {
-  urlEncoded: "application/x-www-form-urlencoded",
-  multipart: "multipart/form-data",
-  plain: "text/plain"
-};
-
 class FetchRequest {
-  abortController=new AbortController;
-  #resolveRequestPromise=_value => {};
-  constructor(delegate, method, location, requestBody = new URLSearchParams, target = null, enctype = FetchEnctype.urlEncoded) {
-    const [url, body] = buildResourceAndBody(expandURL(location), method, requestBody, enctype);
+  constructor(delegate, method, location, body = new URLSearchParams, target = null) {
+    this.abortController = new AbortController;
+    this.resolveRequestPromise = _value => {};
     this.delegate = delegate;
-    this.url = url;
+    this.method = method;
+    this.headers = this.defaultHeaders;
+    this.body = body;
+    this.url = location;
     this.target = target;
-    this.fetchOptions = {
-      credentials: "same-origin",
-      redirect: "follow",
-      method: method,
-      headers: {
-        ...this.defaultHeaders
-      },
-      body: body,
-      signal: this.abortSignal,
-      referrer: this.delegate.referrer?.href
-    };
-    this.enctype = enctype;
-  }
-  get method() {
-    return this.fetchOptions.method;
-  }
-  set method(value) {
-    const fetchBody = this.isSafe ? this.url.searchParams : this.fetchOptions.body || new FormData;
-    const fetchMethod = fetchMethodFromString(value) || FetchMethod.get;
-    this.url.search = "";
-    const [url, body] = buildResourceAndBody(this.url, fetchMethod, fetchBody, this.enctype);
-    this.url = url;
-    this.fetchOptions.body = body;
-    this.fetchOptions.method = fetchMethod;
-  }
-  get headers() {
-    return this.fetchOptions.headers;
-  }
-  set headers(value) {
-    this.fetchOptions.headers = value;
-  }
-  get body() {
-    if (this.isSafe) {
-      return this.url.searchParams;
-    } else {
-      return this.fetchOptions.body;
-    }
-  }
-  set body(value) {
-    this.fetchOptions.body = value;
   }
   get location() {
     return this.url;
@@ -606,14 +517,14 @@ class FetchRequest {
   async perform() {
     const {fetchOptions: fetchOptions} = this;
     this.delegate.prepareRequest(this);
-    await this.#allowRequestToBeIntercepted(fetchOptions);
+    await this.allowRequestToBeIntercepted(fetchOptions);
     try {
       this.delegate.requestStarted(this);
       const response = await fetch(this.url.href, fetchOptions);
       return await this.receive(response);
     } catch (error) {
       if (error.name !== "AbortError") {
-        if (this.#willDelegateErrorHandling(error)) {
+        if (this.willDelegateErrorHandling(error)) {
           this.delegate.requestErrored(this, error);
         }
         throw error;
@@ -640,13 +551,25 @@ class FetchRequest {
     }
     return fetchResponse;
   }
+  get fetchOptions() {
+    var _a;
+    return {
+      method: FetchMethod[this.method].toUpperCase(),
+      credentials: "same-origin",
+      headers: this.headers,
+      redirect: "follow",
+      body: this.isSafe ? null : this.body,
+      signal: this.abortSignal,
+      referrer: (_a = this.delegate.referrer) === null || _a === void 0 ? void 0 : _a.href
+    };
+  }
   get defaultHeaders() {
     return {
       Accept: "text/html, application/xhtml+xml"
     };
   }
   get isSafe() {
-    return isSafe(this.method);
+    return this.method === FetchMethod.get;
   }
   get abortSignal() {
     return this.abortController.signal;
@@ -654,21 +577,20 @@ class FetchRequest {
   acceptResponseType(mimeType) {
     this.headers["Accept"] = [ mimeType, this.headers["Accept"] ].join(", ");
   }
-  async #allowRequestToBeIntercepted(fetchOptions) {
-    const requestInterception = new Promise((resolve => this.#resolveRequestPromise = resolve));
+  async allowRequestToBeIntercepted(fetchOptions) {
+    const requestInterception = new Promise((resolve => this.resolveRequestPromise = resolve));
     const event = dispatch("turbo:before-fetch-request", {
       cancelable: true,
       detail: {
         fetchOptions: fetchOptions,
         url: this.url,
-        resume: this.#resolveRequestPromise
+        resume: this.resolveRequestPromise
       },
       target: this.target
     });
-    this.url = event.detail.url;
     if (event.defaultPrevented) await requestInterception;
   }
-  #willDelegateErrorHandling(error) {
+  willDelegateErrorHandling(error) {
     const event = dispatch("turbo:fetch-request-error", {
       target: this.target,
       cancelable: true,
@@ -681,38 +603,15 @@ class FetchRequest {
   }
 }
 
-function isSafe(fetchMethod) {
-  return fetchMethodFromString(fetchMethod) == FetchMethod.get;
-}
-
-function buildResourceAndBody(resource, method, requestBody, enctype) {
-  const searchParams = Array.from(requestBody).length > 0 ? new URLSearchParams(entriesExcludingFiles(requestBody)) : resource.searchParams;
-  if (isSafe(method)) {
-    return [ mergeIntoURLSearchParams(resource, searchParams), null ];
-  } else if (enctype == FetchEnctype.urlEncoded) {
-    return [ resource, searchParams ];
-  } else {
-    return [ resource, requestBody ];
-  }
-}
-
-function entriesExcludingFiles(requestBody) {
-  const entries = [];
-  for (const [name, value] of requestBody) {
-    if (value instanceof File) continue; else entries.push([ name, value ]);
-  }
-  return entries;
-}
-
-function mergeIntoURLSearchParams(url, requestBody) {
-  const searchParams = new URLSearchParams(entriesExcludingFiles(requestBody));
-  url.search = searchParams.toString();
-  return url;
-}
-
 class AppearanceObserver {
-  started=false;
   constructor(delegate, element) {
+    this.started = false;
+    this.intersect = entries => {
+      const lastEntry = entries.slice(-1)[0];
+      if (lastEntry === null || lastEntry === void 0 ? void 0 : lastEntry.isIntersecting) {
+        this.delegate.elementAppearedInViewport(this.element);
+      }
+    };
     this.delegate = delegate;
     this.element = element;
     this.intersectionObserver = new IntersectionObserver(this.intersect);
@@ -729,16 +628,9 @@ class AppearanceObserver {
       this.intersectionObserver.unobserve(this.element);
     }
   }
-  intersect=entries => {
-    const lastEntry = entries.slice(-1)[0];
-    if (lastEntry?.isIntersecting) {
-      this.delegate.elementAppearedInViewport(this.element);
-    }
-  };
 }
 
 class StreamMessage {
-  static contentType="text/vnd.turbo-stream.html";
   static wrap(message) {
     if (typeof message == "string") {
       return new this(createDocumentFragment(message));
@@ -751,6 +643,8 @@ class StreamMessage {
   }
 }
 
+StreamMessage.contentType = "text/vnd.turbo-stream.html";
+
 function importStreamElements(fragment) {
   for (const element of fragment.querySelectorAll("turbo-stream")) {
     const streamElement = document.importNode(element, true);
@@ -762,54 +656,85 @@ function importStreamElements(fragment) {
   return fragment;
 }
 
-const FormSubmissionState = {
-  initialized: "initialized",
-  requesting: "requesting",
-  waiting: "waiting",
-  receiving: "receiving",
-  stopping: "stopping",
-  stopped: "stopped"
-};
+var FormSubmissionState;
+
+(function(FormSubmissionState) {
+  FormSubmissionState[FormSubmissionState["initialized"] = 0] = "initialized";
+  FormSubmissionState[FormSubmissionState["requesting"] = 1] = "requesting";
+  FormSubmissionState[FormSubmissionState["waiting"] = 2] = "waiting";
+  FormSubmissionState[FormSubmissionState["receiving"] = 3] = "receiving";
+  FormSubmissionState[FormSubmissionState["stopping"] = 4] = "stopping";
+  FormSubmissionState[FormSubmissionState["stopped"] = 5] = "stopped";
+})(FormSubmissionState || (FormSubmissionState = {}));
+
+var FormEnctype;
+
+(function(FormEnctype) {
+  FormEnctype["urlEncoded"] = "application/x-www-form-urlencoded";
+  FormEnctype["multipart"] = "multipart/form-data";
+  FormEnctype["plain"] = "text/plain";
+})(FormEnctype || (FormEnctype = {}));
+
+function formEnctypeFromString(encoding) {
+  switch (encoding.toLowerCase()) {
+   case FormEnctype.multipart:
+    return FormEnctype.multipart;
+
+   case FormEnctype.plain:
+    return FormEnctype.plain;
+
+   default:
+    return FormEnctype.urlEncoded;
+  }
+}
 
 class FormSubmission {
-  state=FormSubmissionState.initialized;
   static confirmMethod(message, _element, _submitter) {
     return Promise.resolve(confirm(message));
   }
   constructor(delegate, formElement, submitter, mustRedirect = false) {
-    const method = getMethod(formElement, submitter);
-    const action = getAction(getFormAction(formElement, submitter), method);
-    const body = buildFormData(formElement, submitter);
-    const enctype = getEnctype(formElement, submitter);
+    this.state = FormSubmissionState.initialized;
     this.delegate = delegate;
     this.formElement = formElement;
     this.submitter = submitter;
-    this.fetchRequest = new FetchRequest(this, method, action, body, formElement, enctype);
+    this.formData = buildFormData(formElement, submitter);
+    this.location = expandURL(this.action);
+    if (this.method == FetchMethod.get) {
+      mergeFormDataEntries(this.location, [ ...this.body.entries() ]);
+    }
+    this.fetchRequest = new FetchRequest(this, this.method, this.location, this.body, this.formElement);
     this.mustRedirect = mustRedirect;
   }
   get method() {
-    return this.fetchRequest.method;
-  }
-  set method(value) {
-    this.fetchRequest.method = value;
+    var _a;
+    const method = ((_a = this.submitter) === null || _a === void 0 ? void 0 : _a.getAttribute("formmethod")) || this.formElement.getAttribute("method") || "";
+    return fetchMethodFromString(method.toLowerCase()) || FetchMethod.get;
   }
   get action() {
-    return this.fetchRequest.url.toString();
-  }
-  set action(value) {
-    this.fetchRequest.url = expandURL(value);
+    var _a;
+    const formElementAction = typeof this.formElement.action === "string" ? this.formElement.action : null;
+    if ((_a = this.submitter) === null || _a === void 0 ? void 0 : _a.hasAttribute("formaction")) {
+      return this.submitter.getAttribute("formaction") || "";
+    } else {
+      return this.formElement.getAttribute("action") || formElementAction || "";
+    }
   }
   get body() {
-    return this.fetchRequest.body;
+    if (this.enctype == FormEnctype.urlEncoded || this.method == FetchMethod.get) {
+      return new URLSearchParams(this.stringFormData);
+    } else {
+      return this.formData;
+    }
   }
   get enctype() {
-    return this.fetchRequest.enctype;
+    var _a;
+    return formEnctypeFromString(((_a = this.submitter) === null || _a === void 0 ? void 0 : _a.getAttribute("formenctype")) || this.formElement.enctype);
   }
   get isSafe() {
     return this.fetchRequest.isSafe;
   }
-  get location() {
-    return this.fetchRequest.url;
+  get stringFormData() {
+    return [ ...this.formData ].reduce(((entries, [name, value]) => entries.concat(typeof value == "string" ? [ [ name, value ] ] : [])), []);
   }
   async start() {
     const {initialized: initialized, requesting: requesting} = FormSubmissionState;
@@ -845,8 +770,9 @@ class FormSubmission {
     }
   }
   requestStarted(_request) {
+    var _a;
     this.state = FormSubmissionState.waiting;
-    this.submitter?.setAttribute("disabled", "");
+    (_a = this.submitter) === null || _a === void 0 ? void 0 : _a.setAttribute("disabled", "");
     this.setSubmitsWith();
     dispatch("turbo:submit-start", {
       target: this.formElement,
@@ -892,15 +818,15 @@ class FormSubmission {
     this.delegate.formSubmissionErrored(this, error);
   }
   requestFinished(_request) {
+    var _a;
     this.state = FormSubmissionState.stopped;
-    this.submitter?.removeAttribute("disabled");
+    (_a = this.submitter) === null || _a === void 0 ? void 0 : _a.removeAttribute("disabled");
     this.resetSubmitterText();
     dispatch("turbo:submit-end", {
       target: this.formElement,
-      detail: {
-        formSubmission: this,
-        ...this.result
-      }
+      detail: Object.assign({
+        formSubmission: this
+      }, this.result)
     });
     this.delegate.formSubmissionFinished(this);
   }
@@ -931,14 +857,15 @@ class FormSubmission {
     return !request.isSafe || hasAttribute("data-turbo-stream", this.submitter, this.formElement);
   }
   get submitsWith() {
-    return this.submitter?.getAttribute("data-turbo-submits-with");
+    var _a;
+    return (_a = this.submitter) === null || _a === void 0 ? void 0 : _a.getAttribute("data-turbo-submits-with");
   }
 }
 
 function buildFormData(formElement, submitter) {
   const formData = new FormData(formElement);
-  const name = submitter?.getAttribute("name");
-  const value = submitter?.getAttribute("value");
+  const name = submitter === null || submitter === void 0 ? void 0 : submitter.getAttribute("name");
+  const value = submitter === null || submitter === void 0 ? void 0 : submitter.getAttribute("value");
   if (name) {
     formData.append(name, value || "");
   }
@@ -960,30 +887,14 @@ function responseSucceededWithoutRedirect(response) {
   return response.statusCode == 200 && !response.redirected;
 }
 
-function getFormAction(formElement, submitter) {
-  const formElementAction = typeof formElement.action === "string" ? formElement.action : null;
-  if (submitter?.hasAttribute("formaction")) {
-    return submitter.getAttribute("formaction") || "";
-  } else {
-    return formElement.getAttribute("action") || formElementAction || "";
+function mergeFormDataEntries(url, entries) {
+  const searchParams = new URLSearchParams;
+  for (const [name, value] of entries) {
+    if (value instanceof File) continue;
+    searchParams.append(name, value);
   }
-}
-
-function getAction(formAction, fetchMethod) {
-  const action = expandURL(formAction);
-  if (isSafe(fetchMethod)) {
-    action.search = "";
-  }
-  return action;
-}
-
-function getMethod(formElement, submitter) {
-  const method = submitter?.getAttribute("formmethod") || formElement.getAttribute("method") || "";
-  return fetchMethodFromString(method.toLowerCase()) || FetchMethod.get;
-}
-
-function getEnctype(formElement, submitter) {
-  return fetchEnctypeFromString(submitter?.getAttribute("formenctype") || formElement.enctype);
+  url.search = searchParams.toString();
+  return url;
 }
 
 class Snapshot {
@@ -1006,7 +917,11 @@ class Snapshot {
     return this.element.isConnected;
   }
   get firstAutofocusableElement() {
-    return queryAutofocusableElement(this.element);
+    const inertDisabledOrHidden = "[inert], :disabled, [hidden], details:not([open]), dialog:not([open])";
+    for (const element of this.element.querySelectorAll("[autofocus]")) {
+      if (element.closest(inertDisabledOrHidden) == null) return element; else continue;
+    }
+    return null;
   }
   get permanentElements() {
     return queryPermanentElementsAll(this.element);
@@ -1036,8 +951,23 @@ function queryPermanentElementsAll(node) {
 }
 
 class FormSubmitObserver {
-  started=false;
   constructor(delegate, eventTarget) {
+    this.started = false;
+    this.submitCaptured = () => {
+      this.eventTarget.removeEventListener("submit", this.submitBubbled, false);
+      this.eventTarget.addEventListener("submit", this.submitBubbled, false);
+    };
+    this.submitBubbled = event => {
+      if (!event.defaultPrevented) {
+        const form = event.target instanceof HTMLFormElement ? event.target : undefined;
+        const submitter = event.submitter || undefined;
+        if (form && submissionDoesNotDismissDialog(form, submitter) && submissionDoesNotTargetIFrame(form, submitter) && this.delegate.willSubmitForm(form, submitter)) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          this.delegate.formSubmitted(form, submitter);
+        }
+      }
+    };
     this.delegate = delegate;
     this.eventTarget = eventTarget;
   }
@@ -1053,31 +983,16 @@ class FormSubmitObserver {
       this.started = false;
     }
   }
-  submitCaptured=() => {
-    this.eventTarget.removeEventListener("submit", this.submitBubbled, false);
-    this.eventTarget.addEventListener("submit", this.submitBubbled, false);
-  };
-  submitBubbled=event => {
-    if (!event.defaultPrevented) {
-      const form = event.target instanceof HTMLFormElement ? event.target : undefined;
-      const submitter = event.submitter || undefined;
-      if (form && submissionDoesNotDismissDialog(form, submitter) && submissionDoesNotTargetIFrame(form, submitter) && this.delegate.willSubmitForm(form, submitter)) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        this.delegate.formSubmitted(form, submitter);
-      }
-    }
-  };
 }
 
 function submissionDoesNotDismissDialog(form, submitter) {
-  const method = submitter?.getAttribute("formmethod") || form.getAttribute("method");
+  const method = (submitter === null || submitter === void 0 ? void 0 : submitter.getAttribute("formmethod")) || form.getAttribute("method");
   return method != "dialog";
 }
 
 function submissionDoesNotTargetIFrame(form, submitter) {
-  if (submitter?.hasAttribute("formtarget") || form.hasAttribute("target")) {
-    const target = submitter?.getAttribute("formtarget") || form.target;
+  if ((submitter === null || submitter === void 0 ? void 0 : submitter.hasAttribute("formtarget")) || form.hasAttribute("target")) {
+    const target = (submitter === null || submitter === void 0 ? void 0 : submitter.getAttribute("formtarget")) || form.target;
     for (const element of document.getElementsByName(target)) {
       if (element instanceof HTMLIFrameElement) return false;
     }
@@ -1088,9 +1003,9 @@ function submissionDoesNotTargetIFrame(form, submitter) {
 }
 
 class View {
-  #resolveRenderPromise=_value => {};
-  #resolveInterceptionPromise=_value => {};
   constructor(delegate, element) {
+    this.resolveRenderPromise = _value => {};
+    this.resolveInterceptionPromise = _value => {};
     this.delegate = delegate;
     this.element = element;
   }
@@ -1139,23 +1054,23 @@ class View {
     const {isPreview: isPreview, shouldRender: shouldRender, newSnapshot: snapshot} = renderer;
     if (shouldRender) {
       try {
-        this.renderPromise = new Promise((resolve => this.#resolveRenderPromise = resolve));
+        this.renderPromise = new Promise((resolve => this.resolveRenderPromise = resolve));
         this.renderer = renderer;
         await this.prepareToRenderSnapshot(renderer);
-        const renderInterception = new Promise((resolve => this.#resolveInterceptionPromise = resolve));
+        const renderInterception = new Promise((resolve => this.resolveInterceptionPromise = resolve));
         const options = {
-          resume: this.#resolveInterceptionPromise,
+          resume: this.resolveInterceptionPromise,
           render: this.renderer.renderElement
         };
-        const immediateRender = this.delegate.allowsImmediateRender(snapshot, isPreview, options);
+        const immediateRender = this.delegate.allowsImmediateRender(snapshot, options);
         if (!immediateRender) await renderInterception;
         await this.renderSnapshot(renderer);
-        this.delegate.viewRenderedSnapshot(snapshot, isPreview, this.renderer.renderMethod);
+        this.delegate.viewRenderedSnapshot(snapshot, isPreview);
         this.delegate.preloadOnLoadLinksForView(this.element);
         this.finishRenderingSnapshot(renderer);
       } finally {
         delete this.renderer;
-        this.#resolveRenderPromise(undefined);
+        this.resolveRenderPromise(undefined);
         delete this.renderPromise;
       }
     } else {
@@ -1195,6 +1110,26 @@ class FrameView extends View {
 
 class LinkInterceptor {
   constructor(delegate, element) {
+    this.clickBubbled = event => {
+      if (this.respondsToEventTarget(event.target)) {
+        this.clickEvent = event;
+      } else {
+        delete this.clickEvent;
+      }
+    };
+    this.linkClicked = event => {
+      if (this.clickEvent && this.respondsToEventTarget(event.target) && event.target instanceof Element) {
+        if (this.delegate.shouldInterceptLinkClick(event.target, event.detail.url, event.detail.originalEvent)) {
+          this.clickEvent.preventDefault();
+          event.preventDefault();
+          this.delegate.linkClickIntercepted(event.target, event.detail.url, event.detail.originalEvent);
+        }
+      }
+      delete this.clickEvent;
+    };
+    this.willVisit = _event => {
+      delete this.clickEvent;
+    };
     this.delegate = delegate;
     this.element = element;
   }
@@ -1208,26 +1143,6 @@ class LinkInterceptor {
     document.removeEventListener("turbo:click", this.linkClicked);
     document.removeEventListener("turbo:before-visit", this.willVisit);
   }
-  clickBubbled=event => {
-    if (this.respondsToEventTarget(event.target)) {
-      this.clickEvent = event;
-    } else {
-      delete this.clickEvent;
-    }
-  };
-  linkClicked=event => {
-    if (this.clickEvent && this.respondsToEventTarget(event.target) && event.target instanceof Element) {
-      if (this.delegate.shouldInterceptLinkClick(event.target, event.detail.url, event.detail.originalEvent)) {
-        this.clickEvent.preventDefault();
-        event.preventDefault();
-        this.delegate.linkClickIntercepted(event.target, event.detail.url, event.detail.originalEvent);
-      }
-    }
-    delete this.clickEvent;
-  };
-  willVisit=_event => {
-    delete this.clickEvent;
-  };
   respondsToEventTarget(target) {
     const element = target instanceof Element ? target : target instanceof Node ? target.parentElement : null;
     return element && element.closest("turbo-frame, html") == this.element;
@@ -1235,8 +1150,25 @@ class LinkInterceptor {
 }
 
 class LinkClickObserver {
-  started=false;
   constructor(delegate, eventTarget) {
+    this.started = false;
+    this.clickCaptured = () => {
+      this.eventTarget.removeEventListener("click", this.clickBubbled, false);
+      this.eventTarget.addEventListener("click", this.clickBubbled, false);
+    };
+    this.clickBubbled = event => {
+      if (event instanceof MouseEvent && this.clickEventIsSignificant(event)) {
+        const target = event.composedPath && event.composedPath()[0] || event.target;
+        const link = this.findLinkFromClickTarget(target);
+        if (link && doesNotTargetIFrame(link)) {
+          const location = this.getLocationForLink(link);
+          if (this.delegate.willFollowLinkToLocation(link, location, event)) {
+            event.preventDefault();
+            this.delegate.followedLinkToLocation(link, location);
+          }
+        }
+      }
+    };
     this.delegate = delegate;
     this.eventTarget = eventTarget;
   }
@@ -1252,23 +1184,6 @@ class LinkClickObserver {
       this.started = false;
     }
   }
-  clickCaptured=() => {
-    this.eventTarget.removeEventListener("click", this.clickBubbled, false);
-    this.eventTarget.addEventListener("click", this.clickBubbled, false);
-  };
-  clickBubbled=event => {
-    if (event instanceof MouseEvent && this.clickEventIsSignificant(event)) {
-      const target = event.composedPath && event.composedPath()[0] || event.target;
-      const link = this.findLinkFromClickTarget(target);
-      if (link && doesNotTargetIFrame(link)) {
-        const location = this.getLocationForLink(link);
-        if (this.delegate.willFollowLinkToLocation(link, location, event)) {
-          event.preventDefault();
-          this.delegate.followedLinkToLocation(link, location);
-        }
-      }
-    }
-  };
   clickEventIsSignificant(event) {
     return !(event.target && event.target.isContentEditable || event.defaultPrevented || event.which > 1 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey);
   }
@@ -1303,7 +1218,7 @@ class FormLinkClickObserver {
     this.linkInterceptor.stop();
   }
   willFollowLinkToLocation(link, location, originalEvent) {
-    return this.delegate.willSubmitFormLinkToLocation(link, location, originalEvent) && (link.hasAttribute("data-turbo-method") || link.hasAttribute("data-turbo-stream"));
+    return this.delegate.willSubmitFormLinkToLocation(link, location, originalEvent) && link.hasAttribute("data-turbo-method");
   }
   followedLinkToLocation(link, location) {
     const form = document.createElement("form");
@@ -1376,7 +1291,7 @@ class Bardo {
   }
   replacePlaceholderWithPermanentElement(permanentElement) {
     const placeholder = this.getPlaceholderById(permanentElement.id);
-    placeholder?.replaceWith(permanentElement);
+    placeholder === null || placeholder === void 0 ? void 0 : placeholder.replaceWith(permanentElement);
   }
   getPlaceholderById(id) {
     return this.placeholders.find((element => element.content == id));
@@ -1394,8 +1309,8 @@ function createPlaceholderForPermanentElement(permanentElement) {
 }
 
 class Renderer {
-  #activeElement=null;
   constructor(currentSnapshot, newSnapshot, renderElement, isPreview, willRender = true) {
+    this.activeElement = null;
     this.currentSnapshot = currentSnapshot;
     this.newSnapshot = newSnapshot;
     this.isPreview = isPreview;
@@ -1415,7 +1330,6 @@ class Renderer {
   prepareToRender() {
     return;
   }
-  render() {}
   finishRendering() {
     if (this.resolvingFunctions) {
       this.resolvingFunctions.resolve();
@@ -1427,20 +1341,20 @@ class Renderer {
   }
   focusFirstAutofocusableElement() {
     const element = this.connectedSnapshot.firstAutofocusableElement;
-    if (element) {
+    if (elementIsFocusable(element)) {
       element.focus();
     }
   }
   enteringBardo(currentPermanentElement) {
-    if (this.#activeElement) return;
+    if (this.activeElement) return;
     if (currentPermanentElement.contains(this.currentSnapshot.activeElement)) {
-      this.#activeElement = this.currentSnapshot.activeElement;
+      this.activeElement = this.currentSnapshot.activeElement;
     }
   }
   leavingBardo(currentPermanentElement) {
-    if (currentPermanentElement.contains(this.#activeElement) && this.#activeElement instanceof HTMLElement) {
-      this.#activeElement.focus();
-      this.#activeElement = null;
+    if (currentPermanentElement.contains(this.activeElement) && this.activeElement instanceof HTMLElement) {
+      this.activeElement.focus();
+      this.activeElement = null;
     }
   }
   get connectedSnapshot() {
@@ -1455,18 +1369,20 @@ class Renderer {
   get permanentElementMap() {
     return this.currentSnapshot.getPermanentElementMapForSnapshot(this.newSnapshot);
   }
-  get renderMethod() {
-    return "replace";
-  }
+}
+
+function elementIsFocusable(element) {
+  return element && typeof element.focus == "function";
 }
 
 class FrameRenderer extends Renderer {
   static renderElement(currentElement, newElement) {
+    var _a;
     const destinationRange = document.createRange();
     destinationRange.selectNodeContents(currentElement);
     destinationRange.deleteContents();
     const frameElement = newElement;
-    const sourceRange = frameElement.ownerDocument?.createRange();
+    const sourceRange = (_a = frameElement.ownerDocument) === null || _a === void 0 ? void 0 : _a.createRange();
     if (sourceRange) {
       sourceRange.selectNodeContents(frameElement);
       currentElement.appendChild(sourceRange.extractContents());
@@ -1537,7 +1453,6 @@ function readScrollBehavior(value, defaultValue) {
 }
 
 class ProgressBar {
-  static animationDuration=300;
   static get defaultCSS() {
     return unindent`
       .turbo-progress-bar {
@@ -1555,10 +1470,13 @@ class ProgressBar {
       }
     `;
   }
-  hiding=false;
-  value=0;
-  visible=false;
   constructor() {
+    this.hiding = false;
+    this.value = 0;
+    this.visible = false;
+    this.trickle = () => {
+      this.setValue(this.value + Math.random() / 100);
+    };
     this.stylesheetElement = this.createStylesheetElement();
     this.progressElement = this.createProgressElement();
     this.installStylesheetElement();
@@ -1613,9 +1531,6 @@ class ProgressBar {
     window.clearInterval(this.trickleInterval);
     delete this.trickleInterval;
   }
-  trickle=() => {
-    this.setValue(this.value + Math.random() / 100);
-  };
   refresh() {
     requestAnimationFrame((() => {
       this.progressElement.style.width = `${10 + this.value * 90}%`;
@@ -1640,22 +1555,25 @@ class ProgressBar {
   }
 }
 
+ProgressBar.animationDuration = 300;
+
 class HeadSnapshot extends Snapshot {
-  detailsByOuterHTML=this.children.filter((element => !elementIsNoscript(element))).map((element => elementWithoutNonce(element))).reduce(((result, element) => {
-    const {outerHTML: outerHTML} = element;
-    const details = outerHTML in result ? result[outerHTML] : {
-      type: elementType(element),
-      tracked: elementIsTracked(element),
-      elements: []
-    };
-    return {
-      ...result,
-      [outerHTML]: {
-        ...details,
-        elements: [ ...details.elements, element ]
-      }
-    };
-  }), {});
+  constructor() {
+    super(...arguments);
+    this.detailsByOuterHTML = this.children.filter((element => !elementIsNoscript(element))).map((element => elementWithoutNonce(element))).reduce(((result, element) => {
+      const {outerHTML: outerHTML} = element;
+      const details = outerHTML in result ? result[outerHTML] : {
+        type: elementType(element),
+        tracked: elementIsTracked(element),
+        elements: []
+      };
+      return Object.assign(Object.assign({}, result), {
+        [outerHTML]: Object.assign(Object.assign({}, details), {
+          elements: [ ...details.elements, element ]
+        })
+      });
+    }), {});
+  }
   get trackedElementSignature() {
     return Object.keys(this.detailsByOuterHTML).filter((outerHTML => this.detailsByOuterHTML[outerHTML].tracked)).join("");
   }
@@ -1688,7 +1606,7 @@ class HeadSnapshot extends Snapshot {
     return Object.keys(this.detailsByOuterHTML).reduce(((result, outerHTML) => {
       const {elements: [element]} = this.detailsByOuterHTML[outerHTML];
       return elementIsMetaElementWithName(element, name) ? element : result;
-    }), undefined | undefined);
+    }), undefined);
   }
 }
 
@@ -1738,12 +1656,11 @@ class PageSnapshot extends Snapshot {
   static fromElement(element) {
     return this.fromDocument(element.ownerDocument);
   }
-  static fromDocument({documentElement: documentElement, body: body, head: head}) {
-    return new this(documentElement, body, new HeadSnapshot(head));
+  static fromDocument({head: head, body: body}) {
+    return new this(body, new HeadSnapshot(head));
   }
-  constructor(documentElement, body, headSnapshot) {
-    super(body);
-    this.documentElement = documentElement;
+  constructor(element, headSnapshot) {
+    super(element);
     this.headSnapshot = headSnapshot;
   }
   clone() {
@@ -1758,19 +1675,14 @@ class PageSnapshot extends Snapshot {
     for (const clonedPasswordInput of clonedElement.querySelectorAll('input[type="password"]')) {
       clonedPasswordInput.value = "";
     }
-    return new PageSnapshot(this.documentElement, clonedElement, this.headSnapshot);
-  }
-  get lang() {
-    return this.documentElement.getAttribute("lang");
-  }
-  get html() {
-    return `${this.headElement.outerHTML}\n\n${this.element.outerHTML}`;
+    return new PageSnapshot(clonedElement, this.headSnapshot);
   }
   get headElement() {
     return this.headSnapshot.element;
   }
   get rootLocation() {
-    const root = this.getSetting("root") ?? "/";
+    var _a;
+    const root = (_a = this.getSetting("root")) !== null && _a !== void 0 ? _a : "/";
     return expandURL(root);
   }
   get cacheControlValue() {
@@ -1785,38 +1697,29 @@ class PageSnapshot extends Snapshot {
   get isVisitable() {
     return this.getSetting("visit-control") != "reload";
   }
-  get prefersViewTransitions() {
-    return this.headSnapshot.getMetaValue("view-transition") === "same-origin";
-  }
-  get shouldMorphPage() {
-    return this.getSetting("refresh-method") === "morph";
-  }
-  get shouldPreserveScrollPosition() {
-    return this.getSetting("refresh-scroll") === "preserve";
-  }
   getSetting(name) {
     return this.headSnapshot.getMetaValue(`turbo-${name}`);
   }
 }
 
-class ViewTransitioner {
-  #viewTransitionStarted=false;
-  #lastOperation=Promise.resolve();
-  renderChange(useViewTransition, render) {
-    if (useViewTransition && this.viewTransitionsAvailable && !this.#viewTransitionStarted) {
-      this.#viewTransitionStarted = true;
-      this.#lastOperation = this.#lastOperation.then((async () => {
-        await document.startViewTransition(render).finished;
-      }));
-    } else {
-      this.#lastOperation = this.#lastOperation.then(render);
-    }
-    return this.#lastOperation;
-  }
-  get viewTransitionsAvailable() {
-    return document.startViewTransition;
-  }
-}
+var TimingMetric;
+
+(function(TimingMetric) {
+  TimingMetric["visitStart"] = "visitStart";
+  TimingMetric["requestStart"] = "requestStart";
+  TimingMetric["requestEnd"] = "requestEnd";
+  TimingMetric["visitEnd"] = "visitEnd";
+})(TimingMetric || (TimingMetric = {}));
+
+var VisitState;
+
+(function(VisitState) {
+  VisitState["initialized"] = "initialized";
+  VisitState["started"] = "started";
+  VisitState["canceled"] = "canceled";
+  VisitState["failed"] = "failed";
+  VisitState["completed"] = "completed";
+})(VisitState || (VisitState = {}));
 
 const defaultOptions = {
   action: "advance",
@@ -1828,46 +1731,29 @@ const defaultOptions = {
   acceptsStreamResponse: false
 };
 
-const TimingMetric = {
-  visitStart: "visitStart",
-  requestStart: "requestStart",
-  requestEnd: "requestEnd",
-  visitEnd: "visitEnd"
-};
+var SystemStatusCode;
 
-const VisitState = {
-  initialized: "initialized",
-  started: "started",
-  canceled: "canceled",
-  failed: "failed",
-  completed: "completed"
-};
-
-const SystemStatusCode = {
-  networkFailure: 0,
-  timeoutFailure: -1,
-  contentTypeMismatch: -2
-};
+(function(SystemStatusCode) {
+  SystemStatusCode[SystemStatusCode["networkFailure"] = 0] = "networkFailure";
+  SystemStatusCode[SystemStatusCode["timeoutFailure"] = -1] = "timeoutFailure";
+  SystemStatusCode[SystemStatusCode["contentTypeMismatch"] = -2] = "contentTypeMismatch";
+})(SystemStatusCode || (SystemStatusCode = {}));
 
 class Visit {
-  identifier=uuid();
-  timingMetrics={};
-  followedRedirect=false;
-  historyChanged=false;
-  scrolled=false;
-  shouldCacheSnapshot=true;
-  acceptsStreamResponse=false;
-  snapshotCached=false;
-  state=VisitState.initialized;
-  viewTransitioner=new ViewTransitioner;
   constructor(delegate, location, restorationIdentifier, options = {}) {
+    this.identifier = uuid();
+    this.timingMetrics = {};
+    this.followedRedirect = false;
+    this.historyChanged = false;
+    this.scrolled = false;
+    this.shouldCacheSnapshot = true;
+    this.acceptsStreamResponse = false;
+    this.snapshotCached = false;
+    this.state = VisitState.initialized;
     this.delegate = delegate;
     this.location = location;
     this.restorationIdentifier = restorationIdentifier || uuid();
-    const {action: action, historyChanged: historyChanged, referrer: referrer, snapshot: snapshot, snapshotHTML: snapshotHTML, response: response, visitCachedSnapshot: visitCachedSnapshot, willRender: willRender, updateHistory: updateHistory, shouldCacheSnapshot: shouldCacheSnapshot, acceptsStreamResponse: acceptsStreamResponse} = {
-      ...defaultOptions,
-      ...options
-    };
+    const {action: action, historyChanged: historyChanged, referrer: referrer, snapshot: snapshot, snapshotHTML: snapshotHTML, response: response, visitCachedSnapshot: visitCachedSnapshot, willRender: willRender, updateHistory: updateHistory, shouldCacheSnapshot: shouldCacheSnapshot, acceptsStreamResponse: acceptsStreamResponse} = Object.assign(Object.assign({}, defaultOptions), options);
     this.action = action;
     this.historyChanged = historyChanged;
     this.referrer = referrer;
@@ -1897,11 +1783,10 @@ class Visit {
   get silent() {
     return this.isSamePage;
   }
-  async start() {
+  start() {
     if (this.state == VisitState.initialized) {
       this.recordTimingMetric(TimingMetric.visitStart);
       this.state = VisitState.started;
-      this.cachedSnapshot = await this.getCachedSnapshot();
       this.adapter.visitStarted(this);
       this.delegate.visitStarted(this);
     }
@@ -1930,21 +1815,21 @@ class Visit {
     if (this.state == VisitState.started) {
       this.state = VisitState.failed;
       this.adapter.visitFailed(this);
-      this.delegate.visitCompleted(this);
     }
   }
   changeHistory() {
+    var _a;
     if (!this.historyChanged && this.updateHistory) {
-      const actionForHistory = this.location.href === this.referrer?.href ? "replace" : this.action;
+      const actionForHistory = this.location.href === ((_a = this.referrer) === null || _a === void 0 ? void 0 : _a.href) ? "replace" : this.action;
       const method = getHistoryMethodForAction(actionForHistory);
       this.history.update(method, this.location, this.restorationIdentifier);
       this.historyChanged = true;
     }
   }
-  async issueRequest() {
+  issueRequest() {
     if (this.hasPreloadedResponse()) {
       this.simulateRequest();
-    } else if (!this.request && await this.shouldIssueRequest()) {
+    } else if (this.shouldIssueRequest() && !this.request) {
       this.request = new FetchRequest(this, FetchMethod.get, this.location);
       this.request.perform();
     }
@@ -1982,8 +1867,8 @@ class Visit {
         if (this.shouldCacheSnapshot) this.cacheSnapshot();
         if (this.view.renderPromise) await this.view.renderPromise;
         if (isSuccessful(statusCode) && responseHTML != null) {
-          const snapshot = PageSnapshot.fromHTMLString(responseHTML);
-          await this.renderPageSnapshot(snapshot, false);
+          await this.view.renderPage(PageSnapshot.fromHTMLString(responseHTML), false, this.willRender, this);
+          this.performScroll();
           this.adapter.visitRendered(this);
           this.complete();
         } else {
@@ -1994,8 +1879,8 @@ class Visit {
       }));
     }
   }
-  async getCachedSnapshot() {
-    const snapshot = await this.view.getCachedSnapshotForLocation(this.location) || this.getPreloadedSnapshot();
+  getCachedSnapshot() {
+    const snapshot = this.view.getCachedSnapshotForLocation(this.location) || this.getPreloadedSnapshot();
     if (snapshot && (!getAnchor(this.location) || snapshot.hasAnchor(getAnchor(this.location)))) {
       if (this.action == "restore" || snapshot.isPreviewable) {
         return snapshot;
@@ -2008,18 +1893,20 @@ class Visit {
     }
   }
   hasCachedSnapshot() {
-    return this.cachedSnapshot != null;
+    return this.getCachedSnapshot() != null;
   }
-  async loadCachedSnapshot() {
-    if (this.cachedSnapshot) {
-      const isPreview = await this.shouldIssueRequest();
+  loadCachedSnapshot() {
+    const snapshot = this.getCachedSnapshot();
+    if (snapshot) {
+      const isPreview = this.shouldIssueRequest();
       this.render((async () => {
         this.cacheSnapshot();
         if (this.isSamePage) {
           this.adapter.visitRendered(this);
         } else {
           if (this.view.renderPromise) await this.view.renderPromise;
-          await this.renderPageSnapshot(this.cachedSnapshot, isPreview);
+          await this.view.renderPage(snapshot, isPreview, this.willRender, this);
+          this.performScroll();
           this.adapter.visitRendered(this);
           if (!isPreview) {
             this.complete();
@@ -2029,7 +1916,8 @@ class Visit {
     }
   }
   followRedirect() {
-    if (this.redirectedToLocation && !this.followedRedirect && this.response?.redirected) {
+    var _a;
+    if (this.redirectedToLocation && !this.followedRedirect && ((_a = this.response) === null || _a === void 0 ? void 0 : _a.redirected)) {
       this.adapter.visitProposedToLocation(this.redirectedToLocation, {
         action: "replace",
         response: this.response,
@@ -2101,7 +1989,7 @@ class Visit {
     this.finishRequest();
   }
   performScroll() {
-    if (!this.scrolled && !this.view.forceReloaded && !this.view.snapshot.shouldPreserveScrollPosition) {
+    if (!this.scrolled && !this.view.forceReloaded) {
       if (this.action == "restore") {
         this.scrollToRestoredPosition() || this.scrollToAnchor() || this.view.scrollToTop();
       } else {
@@ -2131,9 +2019,7 @@ class Visit {
     this.timingMetrics[metric] = (new Date).getTime();
   }
   getTimingMetrics() {
-    return {
-      ...this.timingMetrics
-    };
+    return Object.assign({}, this.timingMetrics);
   }
   getHistoryMethodForAction(action) {
     switch (action) {
@@ -2148,10 +2034,10 @@ class Visit {
   hasPreloadedResponse() {
     return typeof this.response == "object";
   }
-  async shouldIssueRequest() {
+  shouldIssueRequest() {
     if (this.isSamePage) {
       return false;
-    } else if (this.action === "restore") {
+    } else if (this.action == "restore") {
       return !this.hasCachedSnapshot();
     } else {
       return this.willRender;
@@ -2171,12 +2057,6 @@ class Visit {
     await callback();
     delete this.frame;
   }
-  async renderPageSnapshot(snapshot, isPreview) {
-    await this.viewTransitioner.renderChange(this.view.shouldTransitionTo(snapshot), (async () => {
-      await this.view.renderPage(snapshot, isPreview, this.willRender, this);
-      this.performScroll();
-    }));
-  }
   cancelRender() {
     if (this.frame) {
       cancelAnimationFrame(this.frame);
@@ -2190,16 +2070,15 @@ function isSuccessful(statusCode) {
 }
 
 class BrowserAdapter {
-  progressBar=new ProgressBar;
   constructor(session) {
+    this.progressBar = new ProgressBar;
+    this.showProgressBar = () => {
+      this.progressBar.show();
+    };
     this.session = session;
   }
   visitProposedToLocation(location, options) {
-    if (locationIsVisitable(location, this.navigator.rootLocation)) {
-      this.navigator.startVisit(location, options?.restorationIdentifier || uuid(), options);
-    } else {
-      window.location.href = location.toString();
-    }
+    this.navigator.startVisit(location, (options === null || options === void 0 ? void 0 : options.restorationIdentifier) || uuid(), options);
   }
   visitStarted(visit) {
     this.location = visit.location;
@@ -2209,7 +2088,11 @@ class BrowserAdapter {
   }
   visitRequestStarted(visit) {
     this.progressBar.setValue(0);
-    this.showVisitProgressBarAfterDelay();
+    if (visit.hasCachedSnapshot() || visit.action != "restore") {
+      this.showVisitProgressBarAfterDelay();
+    } else {
+      this.showProgressBar();
+    }
   }
   visitRequestCompleted(visit) {
     visit.loadResponse();
@@ -2270,14 +2153,12 @@ class BrowserAdapter {
       delete this.formProgressBarTimeout;
     }
   }
-  showProgressBar=() => {
-    this.progressBar.show();
-  };
   reload(reason) {
+    var _a;
     dispatch("turbo:reload", {
       detail: reason
     });
-    window.location.href = this.location?.toString() || window.location.href;
+    window.location.href = ((_a = this.location) === null || _a === void 0 ? void 0 : _a.toString()) || window.location.href;
   }
   get navigator() {
     return this.session.navigator;
@@ -2285,9 +2166,16 @@ class BrowserAdapter {
 }
 
 class CacheObserver {
-  selector="[data-turbo-temporary]";
-  deprecatedSelector="[data-turbo-cache=false]";
-  started=false;
+  constructor() {
+    this.selector = "[data-turbo-temporary]";
+    this.deprecatedSelector = "[data-turbo-cache=false]";
+    this.started = false;
+    this.removeTemporaryElements = _event => {
+      for (const element of this.temporaryElements) {
+        element.remove();
+      }
+    };
+  }
   start() {
     if (!this.started) {
       this.started = true;
@@ -2300,11 +2188,6 @@ class CacheObserver {
       removeEventListener("turbo:before-cache", this.removeTemporaryElements, false);
     }
   }
-  removeTemporaryElements=_event => {
-    for (const element of this.temporaryElements) {
-      element.remove();
-    }
-  };
   get temporaryElements() {
     return [ ...document.querySelectorAll(this.selector), ...this.temporaryElementsWithDeprecation ];
   }
@@ -2333,40 +2216,41 @@ class FrameRedirector {
     this.formSubmitObserver.stop();
   }
   shouldInterceptLinkClick(element, _location, _event) {
-    return this.#shouldRedirect(element);
+    return this.shouldRedirect(element);
   }
   linkClickIntercepted(element, url, event) {
-    const frame = this.#findFrameElement(element);
+    const frame = this.findFrameElement(element);
     if (frame) {
       frame.delegate.linkClickIntercepted(element, url, event);
     }
   }
   willSubmitForm(element, submitter) {
-    return element.closest("turbo-frame") == null && this.#shouldSubmit(element, submitter) && this.#shouldRedirect(element, submitter);
+    return element.closest("turbo-frame") == null && this.shouldSubmit(element, submitter) && this.shouldRedirect(element, submitter);
   }
   formSubmitted(element, submitter) {
-    const frame = this.#findFrameElement(element, submitter);
+    const frame = this.findFrameElement(element, submitter);
     if (frame) {
       frame.delegate.formSubmitted(element, submitter);
     }
   }
-  #shouldSubmit(form, submitter) {
-    const action = getAction$1(form, submitter);
+  shouldSubmit(form, submitter) {
+    var _a;
+    const action = getAction(form, submitter);
     const meta = this.element.ownerDocument.querySelector(`meta[name="turbo-root"]`);
-    const rootLocation = expandURL(meta?.content ?? "/");
-    return this.#shouldRedirect(form, submitter) && locationIsVisitable(action, rootLocation);
+    const rootLocation = expandURL((_a = meta === null || meta === void 0 ? void 0 : meta.content) !== null && _a !== void 0 ? _a : "/");
+    return this.shouldRedirect(form, submitter) && locationIsVisitable(action, rootLocation);
   }
-  #shouldRedirect(element, submitter) {
+  shouldRedirect(element, submitter) {
     const isNavigatable = element instanceof HTMLFormElement ? this.session.submissionIsNavigatable(element, submitter) : this.session.elementIsNavigatable(element);
     if (isNavigatable) {
-      const frame = this.#findFrameElement(element, submitter);
+      const frame = this.findFrameElement(element, submitter);
       return frame ? frame != element.closest("turbo-frame") : false;
     } else {
       return false;
     }
   }
-  #findFrameElement(element, submitter) {
-    const id = submitter?.getAttribute("data-turbo-frame") || element.getAttribute("data-turbo-frame");
+  findFrameElement(element, submitter) {
+    const id = (submitter === null || submitter === void 0 ? void 0 : submitter.getAttribute("data-turbo-frame")) || element.getAttribute("data-turbo-frame");
     if (id && id != "_top") {
       const frame = this.element.querySelector(`#${id}:not([disabled])`);
       if (frame instanceof FrameElement) {
@@ -2377,12 +2261,26 @@ class FrameRedirector {
 }
 
 class History {
-  location;
-  restorationIdentifier=uuid();
-  restorationData={};
-  started=false;
-  pageLoaded=false;
   constructor(delegate) {
+    this.restorationIdentifier = uuid();
+    this.restorationData = {};
+    this.started = false;
+    this.pageLoaded = false;
+    this.onPopState = event => {
+      if (this.shouldHandlePopState()) {
+        const {turbo: turbo} = event.state || {};
+        if (turbo) {
+          this.location = new URL(window.location.href);
+          const {restorationIdentifier: restorationIdentifier} = turbo;
+          this.restorationIdentifier = restorationIdentifier;
+          this.delegate.historyPoppedToLocationWithRestorationIdentifier(this.location, restorationIdentifier);
+        }
+      }
+    };
+    this.onPageLoad = async _event => {
+      await nextMicrotask();
+      this.pageLoaded = true;
+    };
     this.delegate = delegate;
   }
   start() {
@@ -2422,14 +2320,12 @@ class History {
   updateRestorationData(additionalData) {
     const {restorationIdentifier: restorationIdentifier} = this;
     const restorationData = this.restorationData[restorationIdentifier];
-    this.restorationData[restorationIdentifier] = {
-      ...restorationData,
-      ...additionalData
-    };
+    this.restorationData[restorationIdentifier] = Object.assign(Object.assign({}, restorationData), additionalData);
   }
   assumeControlOfScrollRestoration() {
+    var _a;
     if (!this.previousScrollRestoration) {
-      this.previousScrollRestoration = history.scrollRestoration ?? "auto";
+      this.previousScrollRestoration = (_a = history.scrollRestoration) !== null && _a !== void 0 ? _a : "auto";
       history.scrollRestoration = "manual";
     }
   }
@@ -2439,21 +2335,6 @@ class History {
       delete this.previousScrollRestoration;
     }
   }
-  onPopState=event => {
-    if (this.shouldHandlePopState()) {
-      const {turbo: turbo} = event.state || {};
-      if (turbo) {
-        this.location = new URL(window.location.href);
-        const {restorationIdentifier: restorationIdentifier} = turbo;
-        this.restorationIdentifier = restorationIdentifier;
-        this.delegate.historyPoppedToLocationWithRestorationIdentifier(this.location, restorationIdentifier);
-      }
-    }
-  };
-  onPageLoad=async _event => {
-    await nextMicrotask();
-    this.pageLoaded = true;
-  };
   shouldHandlePopState() {
     return this.pageIsLoaded();
   }
@@ -2468,16 +2349,19 @@ class Navigator {
   }
   proposeVisit(location, options = {}) {
     if (this.delegate.allowsVisitingLocationWithAction(location, options.action)) {
-      this.delegate.visitProposedToLocation(location, options);
+      if (locationIsVisitable(location, this.view.snapshot.rootLocation)) {
+        this.delegate.visitProposedToLocation(location, options);
+      } else {
+        window.location.href = location.toString();
+      }
     }
   }
   startVisit(locatable, restorationIdentifier, options = {}) {
     this.stop();
-    this.currentVisit = new Visit(this, expandURL(locatable), restorationIdentifier, {
-      referrer: this.location,
-      ...options
-    });
-    return this.currentVisit.start();
+    this.currentVisit = new Visit(this, expandURL(locatable), restorationIdentifier, Object.assign({
+      referrer: this.location
+    }, options));
+    this.currentVisit.start();
   }
   submitForm(form, submitter) {
     this.stop();
@@ -2499,9 +2383,6 @@ class Navigator {
   }
   get view() {
     return this.delegate.view;
-  }
-  get rootLocation() {
-    return this.view.snapshot.rootLocation;
   }
   get history() {
     return this.delegate.history;
@@ -2543,9 +2424,7 @@ class Navigator {
       } else {
         await this.view.renderPage(snapshot, false, true, this.currentVisit);
       }
-      if (!snapshot.shouldPreserveScrollPosition) {
-        this.view.scrollToTop();
-      }
+      this.view.scrollToTop();
       this.view.clearSnapshotCache();
     }
   }
@@ -2583,17 +2462,30 @@ class Navigator {
   }
 }
 
-const PageStage = {
-  initial: 0,
-  loading: 1,
-  interactive: 2,
-  complete: 3
-};
+var PageStage;
+
+(function(PageStage) {
+  PageStage[PageStage["initial"] = 0] = "initial";
+  PageStage[PageStage["loading"] = 1] = "loading";
+  PageStage[PageStage["interactive"] = 2] = "interactive";
+  PageStage[PageStage["complete"] = 3] = "complete";
+})(PageStage || (PageStage = {}));
 
 class PageObserver {
-  stage=PageStage.initial;
-  started=false;
   constructor(delegate) {
+    this.stage = PageStage.initial;
+    this.started = false;
+    this.interpretReadyState = () => {
+      const {readyState: readyState} = this;
+      if (readyState == "interactive") {
+        this.pageIsInteractive();
+      } else if (readyState == "complete") {
+        this.pageIsComplete();
+      }
+    };
+    this.pageWillUnload = () => {
+      this.delegate.pageWillUnload();
+    };
     this.delegate = delegate;
   }
   start() {
@@ -2613,14 +2505,6 @@ class PageObserver {
       this.started = false;
     }
   }
-  interpretReadyState=() => {
-    const {readyState: readyState} = this;
-    if (readyState == "interactive") {
-      this.pageIsInteractive();
-    } else if (readyState == "complete") {
-      this.pageIsComplete();
-    }
-  };
   pageIsInteractive() {
     if (this.stage == PageStage.loading) {
       this.stage = PageStage.interactive;
@@ -2634,17 +2518,20 @@ class PageObserver {
       this.delegate.pageLoaded();
     }
   }
-  pageWillUnload=() => {
-    this.delegate.pageWillUnload();
-  };
   get readyState() {
     return document.readyState;
   }
 }
 
 class ScrollObserver {
-  started=false;
   constructor(delegate) {
+    this.started = false;
+    this.onScroll = () => {
+      this.updatePosition({
+        x: window.pageXOffset,
+        y: window.pageYOffset
+      });
+    };
     this.delegate = delegate;
   }
   start() {
@@ -2660,12 +2547,6 @@ class ScrollObserver {
       this.started = false;
     }
   }
-  onScroll=() => {
-    this.updatePosition({
-      x: window.pageXOffset,
-      y: window.pageYOffset
-    });
-  };
   updatePosition(position) {
     this.delegate.scrollPositionChanged(position);
   }
@@ -2673,13 +2554,7 @@ class ScrollObserver {
 
 class StreamMessageRenderer {
   render({fragment: fragment}) {
-    Bardo.preservingPermanentElements(this, getPermanentElementMapForFragment(fragment), (() => {
-      withAutofocusFromFragment(fragment, (() => {
-        withPreservedFocus((() => {
-          document.documentElement.appendChild(fragment);
-        }));
-      }));
-    }));
+    Bardo.preservingPermanentElements(this, getPermanentElementMapForFragment(fragment), (() => document.documentElement.appendChild(fragment)));
   }
   enteringBardo(currentPermanentElement, newPermanentElement) {
     newPermanentElement.replaceWith(currentPermanentElement.cloneNode(true));
@@ -2702,67 +2577,33 @@ function getPermanentElementMapForFragment(fragment) {
   return permanentElementMap;
 }
 
-async function withAutofocusFromFragment(fragment, callback) {
-  const generatedID = `turbo-stream-autofocus-${uuid()}`;
-  const turboStreams = fragment.querySelectorAll("turbo-stream");
-  const elementWithAutofocus = firstAutofocusableElementInStreams(turboStreams);
-  let willAutofocusId = null;
-  if (elementWithAutofocus) {
-    if (elementWithAutofocus.id) {
-      willAutofocusId = elementWithAutofocus.id;
-    } else {
-      willAutofocusId = generatedID;
-    }
-    elementWithAutofocus.id = willAutofocusId;
-  }
-  callback();
-  await nextAnimationFrame();
-  const hasNoActiveElement = document.activeElement == null || document.activeElement == document.body;
-  if (hasNoActiveElement && willAutofocusId) {
-    const elementToAutofocus = document.getElementById(willAutofocusId);
-    if (elementIsFocusable(elementToAutofocus)) {
-      elementToAutofocus.focus();
-    }
-    if (elementToAutofocus && elementToAutofocus.id == generatedID) {
-      elementToAutofocus.removeAttribute("id");
-    }
-  }
-}
-
-async function withPreservedFocus(callback) {
-  const [activeElementBeforeRender, activeElementAfterRender] = await around(callback, (() => document.activeElement));
-  const restoreFocusTo = activeElementBeforeRender && activeElementBeforeRender.id;
-  if (restoreFocusTo) {
-    const elementToFocus = document.getElementById(restoreFocusTo);
-    if (elementIsFocusable(elementToFocus) && elementToFocus != activeElementAfterRender) {
-      elementToFocus.focus();
-    }
-  }
-}
-
-function firstAutofocusableElementInStreams(nodeListOfStreamElements) {
-  for (const streamElement of nodeListOfStreamElements) {
-    const elementWithAutofocus = queryAutofocusableElement(streamElement.templateElement.content);
-    if (elementWithAutofocus) return elementWithAutofocus;
-  }
-  return null;
-}
-
 class StreamObserver {
-  sources=new Set;
-  #started=false;
   constructor(delegate) {
+    this.sources = new Set;
+    this.started = false;
+    this.inspectFetchResponse = event => {
+      const response = fetchResponseFromEvent(event);
+      if (response && fetchResponseIsStream(response)) {
+        event.preventDefault();
+        this.receiveMessageResponse(response);
+      }
+    };
+    this.receiveMessageEvent = event => {
+      if (this.started && typeof event.data == "string") {
+        this.receiveMessageHTML(event.data);
+      }
+    };
     this.delegate = delegate;
   }
   start() {
-    if (!this.#started) {
-      this.#started = true;
+    if (!this.started) {
+      this.started = true;
       addEventListener("turbo:before-fetch-response", this.inspectFetchResponse, false);
     }
   }
   stop() {
-    if (this.#started) {
-      this.#started = false;
+    if (this.started) {
+      this.started = false;
       removeEventListener("turbo:before-fetch-response", this.inspectFetchResponse, false);
     }
   }
@@ -2781,18 +2622,6 @@ class StreamObserver {
   streamSourceIsConnected(source) {
     return this.sources.has(source);
   }
-  inspectFetchResponse=event => {
-    const response = fetchResponseFromEvent(event);
-    if (response && fetchResponseIsStream(response)) {
-      event.preventDefault();
-      this.receiveMessageResponse(response);
-    }
-  };
-  receiveMessageEvent=event => {
-    if (this.#started && typeof event.data == "string") {
-      this.receiveMessageHTML(event.data);
-    }
-  };
   async receiveMessageResponse(response) {
     const html = await response.responseHTML;
     if (html) {
@@ -2805,14 +2634,16 @@ class StreamObserver {
 }
 
 function fetchResponseFromEvent(event) {
-  const fetchResponse = event.detail?.fetchResponse;
+  var _a;
+  const fetchResponse = (_a = event.detail) === null || _a === void 0 ? void 0 : _a.fetchResponse;
   if (fetchResponse instanceof FetchResponse) {
     return fetchResponse;
   }
 }
 
 function fetchResponseIsStream(response) {
-  const contentType = response.contentType ?? "";
+  var _a;
+  const contentType = (_a = response.contentType) !== null && _a !== void 0 ? _a : "";
   return contentType.startsWith(StreamMessage.contentType);
 }
 
@@ -2847,575 +2678,6 @@ class ErrorRenderer extends Renderer {
   }
 }
 
-let EMPTY_SET = new Set;
-
-function morph(oldNode, newContent, config = {}) {
-  if (oldNode instanceof Document) {
-    oldNode = oldNode.documentElement;
-  }
-  if (typeof newContent === "string") {
-    newContent = parseContent(newContent);
-  }
-  let normalizedContent = normalizeContent(newContent);
-  let ctx = createMorphContext(oldNode, normalizedContent, config);
-  return morphNormalizedContent(oldNode, normalizedContent, ctx);
-}
-
-function morphNormalizedContent(oldNode, normalizedNewContent, ctx) {
-  if (ctx.head.block) {
-    let oldHead = oldNode.querySelector("head");
-    let newHead = normalizedNewContent.querySelector("head");
-    if (oldHead && newHead) {
-      let promises = handleHeadElement(newHead, oldHead, ctx);
-      Promise.all(promises).then((function() {
-        morphNormalizedContent(oldNode, normalizedNewContent, Object.assign(ctx, {
-          head: {
-            block: false,
-            ignore: true
-          }
-        }));
-      }));
-      return;
-    }
-  }
-  if (ctx.morphStyle === "innerHTML") {
-    morphChildren(normalizedNewContent, oldNode, ctx);
-    return oldNode.children;
-  } else if (ctx.morphStyle === "outerHTML" || ctx.morphStyle == null) {
-    let bestMatch = findBestNodeMatch(normalizedNewContent, oldNode, ctx);
-    let previousSibling = bestMatch?.previousSibling;
-    let nextSibling = bestMatch?.nextSibling;
-    let morphedNode = morphOldNodeTo(oldNode, bestMatch, ctx);
-    if (bestMatch) {
-      return insertSiblings(previousSibling, morphedNode, nextSibling);
-    } else {
-      return [];
-    }
-  } else {
-    throw "Do not understand how to morph style " + ctx.morphStyle;
-  }
-}
-
-function morphOldNodeTo(oldNode, newContent, ctx) {
-  if (ctx.ignoreActive && oldNode === document.activeElement) ; else if (newContent == null) {
-    if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return;
-    oldNode.remove();
-    ctx.callbacks.afterNodeRemoved(oldNode);
-    return null;
-  } else if (!isSoftMatch(oldNode, newContent)) {
-    if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return;
-    if (ctx.callbacks.beforeNodeAdded(newContent) === false) return;
-    oldNode.parentElement.replaceChild(newContent, oldNode);
-    ctx.callbacks.afterNodeAdded(newContent);
-    ctx.callbacks.afterNodeRemoved(oldNode);
-    return newContent;
-  } else {
-    if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false) return;
-    if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) ; else if (oldNode instanceof HTMLHeadElement && ctx.head.style !== "morph") {
-      handleHeadElement(newContent, oldNode, ctx);
-    } else {
-      syncNodeFrom(newContent, oldNode);
-      morphChildren(newContent, oldNode, ctx);
-    }
-    ctx.callbacks.afterNodeMorphed(oldNode, newContent);
-    return oldNode;
-  }
-}
-
-function morphChildren(newParent, oldParent, ctx) {
-  let nextNewChild = newParent.firstChild;
-  let insertionPoint = oldParent.firstChild;
-  let newChild;
-  while (nextNewChild) {
-    newChild = nextNewChild;
-    nextNewChild = newChild.nextSibling;
-    if (insertionPoint == null) {
-      if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
-      oldParent.appendChild(newChild);
-      ctx.callbacks.afterNodeAdded(newChild);
-      removeIdsFromConsideration(ctx, newChild);
-      continue;
-    }
-    if (isIdSetMatch(newChild, insertionPoint, ctx)) {
-      morphOldNodeTo(insertionPoint, newChild, ctx);
-      insertionPoint = insertionPoint.nextSibling;
-      removeIdsFromConsideration(ctx, newChild);
-      continue;
-    }
-    let idSetMatch = findIdSetMatch(newParent, oldParent, newChild, insertionPoint, ctx);
-    if (idSetMatch) {
-      insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
-      morphOldNodeTo(idSetMatch, newChild, ctx);
-      removeIdsFromConsideration(ctx, newChild);
-      continue;
-    }
-    let softMatch = findSoftMatch(newParent, oldParent, newChild, insertionPoint, ctx);
-    if (softMatch) {
-      insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
-      morphOldNodeTo(softMatch, newChild, ctx);
-      removeIdsFromConsideration(ctx, newChild);
-      continue;
-    }
-    if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
-    oldParent.insertBefore(newChild, insertionPoint);
-    ctx.callbacks.afterNodeAdded(newChild);
-    removeIdsFromConsideration(ctx, newChild);
-  }
-  while (insertionPoint !== null) {
-    let tempNode = insertionPoint;
-    insertionPoint = insertionPoint.nextSibling;
-    removeNode(tempNode, ctx);
-  }
-}
-
-function syncNodeFrom(from, to) {
-  let type = from.nodeType;
-  if (type === 1) {
-    const fromAttributes = from.attributes;
-    const toAttributes = to.attributes;
-    for (const fromAttribute of fromAttributes) {
-      if (to.getAttribute(fromAttribute.name) !== fromAttribute.value) {
-        to.setAttribute(fromAttribute.name, fromAttribute.value);
-      }
-    }
-    for (const toAttribute of toAttributes) {
-      if (!from.hasAttribute(toAttribute.name)) {
-        to.removeAttribute(toAttribute.name);
-      }
-    }
-  }
-  if (type === 8 || type === 3) {
-    if (to.nodeValue !== from.nodeValue) {
-      to.nodeValue = from.nodeValue;
-    }
-  }
-  if (from instanceof HTMLInputElement && to instanceof HTMLInputElement && from.type !== "file") {
-    to.value = from.value || "";
-    syncAttribute(from, to, "value");
-    syncAttribute(from, to, "checked");
-    syncAttribute(from, to, "disabled");
-  } else if (from instanceof HTMLOptionElement) {
-    syncAttribute(from, to, "selected");
-  } else if (from instanceof HTMLTextAreaElement && to instanceof HTMLTextAreaElement) {
-    let fromValue = from.value;
-    let toValue = to.value;
-    if (fromValue !== toValue) {
-      to.value = fromValue;
-    }
-    if (to.firstChild && to.firstChild.nodeValue !== fromValue) {
-      to.firstChild.nodeValue = fromValue;
-    }
-  }
-}
-
-function syncAttribute(from, to, attributeName) {
-  if (from[attributeName] !== to[attributeName]) {
-    if (from[attributeName]) {
-      to.setAttribute(attributeName, from[attributeName]);
-    } else {
-      to.removeAttribute(attributeName);
-    }
-  }
-}
-
-function handleHeadElement(newHeadTag, currentHead, ctx) {
-  let added = [];
-  let removed = [];
-  let preserved = [];
-  let nodesToAppend = [];
-  let headMergeStyle = ctx.head.style;
-  let srcToNewHeadNodes = new Map;
-  for (const newHeadChild of newHeadTag.children) {
-    srcToNewHeadNodes.set(newHeadChild.outerHTML, newHeadChild);
-  }
-  for (const currentHeadElt of currentHead.children) {
-    let inNewContent = srcToNewHeadNodes.has(currentHeadElt.outerHTML);
-    let isReAppended = ctx.head.shouldReAppend(currentHeadElt);
-    let isPreserved = ctx.head.shouldPreserve(currentHeadElt);
-    if (inNewContent || isPreserved) {
-      if (isReAppended) {
-        removed.push(currentHeadElt);
-      } else {
-        srcToNewHeadNodes.delete(currentHeadElt.outerHTML);
-        preserved.push(currentHeadElt);
-      }
-    } else {
-      if (headMergeStyle === "append") {
-        if (isReAppended) {
-          removed.push(currentHeadElt);
-          nodesToAppend.push(currentHeadElt);
-        }
-      } else {
-        if (ctx.head.shouldRemove(currentHeadElt) !== false) {
-          removed.push(currentHeadElt);
-        }
-      }
-    }
-  }
-  nodesToAppend.push(...srcToNewHeadNodes.values());
-  let promises = [];
-  for (const newNode of nodesToAppend) {
-    let newElt = document.createRange().createContextualFragment(newNode.outerHTML).firstChild;
-    if (ctx.callbacks.beforeNodeAdded(newElt) !== false) {
-      if (newElt.href || newElt.src) {
-        let resolve = null;
-        let promise = new Promise((function(_resolve) {
-          resolve = _resolve;
-        }));
-        newElt.addEventListener("load", (function() {
-          resolve();
-        }));
-        promises.push(promise);
-      }
-      currentHead.appendChild(newElt);
-      ctx.callbacks.afterNodeAdded(newElt);
-      added.push(newElt);
-    }
-  }
-  for (const removedElement of removed) {
-    if (ctx.callbacks.beforeNodeRemoved(removedElement) !== false) {
-      currentHead.removeChild(removedElement);
-      ctx.callbacks.afterNodeRemoved(removedElement);
-    }
-  }
-  ctx.head.afterHeadMorphed(currentHead, {
-    added: added,
-    kept: preserved,
-    removed: removed
-  });
-  return promises;
-}
-
-function noOp() {}
-
-function createMorphContext(oldNode, newContent, config) {
-  return {
-    target: oldNode,
-    newContent: newContent,
-    config: config,
-    morphStyle: config.morphStyle,
-    ignoreActive: config.ignoreActive,
-    idMap: createIdMap(oldNode, newContent),
-    deadIds: new Set,
-    callbacks: Object.assign({
-      beforeNodeAdded: noOp,
-      afterNodeAdded: noOp,
-      beforeNodeMorphed: noOp,
-      afterNodeMorphed: noOp,
-      beforeNodeRemoved: noOp,
-      afterNodeRemoved: noOp
-    }, config.callbacks),
-    head: Object.assign({
-      style: "merge",
-      shouldPreserve: function(elt) {
-        return elt.getAttribute("im-preserve") === "true";
-      },
-      shouldReAppend: function(elt) {
-        return elt.getAttribute("im-re-append") === "true";
-      },
-      shouldRemove: noOp,
-      afterHeadMorphed: noOp
-    }, config.head)
-  };
-}
-
-function isIdSetMatch(node1, node2, ctx) {
-  if (node1 == null || node2 == null) {
-    return false;
-  }
-  if (node1.nodeType === node2.nodeType && node1.tagName === node2.tagName) {
-    if (node1.id !== "" && node1.id === node2.id) {
-      return true;
-    } else {
-      return getIdIntersectionCount(ctx, node1, node2) > 0;
-    }
-  }
-  return false;
-}
-
-function isSoftMatch(node1, node2) {
-  if (node1 == null || node2 == null) {
-    return false;
-  }
-  return node1.nodeType === node2.nodeType && node1.tagName === node2.tagName;
-}
-
-function removeNodesBetween(startInclusive, endExclusive, ctx) {
-  while (startInclusive !== endExclusive) {
-    let tempNode = startInclusive;
-    startInclusive = startInclusive.nextSibling;
-    removeNode(tempNode, ctx);
-  }
-  removeIdsFromConsideration(ctx, endExclusive);
-  return endExclusive.nextSibling;
-}
-
-function findIdSetMatch(newContent, oldParent, newChild, insertionPoint, ctx) {
-  let newChildPotentialIdCount = getIdIntersectionCount(ctx, newChild, oldParent);
-  let potentialMatch = null;
-  if (newChildPotentialIdCount > 0) {
-    let potentialMatch = insertionPoint;
-    let otherMatchCount = 0;
-    while (potentialMatch != null) {
-      if (isIdSetMatch(newChild, potentialMatch, ctx)) {
-        return potentialMatch;
-      }
-      otherMatchCount += getIdIntersectionCount(ctx, potentialMatch, newContent);
-      if (otherMatchCount > newChildPotentialIdCount) {
-        return null;
-      }
-      potentialMatch = potentialMatch.nextSibling;
-    }
-  }
-  return potentialMatch;
-}
-
-function findSoftMatch(newContent, oldParent, newChild, insertionPoint, ctx) {
-  let potentialSoftMatch = insertionPoint;
-  let nextSibling = newChild.nextSibling;
-  let siblingSoftMatchCount = 0;
-  while (potentialSoftMatch != null) {
-    if (getIdIntersectionCount(ctx, potentialSoftMatch, newContent) > 0) {
-      return null;
-    }
-    if (isSoftMatch(newChild, potentialSoftMatch)) {
-      return potentialSoftMatch;
-    }
-    if (isSoftMatch(nextSibling, potentialSoftMatch)) {
-      siblingSoftMatchCount++;
-      nextSibling = nextSibling.nextSibling;
-      if (siblingSoftMatchCount >= 2) {
-        return null;
-      }
-    }
-    potentialSoftMatch = potentialSoftMatch.nextSibling;
-  }
-  return potentialSoftMatch;
-}
-
-function parseContent(newContent) {
-  let parser = new DOMParser;
-  let contentWithSvgsRemoved = newContent.replace(/<svg(\s[^>]*>|>)([\s\S]*?)<\/svg>/gim, "");
-  if (contentWithSvgsRemoved.match(/<\/html>/) || contentWithSvgsRemoved.match(/<\/head>/) || contentWithSvgsRemoved.match(/<\/body>/)) {
-    let content = parser.parseFromString(newContent, "text/html");
-    if (contentWithSvgsRemoved.match(/<\/html>/)) {
-      content.generatedByIdiomorph = true;
-      return content;
-    } else {
-      let htmlElement = content.firstChild;
-      if (htmlElement) {
-        htmlElement.generatedByIdiomorph = true;
-        return htmlElement;
-      } else {
-        return null;
-      }
-    }
-  } else {
-    let responseDoc = parser.parseFromString("<body><template>" + newContent + "</template></body>", "text/html");
-    let content = responseDoc.body.querySelector("template").content;
-    content.generatedByIdiomorph = true;
-    return content;
-  }
-}
-
-function normalizeContent(newContent) {
-  if (newContent == null) {
-    const dummyParent = document.createElement("div");
-    return dummyParent;
-  } else if (newContent.generatedByIdiomorph) {
-    return newContent;
-  } else if (newContent instanceof Node) {
-    const dummyParent = document.createElement("div");
-    dummyParent.append(newContent);
-    return dummyParent;
-  } else {
-    const dummyParent = document.createElement("div");
-    for (const elt of [ ...newContent ]) {
-      dummyParent.append(elt);
-    }
-    return dummyParent;
-  }
-}
-
-function insertSiblings(previousSibling, morphedNode, nextSibling) {
-  let stack = [];
-  let added = [];
-  while (previousSibling != null) {
-    stack.push(previousSibling);
-    previousSibling = previousSibling.previousSibling;
-  }
-  while (stack.length > 0) {
-    let node = stack.pop();
-    added.push(node);
-    morphedNode.parentElement.insertBefore(node, morphedNode);
-  }
-  added.push(morphedNode);
-  while (nextSibling != null) {
-    stack.push(nextSibling);
-    added.push(nextSibling);
-    nextSibling = nextSibling.nextSibling;
-  }
-  while (stack.length > 0) {
-    morphedNode.parentElement.insertBefore(stack.pop(), morphedNode.nextSibling);
-  }
-  return added;
-}
-
-function findBestNodeMatch(newContent, oldNode, ctx) {
-  let currentElement;
-  currentElement = newContent.firstChild;
-  let bestElement = currentElement;
-  let score = 0;
-  while (currentElement) {
-    let newScore = scoreElement(currentElement, oldNode, ctx);
-    if (newScore > score) {
-      bestElement = currentElement;
-      score = newScore;
-    }
-    currentElement = currentElement.nextSibling;
-  }
-  return bestElement;
-}
-
-function scoreElement(node1, node2, ctx) {
-  if (isSoftMatch(node1, node2)) {
-    return .5 + getIdIntersectionCount(ctx, node1, node2);
-  }
-  return 0;
-}
-
-function removeNode(tempNode, ctx) {
-  removeIdsFromConsideration(ctx, tempNode);
-  if (ctx.callbacks.beforeNodeRemoved(tempNode) === false) return;
-  tempNode.remove();
-  ctx.callbacks.afterNodeRemoved(tempNode);
-}
-
-function isIdInConsideration(ctx, id) {
-  return !ctx.deadIds.has(id);
-}
-
-function idIsWithinNode(ctx, id, targetNode) {
-  let idSet = ctx.idMap.get(targetNode) || EMPTY_SET;
-  return idSet.has(id);
-}
-
-function removeIdsFromConsideration(ctx, node) {
-  let idSet = ctx.idMap.get(node) || EMPTY_SET;
-  for (const id of idSet) {
-    ctx.deadIds.add(id);
-  }
-}
-
-function getIdIntersectionCount(ctx, node1, node2) {
-  let sourceSet = ctx.idMap.get(node1) || EMPTY_SET;
-  let matchCount = 0;
-  for (const id of sourceSet) {
-    if (isIdInConsideration(ctx, id) && idIsWithinNode(ctx, id, node2)) {
-      ++matchCount;
-    }
-  }
-  return matchCount;
-}
-
-function populateIdMapForNode(node, idMap) {
-  let nodeParent = node.parentElement;
-  let idElements = node.querySelectorAll("[id]");
-  for (const elt of idElements) {
-    let current = elt;
-    while (current !== nodeParent && current != null) {
-      let idSet = idMap.get(current);
-      if (idSet == null) {
-        idSet = new Set;
-        idMap.set(current, idSet);
-      }
-      idSet.add(elt.id);
-      current = current.parentElement;
-    }
-  }
-}
-
-function createIdMap(oldContent, newContent) {
-  let idMap = new Map;
-  populateIdMapForNode(oldContent, idMap);
-  populateIdMapForNode(newContent, idMap);
-  return idMap;
-}
-
-var idiomorph = {
-  morph: morph
-};
-
-class MorphRenderer extends Renderer {
-  async render() {
-    if (this.willRender) await this.#morphBody();
-  }
-  get renderMethod() {
-    return "morph";
-  }
-  async #morphBody() {
-    this.#morphElements(this.currentElement, this.newElement);
-    this.#reloadRemoteFrames();
-    dispatch("turbo:morph", {
-      detail: {
-        currentElement: this.currentElement,
-        newElement: this.newElement
-      }
-    });
-  }
-  #morphElements(currentElement, newElement, morphStyle = "outerHTML") {
-    this.isMorphingTurboFrame = this.#isRemoteFrame(currentElement);
-    idiomorph.morph(currentElement, newElement, {
-      morphStyle: morphStyle,
-      callbacks: {
-        beforeNodeAdded: this.#shouldAddElement,
-        beforeNodeMorphed: this.#shouldMorphElement,
-        beforeNodeRemoved: this.#shouldRemoveElement
-      }
-    });
-  }
-  #shouldAddElement=node => !(node.id && node.hasAttribute("data-turbo-permanent") && document.getElementById(node.id));
-  #shouldMorphElement=node => {
-    if (node instanceof HTMLElement) {
-      return !node.hasAttribute("data-turbo-permanent") && (this.isMorphingTurboFrame || !this.#isRemoteFrame(node));
-    } else {
-      return true;
-    }
-  };
-  #shouldRemoveElement=node => this.#shouldMorphElement(node);
-  #reloadRemoteFrames() {
-    this.#remoteFrames().forEach((frame => {
-      if (this.#isRemoteFrame(frame)) {
-        this.#renderFrameWithMorph(frame);
-        frame.reload();
-      }
-    }));
-  }
-  #renderFrameWithMorph(frame) {
-    frame.addEventListener("turbo:before-frame-render", (event => {
-      event.detail.render = this.#morphFrameUpdate;
-    }), {
-      once: true
-    });
-  }
-  #morphFrameUpdate=(currentElement, newElement) => {
-    dispatch("turbo:before-frame-morph", {
-      target: currentElement,
-      detail: {
-        currentElement: currentElement,
-        newElement: newElement
-      }
-    });
-    this.#morphElements(currentElement, newElement.children, "innerHTML");
-  };
-  #isRemoteFrame(element) {
-    return element.nodeName.toLowerCase() === "turbo-frame" && element.src;
-  }
-  #remoteFrames() {
-    return Array.from(document.querySelectorAll("turbo-frame[src]")).filter((frame => !frame.closest("[data-turbo-permanent]")));
-  }
-}
-
 class PageRenderer extends Renderer {
   static renderElement(currentElement, newElement) {
     if (document.body && newElement instanceof HTMLBodyElement) {
@@ -3440,7 +2702,6 @@ class PageRenderer extends Renderer {
     }
   }
   async prepareToRender() {
-    this.#setLanguage();
     await this.mergeHead();
   }
   async render() {
@@ -3462,15 +2723,6 @@ class PageRenderer extends Renderer {
   }
   get newElement() {
     return this.newSnapshot.element;
-  }
-  #setLanguage() {
-    const {documentElement: documentElement} = this.currentSnapshot;
-    const {lang: lang} = this.newSnapshot;
-    if (lang) {
-      documentElement.setAttribute("lang", lang);
-    } else {
-      documentElement.removeAttribute("lang");
-    }
   }
   async mergeHead() {
     const mergedHeadElements = this.mergeProvisionalElements();
@@ -3570,80 +2822,28 @@ class PageRenderer extends Renderer {
   }
 }
 
-class DiskStore {
-  _version="v1";
-  constructor() {
-    if (typeof caches === "undefined") {
-      throw new Error("windows.caches is undefined. CacheStore requires a secure context.");
-    }
-    this.storage = this.openStorage();
-  }
-  async has(location) {
-    const storage = await this.openStorage();
-    return await storage.match(location) !== undefined;
-  }
-  async get(location) {
-    const storage = await this.openStorage();
-    const response = await storage.match(location);
-    if (response && response.ok) {
-      const html = await response.text();
-      return PageSnapshot.fromHTMLString(html);
-    }
-  }
-  async put(location, snapshot) {
-    const storage = await this.openStorage();
-    const response = new Response(snapshot.html, {
-      status: 200,
-      statusText: "OK",
-      headers: {
-        "Content-Type": "text/html"
-      }
-    });
-    await storage.put(location, response);
-    return snapshot;
-  }
-  async clear() {
-    const storage = await this.openStorage();
-    const keys = await storage.keys();
-    await Promise.all(keys.map((key => storage.delete(key))));
-  }
-  openStorage() {
-    this.storage ||= caches.open(`turbo-${this.version}`);
-    return this.storage;
-  }
-  set version(value) {
-    if (value !== this._version) {
-      this._version = value;
-      this.storage ||= caches.open(`turbo-${this.version}`);
-    }
-  }
-  get version() {
-    return this._version;
-  }
-}
-
-class MemoryStore {
-  keys=[];
-  snapshots={};
+class SnapshotCache {
   constructor(size) {
+    this.keys = [];
+    this.snapshots = {};
     this.size = size;
   }
-  async has(location) {
+  has(location) {
     return toCacheKey(location) in this.snapshots;
   }
-  async get(location) {
-    if (await this.has(location)) {
+  get(location) {
+    if (this.has(location)) {
       const snapshot = this.read(location);
       this.touch(location);
       return snapshot;
     }
   }
-  async put(location, snapshot) {
+  put(location, snapshot) {
     this.write(location, snapshot);
     this.touch(location);
     return snapshot;
   }
-  async clear() {
+  clear() {
     this.snapshots = {};
   }
   read(location) {
@@ -3666,61 +2866,26 @@ class MemoryStore {
   }
 }
 
-class SnapshotCache {
-  static currentStore=new MemoryStore(10);
-  static setStore(storeName) {
-    switch (storeName) {
-     case "memory":
-      SnapshotCache.currentStore = new MemoryStore(10);
-      break;
-
-     case "disk":
-      SnapshotCache.currentStore = new DiskStore;
-      break;
-
-     default:
-      throw new Error(`Invalid store name: ${storeName}`);
-    }
-  }
-  has(location) {
-    return SnapshotCache.currentStore.has(location);
-  }
-  get(location) {
-    return SnapshotCache.currentStore.get(location);
-  }
-  put(location, snapshot) {
-    return SnapshotCache.currentStore.put(location, snapshot);
-  }
-  clear() {
-    return SnapshotCache.currentStore.clear();
-  }
-}
-
 class PageView extends View {
-  snapshotCache=new SnapshotCache;
-  lastRenderedLocation=new URL(location.href);
-  forceReloaded=false;
-  shouldTransitionTo(newSnapshot) {
-    return this.snapshot.prefersViewTransitions && newSnapshot.prefersViewTransitions;
+  constructor() {
+    super(...arguments);
+    this.snapshotCache = new SnapshotCache(10);
+    this.lastRenderedLocation = new URL(location.href);
+    this.forceReloaded = false;
   }
   renderPage(snapshot, isPreview = false, willRender = true, visit) {
-    const shouldMorphPage = this.isPageRefresh(visit) && this.snapshot.shouldMorphPage;
-    const rendererClass = shouldMorphPage ? MorphRenderer : PageRenderer;
-    const renderer = new rendererClass(this.snapshot, snapshot, PageRenderer.renderElement, isPreview, willRender);
+    const renderer = new PageRenderer(this.snapshot, snapshot, PageRenderer.renderElement, isPreview, willRender);
     if (!renderer.shouldRender) {
       this.forceReloaded = true;
     } else {
-      visit?.changeHistory();
+      visit === null || visit === void 0 ? void 0 : visit.changeHistory();
     }
     return this.render(renderer);
   }
   renderError(snapshot, visit) {
-    visit?.changeHistory();
+    visit === null || visit === void 0 ? void 0 : visit.changeHistory();
     const renderer = new ErrorRenderer(this.snapshot, snapshot, ErrorRenderer.renderElement, false);
     return this.render(renderer);
-  }
-  setCacheStore(cacheName) {
-    SnapshotCache.setStore(cacheName);
   }
   clearSnapshotCache() {
     this.snapshotCache.clear();
@@ -3738,17 +2903,14 @@ class PageView extends View {
   getCachedSnapshotForLocation(location) {
     return this.snapshotCache.get(location);
   }
-  isPageRefresh(visit) {
-    return !visit || this.lastRenderedLocation.href === visit.location.href;
-  }
   get snapshot() {
     return PageSnapshot.fromElement(this.element);
   }
 }
 
 class Preloader {
-  selector="a[data-turbo-preload]";
   constructor(delegate) {
+    this.selector = "a[data-turbo-preload]";
     this.delegate = delegate;
   }
   get snapshotCache() {
@@ -3770,11 +2932,13 @@ class Preloader {
   }
   async preloadURL(link) {
     const location = new URL(link.href);
-    if (await this.snapshotCache.has(location)) return;
+    if (this.snapshotCache.has(location)) {
+      return;
+    }
     try {
       const response = await fetch(location.toString(), {
         headers: {
-          "Sec-Purpose": "prefetch",
+          "VND.PREFETCH": "true",
           Accept: "text/html"
         }
       });
@@ -3785,71 +2949,28 @@ class Preloader {
   }
 }
 
-class LimitedSet extends Set {
-  constructor(maxSize) {
-    super();
-    this.maxSize = maxSize;
-  }
-  add(value) {
-    if (this.size >= this.maxSize) {
-      const iterator = this.values();
-      const oldestValue = iterator.next().value;
-      this.delete(oldestValue);
-    }
-    super.add(value);
-  }
-}
-
-class Cache {
-  clear() {
-    this.store.clear();
-  }
-  resetCacheControl() {
-    this.#setCacheControl("");
-  }
-  exemptPageFromCache() {
-    this.#setCacheControl("no-cache");
-  }
-  exemptPageFromPreview() {
-    this.#setCacheControl("no-preview");
-  }
-  set store(store) {
-    if (typeof store === "string") {
-      SnapshotCache.setStore(store);
-    } else {
-      SnapshotCache.currentStore = store;
-    }
-  }
-  get store() {
-    return SnapshotCache.currentStore;
-  }
-  #setCacheControl(value) {
-    setMetaContent("turbo-cache-control", value);
-  }
-}
-
 class Session {
-  navigator=new Navigator(this);
-  history=new History(this);
-  preloader=new Preloader(this);
-  view=new PageView(this, document.documentElement);
-  adapter=new BrowserAdapter(this);
-  pageObserver=new PageObserver(this);
-  cacheObserver=new CacheObserver;
-  linkClickObserver=new LinkClickObserver(this, window);
-  formSubmitObserver=new FormSubmitObserver(this, document);
-  scrollObserver=new ScrollObserver(this);
-  streamObserver=new StreamObserver(this);
-  formLinkClickObserver=new FormLinkClickObserver(this, document.documentElement);
-  frameRedirector=new FrameRedirector(this, document.documentElement);
-  streamMessageRenderer=new StreamMessageRenderer;
-  cache=new Cache(this);
-  recentRequests=new LimitedSet(20);
-  drive=true;
-  enabled=true;
-  progressBarDelay=500;
-  started=false;
-  formMode="on";
+  constructor() {
+    this.navigator = new Navigator(this);
+    this.history = new History(this);
+    this.preloader = new Preloader(this);
+    this.view = new PageView(this, document.documentElement);
+    this.adapter = new BrowserAdapter(this);
+    this.pageObserver = new PageObserver(this);
+    this.cacheObserver = new CacheObserver;
+    this.linkClickObserver = new LinkClickObserver(this, window);
+    this.formSubmitObserver = new FormSubmitObserver(this, document);
+    this.scrollObserver = new ScrollObserver(this);
+    this.streamObserver = new StreamObserver(this);
+    this.formLinkClickObserver = new FormLinkClickObserver(this, document.documentElement);
+    this.frameRedirector = new FrameRedirector(this, document.documentElement);
+    this.streamMessageRenderer = new StreamMessageRenderer;
+    this.drive = true;
+    this.enabled = true;
+    this.progressBarDelay = 500;
+    this.started = false;
+    this.formMode = "on";
+  }
   start() {
     if (!this.started) {
       this.pageObserver.start();
@@ -3893,15 +3014,6 @@ class Session {
       frameElement.loaded;
     } else {
       this.navigator.proposeVisit(expandURL(location), options);
-    }
-  }
-  refresh(url, requestId) {
-    const isRecentRequest = requestId && this.recentRequests.has(requestId);
-    if (!isRecentRequest) {
-      this.cache.exemptPageFromPreview();
-      this.visit(url, {
-        action: "replace"
-      });
     }
   }
   connectStreamSource(source) {
@@ -3987,7 +3099,7 @@ class Session {
     this.notifyApplicationAfterVisitingSamePageLocation(oldURL, newURL);
   }
   willSubmitForm(form, submitter) {
-    const action = getAction$1(form, submitter);
+    const action = getAction(form, submitter);
     return this.submissionIsNavigatable(form, submitter) && locationIsVisitable(expandURL(action), this.snapshot.rootLocation);
   }
   formSubmitted(form, submitter) {
@@ -4007,21 +3119,22 @@ class Session {
     this.renderStreamMessage(message);
   }
   viewWillCacheSnapshot() {
-    if (!this.navigator.currentVisit?.silent) {
+    var _a;
+    if (!((_a = this.navigator.currentVisit) === null || _a === void 0 ? void 0 : _a.silent)) {
       this.notifyApplicationBeforeCachingSnapshot();
     }
   }
-  allowsImmediateRender({element: element}, isPreview, options) {
-    const event = this.notifyApplicationBeforeRender(element, isPreview, options);
+  allowsImmediateRender({element: element}, options) {
+    const event = this.notifyApplicationBeforeRender(element, options);
     const {defaultPrevented: defaultPrevented, detail: {render: render}} = event;
     if (this.view.renderer && render) {
       this.view.renderer.renderElement = render;
     }
     return !defaultPrevented;
   }
-  viewRenderedSnapshot(_snapshot, isPreview, renderMethod) {
+  viewRenderedSnapshot(_snapshot, _isPreview) {
     this.view.lastRenderedLocation = this.history.location;
-    this.notifyApplicationAfterRender(isPreview, renderMethod);
+    this.notifyApplicationAfterRender();
   }
   preloadOnLoadLinksForView(element) {
     this.preloader.preloadOnLoadLinksForView(element);
@@ -4072,23 +3185,16 @@ class Session {
   notifyApplicationBeforeCachingSnapshot() {
     return dispatch("turbo:before-cache");
   }
-  notifyApplicationBeforeRender(newBody, isPreview, options) {
+  notifyApplicationBeforeRender(newBody, options) {
     return dispatch("turbo:before-render", {
-      detail: {
-        newBody: newBody,
-        isPreview: isPreview,
-        ...options
-      },
+      detail: Object.assign({
+        newBody: newBody
+      }, options),
       cancelable: true
     });
   }
-  notifyApplicationAfterRender(isPreview, renderMethod) {
-    return dispatch("turbo:render", {
-      detail: {
-        isPreview: isPreview,
-        renderMethod: renderMethod
-      }
-    });
+  notifyApplicationAfterRender() {
+    return dispatch("turbo:render");
   }
   notifyApplicationAfterPageLoad(timing = {}) {
     return dispatch("turbo:load", {
@@ -4167,9 +3273,67 @@ const deprecatedLocationPropertyDescriptors = {
   }
 };
 
+class Cache {
+  constructor(session) {
+    this.session = session;
+  }
+  clear() {
+    this.session.clearCache();
+  }
+  resetCacheControl() {
+    this.setCacheControl("");
+  }
+  exemptPageFromCache() {
+    this.setCacheControl("no-cache");
+  }
+  exemptPageFromPreview() {
+    this.setCacheControl("no-preview");
+  }
+  setCacheControl(value) {
+    setMetaContent("turbo-cache-control", value);
+  }
+}
+
+const StreamActions = {
+  after() {
+    this.targetElements.forEach((e => {
+      var _a;
+      return (_a = e.parentElement) === null || _a === void 0 ? void 0 : _a.insertBefore(this.templateContent, e.nextSibling);
+    }));
+  },
+  append() {
+    this.removeDuplicateTargetChildren();
+    this.targetElements.forEach((e => e.append(this.templateContent)));
+  },
+  before() {
+    this.targetElements.forEach((e => {
+      var _a;
+      return (_a = e.parentElement) === null || _a === void 0 ? void 0 : _a.insertBefore(this.templateContent, e);
+    }));
+  },
+  prepend() {
+    this.removeDuplicateTargetChildren();
+    this.targetElements.forEach((e => e.prepend(this.templateContent)));
+  },
+  remove() {
+    this.targetElements.forEach((e => e.remove()));
+  },
+  replace() {
+    this.targetElements.forEach((e => e.replaceWith(this.templateContent)));
+  },
+  update() {
+    this.targetElements.forEach((targetElement => {
+      targetElement.innerHTML = "";
+      targetElement.append(this.templateContent);
+    }));
+  }
+};
+
 const session = new Session;
 
-const {cache: cache, navigator: navigator$1} = session;
+const cache = new Cache(session);
+
+const {navigator: navigator$1} = session;
 
 function start() {
   session.start();
@@ -4220,7 +3384,6 @@ var Turbo = Object.freeze({
   PageRenderer: PageRenderer,
   PageSnapshot: PageSnapshot,
   FrameRenderer: FrameRenderer,
-  fetch: fetch,
   start: start,
   registerAdapter: registerAdapter,
   visit: visit,
@@ -4230,20 +3393,28 @@ var Turbo = Object.freeze({
   clearCache: clearCache,
   setProgressBarDelay: setProgressBarDelay,
   setConfirmMethod: setConfirmMethod,
-  setFormMode: setFormMode
+  setFormMode: setFormMode,
+  StreamActions: StreamActions
 });
 
 class TurboFrameMissingError extends Error {}
 
 class FrameController {
-  fetchResponseLoaded=_fetchResponse => Promise.resolve();
-  #currentFetchRequest=null;
-  #resolveVisitPromise=() => {};
-  #connected=false;
-  #hasBeenLoaded=false;
-  #ignoredAttributes=new Set;
-  action=null;
   constructor(element) {
+    this.fetchResponseLoaded = _fetchResponse => {};
+    this.currentFetchRequest = null;
+    this.resolveVisitPromise = () => {};
+    this.connected = false;
+    this.hasBeenLoaded = false;
+    this.ignoredAttributes = new Set;
+    this.action = null;
+    this.visitCachedSnapshot = ({element: element}) => {
+      const frame = element.querySelector("#" + this.element.id);
+      if (frame && this.previousFrameElement) {
+        frame.replaceChildren(...this.previousFrameElement.children);
+      }
+      delete this.previousFrameElement;
+    };
     this.element = element;
     this.view = new FrameView(this, this.element);
     this.appearanceObserver = new AppearanceObserver(this, this.element);
@@ -4253,12 +3424,12 @@ class FrameController {
     this.formSubmitObserver = new FormSubmitObserver(this, this.element);
   }
   connect() {
-    if (!this.#connected) {
-      this.#connected = true;
+    if (!this.connected) {
+      this.connected = true;
       if (this.loadingStyle == FrameLoadingStyle.lazy) {
         this.appearanceObserver.start();
       } else {
-        this.#loadSourceURL();
+        this.loadSourceURL();
       }
       this.formLinkClickObserver.start();
       this.linkInterceptor.start();
@@ -4266,8 +3437,8 @@ class FrameController {
     }
   }
   disconnect() {
-    if (this.#connected) {
-      this.#connected = false;
+    if (this.connected) {
+      this.connected = false;
       this.appearanceObserver.stop();
       this.formLinkClickObserver.stop();
       this.linkInterceptor.stop();
@@ -4276,21 +3447,21 @@ class FrameController {
   }
   disabledChanged() {
     if (this.loadingStyle == FrameLoadingStyle.eager) {
-      this.#loadSourceURL();
+      this.loadSourceURL();
     }
   }
   sourceURLChanged() {
-    if (this.#isIgnoringChangesTo("src")) return;
+    if (this.isIgnoringChangesTo("src")) return;
     if (this.element.isConnected) {
       this.complete = false;
     }
-    if (this.loadingStyle == FrameLoadingStyle.eager || this.#hasBeenLoaded) {
-      this.#loadSourceURL();
+    if (this.loadingStyle == FrameLoadingStyle.eager || this.hasBeenLoaded) {
+      this.loadSourceURL();
     }
   }
   sourceURLReloaded() {
     const {src: src} = this.element;
-    this.#ignoringChangesToAttribute("complete", (() => {
+    this.ignoringChangesToAttribute("complete", (() => {
       this.element.removeAttribute("complete");
     }));
     this.element.src = null;
@@ -4298,23 +3469,23 @@ class FrameController {
     return this.element.loaded;
   }
   completeChanged() {
-    if (this.#isIgnoringChangesTo("complete")) return;
-    this.#loadSourceURL();
+    if (this.isIgnoringChangesTo("complete")) return;
+    this.loadSourceURL();
   }
   loadingStyleChanged() {
     if (this.loadingStyle == FrameLoadingStyle.lazy) {
       this.appearanceObserver.start();
     } else {
       this.appearanceObserver.stop();
-      this.#loadSourceURL();
+      this.loadSourceURL();
     }
   }
-  async #loadSourceURL() {
+  async loadSourceURL() {
     if (this.enabled && this.isActive && !this.complete && this.sourceURL) {
-      this.element.loaded = this.#visit(expandURL(this.sourceURL));
+      this.element.loaded = this.visit(expandURL(this.sourceURL));
       this.appearanceObserver.stop();
       await this.element.loaded;
-      this.#hasBeenLoaded = true;
+      this.hasBeenLoaded = true;
     }
   }
   async loadResponse(fetchResponse) {
@@ -4327,34 +3498,34 @@ class FrameController {
         const document = parseHTMLDocument(html);
         const pageSnapshot = PageSnapshot.fromDocument(document);
         if (pageSnapshot.isVisitable) {
-          await this.#loadFrameResponse(fetchResponse, document);
+          await this.loadFrameResponse(fetchResponse, document);
         } else {
-          await this.#handleUnvisitableFrameResponse(fetchResponse);
+          await this.handleUnvisitableFrameResponse(fetchResponse);
         }
       }
     } finally {
-      this.fetchResponseLoaded = () => Promise.resolve();
+      this.fetchResponseLoaded = () => {};
     }
   }
   elementAppearedInViewport(element) {
     this.proposeVisitIfNavigatedWithAction(element, element);
-    this.#loadSourceURL();
+    this.loadSourceURL();
   }
   willSubmitFormLinkToLocation(link) {
-    return this.#shouldInterceptNavigation(link);
+    return this.shouldInterceptNavigation(link);
   }
   submittedFormLinkToLocation(link, _location, form) {
-    const frame = this.#findFrameElement(link);
+    const frame = this.findFrameElement(link);
     if (frame) form.setAttribute("data-turbo-frame", frame.id);
   }
   shouldInterceptLinkClick(element, _location, _event) {
-    return this.#shouldInterceptNavigation(element);
+    return this.shouldInterceptNavigation(element);
   }
   linkClickIntercepted(element, location) {
-    this.#navigateFrame(element, location);
+    this.navigateFrame(element, location);
   }
   willSubmitForm(element, submitter) {
-    return element.closest("turbo-frame") == this.element && this.#shouldInterceptNavigation(element, submitter);
+    return element.closest("turbo-frame") == this.element && this.shouldInterceptNavigation(element, submitter);
   }
   formSubmitted(element, submitter) {
     if (this.formSubmission) {
@@ -4366,8 +3537,9 @@ class FrameController {
     this.formSubmission.start();
   }
   prepareRequest(request) {
+    var _a;
     request.headers["Turbo-Frame"] = this.id;
-    if (this.currentNavigationElement?.hasAttribute("data-turbo-stream")) {
+    if ((_a = this.currentNavigationElement) === null || _a === void 0 ? void 0 : _a.hasAttribute("data-turbo-stream")) {
       request.acceptResponseType(StreamMessage.contentType);
     }
   }
@@ -4375,28 +3547,28 @@ class FrameController {
     markAsBusy(this.element);
   }
   requestPreventedHandlingResponse(_request, _response) {
-    this.#resolveVisitPromise();
+    this.resolveVisitPromise();
   }
   async requestSucceededWithResponse(request, response) {
     await this.loadResponse(response);
-    this.#resolveVisitPromise();
+    this.resolveVisitPromise();
   }
   async requestFailedWithResponse(request, response) {
     await this.loadResponse(response);
-    this.#resolveVisitPromise();
+    this.resolveVisitPromise();
   }
   requestErrored(request, error) {
     console.error(error);
-    this.#resolveVisitPromise();
+    this.resolveVisitPromise();
   }
   requestFinished(_request) {
     clearBusyState(this.element);
   }
   formSubmissionStarted({formElement: formElement}) {
-    markAsBusy(formElement, this.#findFrameElement(formElement));
+    markAsBusy(formElement, this.findFrameElement(formElement));
   }
   formSubmissionSucceededWithResponse(formSubmission, response) {
-    const frame = this.#findFrameElement(formSubmission.formElement, formSubmission.submitter);
+    const frame = this.findFrameElement(formSubmission.formElement, formSubmission.submitter);
     frame.delegate.proposeVisitIfNavigatedWithAction(frame, formSubmission.formElement, formSubmission.submitter);
     frame.delegate.loadResponse(response);
     if (!formSubmission.isSafe) {
@@ -4411,15 +3583,14 @@ class FrameController {
     console.error(error);
   }
   formSubmissionFinished({formElement: formElement}) {
-    clearBusyState(formElement, this.#findFrameElement(formElement));
+    clearBusyState(formElement, this.findFrameElement(formElement));
   }
-  allowsImmediateRender({element: newFrame}, _isPreview, options) {
+  allowsImmediateRender({element: newFrame}, options) {
     const event = dispatch("turbo:before-frame-render", {
       target: this.element,
-      detail: {
-        newFrame: newFrame,
-        ...options
-      },
+      detail: Object.assign({
+        newFrame: newFrame
+      }, options),
       cancelable: true
     });
     const {defaultPrevented: defaultPrevented, detail: {render: render}} = event;
@@ -4428,7 +3599,7 @@ class FrameController {
     }
     return !defaultPrevented;
   }
-  viewRenderedSnapshot(_snapshot, _isPreview, _renderMethod) {}
+  viewRenderedSnapshot(_snapshot, _isPreview) {}
   preloadOnLoadLinksForView(element) {
     session.preloadOnLoadLinksForView(element);
   }
@@ -4436,14 +3607,7 @@ class FrameController {
   willRenderFrame(currentElement, _newElement) {
     this.previousFrameElement = currentElement.cloneNode(true);
   }
-  visitCachedSnapshot=({element: element}) => {
-    const frame = element.querySelector("#" + this.element.id);
-    if (frame && this.previousFrameElement) {
-      frame.replaceChildren(...this.previousFrameElement.children);
-    }
-    delete this.previousFrameElement;
-  };
-  async #loadFrameResponse(fetchResponse, document) {
+  async loadFrameResponse(fetchResponse, document) {
     const newFrameElement = await this.extractForeignFrameElement(document.body);
     if (newFrameElement) {
       const snapshot = new Snapshot(newFrameElement);
@@ -4454,28 +3618,29 @@ class FrameController {
       this.complete = true;
       session.frameRendered(fetchResponse, this.element);
       session.frameLoaded(this.element);
-      await this.fetchResponseLoaded(fetchResponse);
-    } else if (this.#willHandleFrameMissingFromResponse(fetchResponse)) {
-      this.#handleFrameMissingFromResponse(fetchResponse);
+      this.fetchResponseLoaded(fetchResponse);
+    } else if (this.willHandleFrameMissingFromResponse(fetchResponse)) {
+      this.handleFrameMissingFromResponse(fetchResponse);
     }
   }
-  async #visit(url) {
+  async visit(url) {
+    var _a;
     const request = new FetchRequest(this, FetchMethod.get, url, new URLSearchParams, this.element);
-    this.#currentFetchRequest?.cancel();
-    this.#currentFetchRequest = request;
+    (_a = this.currentFetchRequest) === null || _a === void 0 ? void 0 : _a.cancel();
+    this.currentFetchRequest = request;
     return new Promise((resolve => {
-      this.#resolveVisitPromise = () => {
-        this.#resolveVisitPromise = () => {};
-        this.#currentFetchRequest = null;
+      this.resolveVisitPromise = () => {
+        this.resolveVisitPromise = () => {};
+        this.currentFetchRequest = null;
         resolve();
       };
       request.perform();
     }));
   }
-  #navigateFrame(element, url, submitter) {
-    const frame = this.#findFrameElement(element, submitter);
+  navigateFrame(element, url, submitter) {
+    const frame = this.findFrameElement(element, submitter);
     frame.delegate.proposeVisitIfNavigatedWithAction(frame, element, submitter);
-    this.#withCurrentNavigationElement(element, (() => {
+    this.withCurrentNavigationElement(element, (() => {
       frame.src = url;
     }));
   }
@@ -4484,10 +3649,10 @@ class FrameController {
     if (this.action) {
       const pageSnapshot = PageSnapshot.fromElement(frame).clone();
       const {visitCachedSnapshot: visitCachedSnapshot} = frame.delegate;
-      frame.delegate.fetchResponseLoaded = async fetchResponse => {
+      frame.delegate.fetchResponseLoaded = fetchResponse => {
         if (frame.src) {
           const {statusCode: statusCode, redirected: redirected} = fetchResponse;
-          const responseHTML = await fetchResponse.responseHTML;
+          const responseHTML = frame.ownerDocument.documentElement.outerHTML;
           const response = {
             statusCode: statusCode,
             redirected: redirected,
@@ -4513,16 +3678,16 @@ class FrameController {
       session.history.update(method, expandURL(this.element.src || ""), this.restorationIdentifier);
     }
   }
-  async #handleUnvisitableFrameResponse(fetchResponse) {
+  async handleUnvisitableFrameResponse(fetchResponse) {
     console.warn(`The response (${fetchResponse.statusCode}) from <turbo-frame id="${this.element.id}"> is performing a full page visit due to turbo-visit-control.`);
-    await this.#visitResponse(fetchResponse.response);
+    await this.visitResponse(fetchResponse.response);
   }
-  #willHandleFrameMissingFromResponse(fetchResponse) {
+  willHandleFrameMissingFromResponse(fetchResponse) {
     this.element.setAttribute("complete", "");
     const response = fetchResponse.response;
-    const visit = async (url, options) => {
+    const visit = async (url, options = {}) => {
       if (url instanceof Response) {
-        this.#visitResponse(url);
+        this.visitResponse(url);
       } else {
         session.visit(url, options);
       }
@@ -4537,15 +3702,15 @@ class FrameController {
     });
     return !event.defaultPrevented;
   }
-  #handleFrameMissingFromResponse(fetchResponse) {
+  handleFrameMissingFromResponse(fetchResponse) {
     this.view.missing();
-    this.#throwFrameMissingError(fetchResponse);
+    this.throwFrameMissingError(fetchResponse);
   }
-  #throwFrameMissingError(fetchResponse) {
+  throwFrameMissingError(fetchResponse) {
     const message = `The response (${fetchResponse.statusCode}) did not contain the expected <turbo-frame id="${this.element.id}"> and will be ignored. To perform a full page visit instead, set turbo-visit-control to reload.`;
     throw new TurboFrameMissingError(message);
   }
-  async #visitResponse(response) {
+  async visitResponse(response) {
     const wrapped = new FetchResponse(response);
     const responseHTML = await wrapped.responseHTML;
     const {location: location, redirected: redirected, statusCode: statusCode} = wrapped;
@@ -4557,9 +3722,10 @@ class FrameController {
       }
     });
   }
-  #findFrameElement(element, submitter) {
+  findFrameElement(element, submitter) {
+    var _a;
     const id = getAttribute("data-turbo-frame", submitter, element) || this.element.getAttribute("target");
-    return getFrameElementById(id) ?? this.element;
+    return (_a = getFrameElementById(id)) !== null && _a !== void 0 ? _a : this.element;
   }
   async extractForeignFrameElement(container) {
     let element;
@@ -4580,13 +3746,13 @@ class FrameController {
     }
     return null;
   }
-  #formActionIsVisitable(form, submitter) {
-    const action = getAction$1(form, submitter);
+  formActionIsVisitable(form, submitter) {
+    const action = getAction(form, submitter);
     return locationIsVisitable(expandURL(action), this.rootLocation);
   }
-  #shouldInterceptNavigation(element, submitter) {
+  shouldInterceptNavigation(element, submitter) {
     const id = getAttribute("data-turbo-frame", submitter, element) || this.element.getAttribute("target");
-    if (element instanceof HTMLFormElement && !this.#formActionIsVisitable(element, submitter)) {
+    if (element instanceof HTMLFormElement && !this.formActionIsVisitable(element, submitter)) {
       return false;
     }
     if (!this.enabled || id == "_top") {
@@ -4618,21 +3784,21 @@ class FrameController {
     }
   }
   set sourceURL(sourceURL) {
-    this.#ignoringChangesToAttribute("src", (() => {
-      this.element.src = sourceURL ?? null;
+    this.ignoringChangesToAttribute("src", (() => {
+      this.element.src = sourceURL !== null && sourceURL !== void 0 ? sourceURL : null;
     }));
   }
   get loadingStyle() {
     return this.element.loading;
   }
   get isLoading() {
-    return this.formSubmission !== undefined || this.#resolveVisitPromise() !== undefined;
+    return this.formSubmission !== undefined || this.resolveVisitPromise() !== undefined;
   }
   get complete() {
     return this.element.hasAttribute("complete");
   }
   set complete(value) {
-    this.#ignoringChangesToAttribute("complete", (() => {
+    this.ignoringChangesToAttribute("complete", (() => {
       if (value) {
         this.element.setAttribute("complete", "");
       } else {
@@ -4641,22 +3807,23 @@ class FrameController {
     }));
   }
   get isActive() {
-    return this.element.isActive && this.#connected;
+    return this.element.isActive && this.connected;
   }
   get rootLocation() {
+    var _a;
     const meta = this.element.ownerDocument.querySelector(`meta[name="turbo-root"]`);
-    const root = meta?.content ?? "/";
+    const root = (_a = meta === null || meta === void 0 ? void 0 : meta.content) !== null && _a !== void 0 ? _a : "/";
     return expandURL(root);
   }
-  #isIgnoringChangesTo(attributeName) {
-    return this.#ignoredAttributes.has(attributeName);
+  isIgnoringChangesTo(attributeName) {
+    return this.ignoredAttributes.has(attributeName);
   }
-  #ignoringChangesToAttribute(attributeName, callback) {
-    this.#ignoredAttributes.add(attributeName);
+  ignoringChangesToAttribute(attributeName, callback) {
+    this.ignoredAttributes.add(attributeName);
     callback();
-    this.#ignoredAttributes.delete(attributeName);
+    this.ignoredAttributes.delete(attributeName);
   }
-  #withCurrentNavigationElement(element, callback) {
+  withCurrentNavigationElement(element, callback) {
     this.currentNavigationElement = element;
     callback();
     delete this.currentNavigationElement;
@@ -4689,38 +3856,6 @@ function activateElement(element, currentURL) {
   }
 }
 
-const StreamActions = {
-  after() {
-    this.targetElements.forEach((e => e.parentElement?.insertBefore(this.templateContent, e.nextSibling)));
-  },
-  append() {
-    this.removeDuplicateTargetChildren();
-    this.targetElements.forEach((e => e.append(this.templateContent)));
-  },
-  before() {
-    this.targetElements.forEach((e => e.parentElement?.insertBefore(this.templateContent, e)));
-  },
-  prepend() {
-    this.removeDuplicateTargetChildren();
-    this.targetElements.forEach((e => e.prepend(this.templateContent)));
-  },
-  remove() {
-    this.targetElements.forEach((e => e.remove()));
-  },
-  replace() {
-    this.targetElements.forEach((e => e.replaceWith(this.templateContent)));
-  },
-  update() {
-    this.targetElements.forEach((targetElement => {
-      targetElement.innerHTML = "";
-      targetElement.append(this.templateContent);
-    }));
-  },
-  refresh() {
-    session.refresh(this.baseURI, this.requestId);
-  }
-};
-
 class StreamElement extends HTMLElement {
   static async renderElement(newElement) {
     await newElement.performAction();
@@ -4735,10 +3870,11 @@ class StreamElement extends HTMLElement {
     }
   }
   async render() {
-    return this.renderPromise ??= (async () => {
+    var _a;
+    return (_a = this.renderPromise) !== null && _a !== void 0 ? _a : this.renderPromise = (async () => {
       const event = this.beforeRenderEvent;
       if (this.dispatchEvent(event)) {
-        await nextRepaint();
+        await nextAnimationFrame();
         await event.detail.render(this);
       }
     })();
@@ -4746,14 +3882,15 @@ class StreamElement extends HTMLElement {
   disconnect() {
     try {
       this.remove();
-    } catch {}
+    } catch (_a) {}
   }
   removeDuplicateTargetChildren() {
     this.duplicateChildren.forEach((c => c.remove()));
   }
   get duplicateChildren() {
+    var _a;
     const existingChildren = this.targetElements.flatMap((e => [ ...e.children ])).filter((c => !!c.id));
-    const newChildrenIds = [ ...this.templateContent?.children || [] ].filter((c => !!c.id)).map((c => c.id));
+    const newChildrenIds = [ ...((_a = this.templateContent) === null || _a === void 0 ? void 0 : _a.children) || [] ].filter((c => !!c.id)).map((c => c.id));
     return existingChildren.filter((c => newChildrenIds.includes(c.id)));
   }
   get performAction() {
@@ -4762,9 +3899,9 @@ class StreamElement extends HTMLElement {
       if (actionFunction) {
         return actionFunction;
       }
-      this.#raise("unknown action");
+      this.raise("unknown action");
     }
-    this.#raise("action attribute is missing");
+    this.raise("action attribute is missing");
   }
   get targetElements() {
     if (this.target) {
@@ -4772,7 +3909,7 @@ class StreamElement extends HTMLElement {
     } else if (this.targets) {
       return this.targetElementsByQuery;
     } else {
-      this.#raise("target or targets attribute is missing");
+      this.raise("target or targets attribute is missing");
     }
   }
   get templateContent() {
@@ -4786,7 +3923,7 @@ class StreamElement extends HTMLElement {
     } else if (this.firstElementChild instanceof HTMLTemplateElement) {
       return this.firstElementChild;
     }
-    this.#raise("first child element must be a <template> element");
+    this.raise("first child element must be a <template> element");
   }
   get action() {
     return this.getAttribute("action");
@@ -4797,14 +3934,12 @@ class StreamElement extends HTMLElement {
   get targets() {
     return this.getAttribute("targets");
   }
-  get requestId() {
-    return this.getAttribute("request-id");
-  }
-  #raise(message) {
+  raise(message) {
     throw new Error(`${this.description}: ${message}`);
   }
   get description() {
-    return (this.outerHTML.match(/<[^>]+>/) ?? [])[0] ?? "<turbo-stream>";
+    var _a, _b;
+    return (_b = ((_a = this.outerHTML.match(/<[^>]+>/)) !== null && _a !== void 0 ? _a : [])[0]) !== null && _b !== void 0 ? _b : "<turbo-stream>";
   }
   get beforeRenderEvent() {
     return new CustomEvent("turbo:before-stream-render", {
@@ -4817,7 +3952,8 @@ class StreamElement extends HTMLElement {
     });
   }
   get targetElementsById() {
-    const element = this.ownerDocument?.getElementById(this.target);
+    var _a;
+    const element = (_a = this.ownerDocument) === null || _a === void 0 ? void 0 : _a.getElementById(this.target);
     if (element !== null) {
       return [ element ];
     } else {
@@ -4825,7 +3961,8 @@ class StreamElement extends HTMLElement {
     }
   }
   get targetElementsByQuery() {
-    const elements = this.ownerDocument?.querySelectorAll(this.targets);
+    var _a;
+    const elements = (_a = this.ownerDocument) === null || _a === void 0 ? void 0 : _a.querySelectorAll(this.targets);
     if (elements.length !== 0) {
       return Array.prototype.slice.call(elements);
     } else {
@@ -4835,14 +3972,16 @@ class StreamElement extends HTMLElement {
 }
 
 class StreamSourceElement extends HTMLElement {
-  streamSource=null;
+  constructor() {
+    super(...arguments);
+    this.streamSource = null;
+  }
   connectedCallback() {
     this.streamSource = this.src.match(/^ws{1,2}:/) ? new WebSocket(this.src) : new EventSource(this.src);
     connectStreamSource(this.streamSource);
   }
   disconnectedCallback() {
     if (this.streamSource) {
-      this.streamSource.close();
       disconnectStreamSource(this.streamSource);
     }
   }
@@ -4893,12 +4032,10 @@ start();
 
 var turbo_es2017Esm = Object.freeze({
   __proto__: null,
-  FetchEnctype: FetchEnctype,
-  FetchMethod: FetchMethod,
-  FetchRequest: FetchRequest,
-  FetchResponse: FetchResponse,
   FrameElement: FrameElement,
-  FrameLoadingStyle: FrameLoadingStyle,
+  get FrameLoadingStyle() {
+    return FrameLoadingStyle;
+  },
   FrameRenderer: FrameRenderer,
   PageRenderer: PageRenderer,
   PageSnapshot: PageSnapshot,
@@ -4909,10 +4046,6 @@ var turbo_es2017Esm = Object.freeze({
   clearCache: clearCache,
   connectStreamSource: connectStreamSource,
   disconnectStreamSource: disconnectStreamSource,
-  fetch: fetch,
-  fetchEnctypeFromString: fetchEnctypeFromString,
-  fetchMethodFromString: fetchMethodFromString,
-  isSafe: isSafe,
   navigator: navigator$1,
   registerAdapter: registerAdapter,
   renderStreamMessage: renderStreamMessage,
