@@ -11,7 +11,7 @@ Turbo is a language-agnostic framework written in JavaScript, but this gem build
 
 Turbo is a continuation of the ideas from the previous [Turbolinks](https://github.com/turbolinks/turbolinks) framework, and the heart of that past approach lives on as Turbo Drive. When installed, Turbo automatically intercepts all clicks on `<a href>` links to the same domain. When you click an eligible link, Turbo prevents the browser from following it. Instead, Turbo changes the browser’s URL using the History API, requests the new page using `fetch`, and then renders the HTML response.
 
-During rendering, Turbo replaces the current `<body>` element outright and merges the contents of the `<head>` element. The JavaScript window and document objects, and the HTML `<html>` element, persist from one rendering to the next.
+During rendering, Turbo replaces the current `<body>` element outright and merges the contents of the `<head>` element. The JavaScript window and document objects, and the `<html>` element, persist from one rendering to the next.
 
 Whereas Turbolinks previously just dealt with links, Turbo can now also process form submissions and responses. This means the entire flow in the web application is wrapped into Turbo, making all the parts fast. No more need for `data-remote=true`.
 
@@ -51,7 +51,7 @@ For instance:
 <% end %>
 ```
 
-When the user will click on the `Edit this todo` link, as direct response to this direct user interaction, the turbo frame will be replaced with the one in the `edit.html.erb` page automatically.
+When the user clicks on the `Edit this todo` link, as a direct response to this user interaction, the turbo frame will be automatically replaced with the one in the `edit.html.erb` page.
 
 [See documentation](https://turbo.hotwired.dev/handbook/frames).
 
@@ -129,10 +129,7 @@ You can watch [the video introduction to Hotwire](https://hotwired.dev/#screenca
 
 ### RubyDoc Documentation
 
-For the API documentation covering this gem's classes and packages, [visit the
-RubyDoc page][].
-
-[visit the RubyDoc page](https://rubydoc.info/github/hotwired/turbo-rails/main)
+For the API documentation covering this gem's classes and packages, [visit the RubyDoc page](https://rubydoc.info/github/hotwired/turbo-rails/main).
 
 ## Compatibility with Rails UJS
 
