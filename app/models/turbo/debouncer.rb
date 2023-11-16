@@ -14,7 +14,7 @@ class Turbo::Debouncer
   end
 
   def wait
-    scheduled_task.wait(wait_timeout)
+    scheduled_task&.wait(wait_timeout)
   end
 
   private
