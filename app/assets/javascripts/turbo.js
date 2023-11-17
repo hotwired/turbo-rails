@@ -3365,7 +3365,7 @@ class MorphRenderer extends Renderer {
     });
   }
   #morphElements(currentElement, newElement, morphStyle = "outerHTML") {
-    this.isMorphingTurboFrame = this.#remoteFrameReplacement(currentElement, newElement);
+    this.isMorphingTurboFrame = this.#isFrameReloadedWithMorph(currentElement);
     idiomorph.morph(currentElement, newElement, {
       morphStyle: morphStyle,
       callbacks: {
@@ -3377,19 +3377,16 @@ class MorphRenderer extends Renderer {
   }
   #shouldAddElement=node => !(node.id && node.hasAttribute("data-turbo-permanent") && document.getElementById(node.id));
   #shouldMorphElement=(oldNode, newNode) => {
-    if (!(oldNode instanceof HTMLElement) || this.isMorphingTurboFrame) {
-      return true;
-    } else if (oldNode.hasAttribute("data-turbo-permanent")) {
-      return false;
+    if (oldNode instanceof HTMLElement) {
+      return !oldNode.hasAttribute("data-turbo-permanent") && (this.isMorphingTurboFrame || !this.#isFrameReloadedWithMorph(oldNode));
     } else {
-      return !this.#remoteFrameReplacement(oldNode, newNode);
+      return true;
     }
   };
-  #remoteFrameReplacement=(oldNode, newNode) => this.#isRemoteFrame(oldNode) && this.#isRemoteFrame(newNode) && urlsAreEqual(oldNode.getAttribute("src"), newNode.getAttribute("src"));
   #shouldRemoveElement=node => this.#shouldMorphElement(node);
   #reloadRemoteFrames() {
     this.#remoteFrames().forEach((frame => {
-      if (this.#isRemoteFrame(frame)) {
+      if (this.#isFrameReloadedWithMorph(frame)) {
         this.#renderFrameWithMorph(frame);
         frame.reload();
       }
@@ -3412,8 +3409,8 @@ class MorphRenderer extends Renderer {
     });
     this.#morphElements(currentElement, newElement.children, "innerHTML");
   };
-  #isRemoteFrame(node) {
-    return node instanceof HTMLElement && node.nodeName.toLowerCase() === "turbo-frame" && node.getAttribute("src");
+  #isFrameReloadedWithMorph(element) {
+    return element.src && element.refresh === "morph";
   }
   #remoteFrames() {
     return Array.from(document.querySelectorAll("turbo-frame[src]")).filter((frame => !frame.closest("[data-turbo-permanent]")));
