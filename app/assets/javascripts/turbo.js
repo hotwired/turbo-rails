@@ -2231,15 +2231,18 @@ class BrowserAdapter {
       return visit.loadResponse();
     }
   }
-  visitRequestFinished(_visit) {
+  visitRequestFinished(_visit) {}
+  visitCompleted(_visit) {
     this.progressBar.setValue(1);
     this.hideVisitProgressBar();
   }
-  visitCompleted(_visit) {}
   pageInvalidated(reason) {
     this.reload(reason);
   }
-  visitFailed(_visit) {}
+  visitFailed(_visit) {
+    this.progressBar.setValue(1);
+    this.hideVisitProgressBar();
+  }
   visitRendered(_visit) {}
   formSubmissionStarted(_formSubmission) {
     this.progressBar.setValue(0);
@@ -2521,7 +2524,7 @@ class Navigator {
           this.view.clearSnapshotCache();
         }
         const {statusCode: statusCode, redirected: redirected} = fetchResponse;
-        const action = this.getActionForFormSubmission(formSubmission);
+        const action = this.#getActionForFormSubmission(formSubmission, fetchResponse);
         const visitOptions = {
           action: action,
           shouldCacheSnapshot: shouldCacheSnapshot,
@@ -2579,8 +2582,13 @@ class Navigator {
   get restorationIdentifier() {
     return this.history.restorationIdentifier;
   }
-  getActionForFormSubmission({submitter: submitter, formElement: formElement}) {
-    return getVisitAction(submitter, formElement) || "advance";
+  #getActionForFormSubmission(formSubmission, fetchResponse) {
+    const {submitter: submitter, formElement: formElement} = formSubmission;
+    return getVisitAction(submitter, formElement) || this.#getDefaultAction(fetchResponse);
+  }
+  #getDefaultAction(fetchResponse) {
+    const sameLocationRedirect = fetchResponse.redirected && fetchResponse.location.href === this.location?.href;
+    return sameLocationRedirect ? "replace" : "advance";
   }
 }
 
@@ -3655,7 +3663,7 @@ class PageView extends View {
     return this.snapshotCache.get(location);
   }
   isPageRefresh(visit) {
-    return !visit || this.lastRenderedLocation.href === visit.location.href;
+    return !visit || this.lastRenderedLocation.href === visit.location.href && visit.action === "replace";
   }
   get snapshot() {
     return PageSnapshot.fromElement(this.element);
