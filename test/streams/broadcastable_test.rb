@@ -96,6 +96,32 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "broadcasting refresh to stream now" do
+    assert_broadcast_on "stream", turbo_stream_refresh_tag do
+      @message.broadcast_refresh_to "stream"
+    end
+  end
+
+  test "broadcasting refresh now" do
+    assert_broadcast_on @message.to_gid_param, turbo_stream_refresh_tag do
+      @message.broadcast_refresh
+    end
+  end
+
+  test "broadcasting refresh later is debounced" do
+    assert_broadcast_on @message.to_gid_param, turbo_stream_refresh_tag do
+      assert_broadcasts(@message.to_gid_param, 1) do
+        perform_enqueued_jobs do
+          assert_no_changes -> { Thread.current.keys.size } do
+            # Not leaking thread variables once the debounced code executes
+            3.times { @message.broadcast_refresh_later }
+            Turbo::StreamsChannel.refresh_debouncer_for(@message).wait
+          end
+        end
+      end
+    end
+  end
+
   test "broadcasting action to stream now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("prepend", target: "messages", template: render(@message)) do
       @message.broadcast_action_to "stream", action: "prepend"
@@ -134,7 +160,7 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
 
   test "broadcasting action later to with attributes" do
     @message.save!
-    
+
     assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("prepend", target: "messages", template: render(@message), "data-foo" => "bar") do
       perform_enqueued_jobs do
         @message.broadcast_action_later_to @message, action: "prepend", target: "messages", attributes: { "data-foo" => "bar" }
@@ -164,7 +190,7 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
 
   test "broadcasting action later with no rendering" do
     @message.save!
-    
+
     assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("prepend", target: "messages", template: nil) do
       perform_enqueued_jobs do
         @message.broadcast_action_later action: "prepend", target: "messages", render: false
@@ -248,8 +274,8 @@ class Turbo::BroadcastableCommentTest < ActionCable::Channel::TestCase
 
   test "updating a comment broadcasts" do
     comment = @article.comments.create!(body: "random")
-    stream  = "#{@article.to_gid_param}:comments"
-    target  = "comment_#{comment.id}"
+    stream = "#{@article.to_gid_param}:comments"
+    target = "comment_#{comment.id}"
 
     assert_broadcast_on stream, turbo_stream_action_tag("replace", target: target, template: %(<p class="different">precise</p>\n)) do
       perform_enqueued_jobs do
@@ -260,11 +286,218 @@ class Turbo::BroadcastableCommentTest < ActionCable::Channel::TestCase
 
   test "destroying a comment broadcasts" do
     comment = @article.comments.create!(body: "comment")
-    stream  = "#{@article.to_gid_param}:comments"
-    target  = "comment_#{comment.id}"
+    stream = "#{@article.to_gid_param}:comments"
+    target = "comment_#{comment.id}"
 
     assert_broadcast_on stream, turbo_stream_action_tag("remove", target: target) do
       comment.destroy!
     end
   end
 end
+
+class Turbo::SuppressingBroadcastsTest < ActionCable::Channel::TestCase
+  include ActiveJob::TestHelper, Turbo::Streams::ActionHelper
+
+  setup { @message = Message.new(id: 1, content: "Hello!") }
+
+  test "suppressing broadcasting remove to stream now" do
+    assert_no_broadcasts_when_suppressing do
+      @message.broadcast_remove_to "stream"
+    end
+  end
+
+  test "suppressing broadcasting remove now" do
+    assert_no_broadcasts_when_suppressing do
+      @message.broadcast_remove
+    end
+  end
+
+  test "suppressing broadcasting replace to stream now" do
+    assert_no_broadcasts_when_suppressing do
+      @message.broadcast_replace_to "stream"
+    end
+  end
+
+  test "suppressing broadcasting replace to stream later" do
+    assert_no_broadcasts_later_when_supressing do
+      @message.broadcast_replace_later_to "stream"
+    end
+  end
+
+  test "suppressing broadcasting replace now" do
+    assert_no_broadcasts_when_suppressing do
+      @message.broadcast_replace
+    end
+  end
+
+  test "suppressing broadcasting replace later" do
+    assert_no_broadcasts_later_when_supressing do
+      @message.broadcast_replace_later
+    end
+  end
+
+  test "suppressing broadcasting update to stream now" do
+    assert_no_broadcasts_when_suppressing do
+      @message.broadcast_update_to "stream"
+    end
+  end
+
+  test "suppressing broadcasting update to stream later" do
+    assert_no_broadcasts_later_when_supressing do
+      @message.broadcast_update_later_to "stream"
+    end
+  end
+
+  test "suppressing broadcasting update now" do
+    assert_no_broadcasts_when_suppressing do
+      @message.broadcast_update
+    end
+  end
+
+  test "suppressing broadcasting update later" do
+    assert_no_broadcasts_later_when_supressing do
+      @message.broadcast_update_later
+    end
+  end
+
+  test "suppressing broadcasting before to stream now" do
+    assert_no_broadcasts_when_suppressing do
+      @message.broadcast_before_to "stream", target: "message_1"
+    end
+  end
+
+  test "suppressing broadcasting after to stream now" do
+    assert_no_broadcasts_when_suppressing do
+      @message.broadcast_after_to "stream", target: "message_1"
+    end
+  end
+
+  test "suppressing broadcasting append to stream now" do
+    assert_no_broadcasts_when_suppressing do
+      @message.broadcast_append_to "stream"
+    end
+  end
+
+  test "suppressing broadcasting append to stream later" do
+    assert_no_broadcasts_later_when_supressing do
+      @message.broadcast_append_later_to "stream"
+    end
+  end
+
+  test "suppressing broadcasting append now" do
+    assert_no_broadcasts_when_suppressing do
+      @message.broadcast_append
+    end
+  end
+
+  test "suppressing broadcasting append later" do
+    assert_no_broadcasts_later_when_supressing do
+      @message.broadcast_append_later
+    end
+  end
+
+  test "suppressing broadcasting prepend to stream now" do
+    assert_no_broadcasts_when_suppressing do
+      @message.broadcast_prepend_to "stream"
+    end
+  end
+
+  test "suppressing broadcasting prepend to stream later" do
+    assert_no_broadcasts_later_when_supressing do
+      @message.broadcast_prepend_later_to "stream"
+    end
+  end
+
+  test "suppressing broadcasting refresh to stream now" do
+    assert_no_broadcasts_when_suppressing do
+      @message.broadcast_refresh_to "stream"
+    end
+  end
+
+  test "suppressing broadcasting refresh to stream later" do
+    assert_no_broadcasts_later_when_supressing do
+      @message.broadcast_refresh_later_to "stream"
+    end
+  end
+
+  test "suppressing broadcasting prepend now" do
+    assert_no_broadcasts_when_suppressing do
+      @message.broadcast_prepend
+    end
+  end
+
+  test "suppressing broadcasting prepend later" do
+    assert_no_broadcasts_later_when_supressing do
+      @message.broadcast_prepend_later
+    end
+  end
+
+  test "suppressing broadcasting action to stream now" do
+    assert_no_broadcasts_when_suppressing do
+      @message.broadcast_action_to "stream", action: "prepend"
+    end
+  end
+
+  test "suppressing broadcasting action to stream later" do
+    assert_no_broadcasts_later_when_supressing do
+      @message.broadcast_action_later_to "stream", action: "prepend"
+    end
+  end
+
+  test "suppressing broadcasting action now" do
+    assert_no_broadcasts_when_suppressing do
+      @message.broadcast_action "prepend"
+    end
+  end
+
+  test "suppressing broadcasting action later" do
+    assert_no_broadcasts_later_when_supressing do
+      @message.broadcast_action_later action: "prepend"
+    end
+  end
+
+  test "suppressing broadcast render now" do
+    assert_no_broadcasts_when_suppressing do
+      @message.broadcast_render
+    end
+  end
+
+  test "suppressing broadcast render later" do
+    assert_no_broadcasts_later_when_supressing do
+      @message.broadcast_render_later
+    end
+  end
+
+  test "suppressing broadcast render to stream now" do
+    @profile = Users::Profile.new(id: 1, name: "Ryan")
+    assert_no_broadcasts_when_suppressing do
+      @message.broadcast_render_to @profile
+    end
+  end
+
+  test "suppressing broadcast render to stream later" do
+    @profile = Users::Profile.new(id: 1, name: "Ryan")
+    assert_no_broadcasts_later_when_supressing do
+      @message.broadcast_render_to @profile
+    end
+  end
+
+  private
+    def assert_no_broadcasts_when_suppressing
+      assert_no_broadcasts @message.to_gid_param do
+        Message.suppressing_turbo_broadcasts do
+          yield
+        end
+      end
+    end
+
+    def assert_no_broadcasts_later_when_supressing
+      assert_no_broadcasts_when_suppressing do
+        assert_no_enqueued_jobs do
+          yield
+        end
+      end
+    end
+end
+
+

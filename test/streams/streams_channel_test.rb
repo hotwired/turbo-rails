@@ -8,7 +8,6 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
     assert_equal "stream", Turbo::StreamsChannel.verified_stream_name(Turbo::StreamsChannel.signed_stream_name("stream"))
   end
 
-
   test "broadcasting remove now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("remove", target: "message_1") do
       Turbo::StreamsChannel.broadcast_remove_to "stream", target: "message_1"
@@ -169,7 +168,54 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
           "stream", targets: ".message", **options
       end
     end
+  end
 
+  test "broadcasting refresh later" do
+    assert_broadcast_on "stream", turbo_stream_refresh_tag do
+      perform_enqueued_jobs do
+        Turbo::StreamsChannel.broadcast_refresh_later_to "stream"
+        Turbo::StreamsChannel.refresh_debouncer_for("stream").wait
+      end
+    end
+
+    Turbo.current_request_id = "123"
+    assert_broadcast_on "stream", turbo_stream_refresh_tag(request_id: "123") do
+      perform_enqueued_jobs do
+        Turbo::StreamsChannel.broadcast_refresh_later_to "stream"
+        Turbo::StreamsChannel.refresh_debouncer_for("stream", request_id: "123").wait
+      end
+    end
+  end
+
+  test "broadcasting refresh later is debounced" do
+    assert_broadcast_on "stream", turbo_stream_refresh_tag do
+      assert_broadcasts("stream", 1) do
+        perform_enqueued_jobs do
+          Turbo::StreamsChannel.broadcast_refresh_later_to "stream"
+
+          Turbo::StreamsChannel.refresh_debouncer_for("stream").wait
+        end
+      end
+    end
+  end
+
+  test "broadcasting refresh later is debounced considering the current request id" do
+    assert_broadcasts("stream", 2) do
+      perform_enqueued_jobs do
+        assert_broadcast_on "stream", turbo_stream_refresh_tag("request-id": "123") do
+          assert_broadcast_on "stream", turbo_stream_refresh_tag("request-id": "456") do
+            Turbo.current_request_id = "123"
+            3.times { Turbo::StreamsChannel.broadcast_refresh_later_to "stream" }
+
+            Turbo.current_request_id = "456"
+            3.times { Turbo::StreamsChannel.broadcast_refresh_later_to "stream" }
+
+            Turbo::StreamsChannel.refresh_debouncer_for("stream", request_id: "123").wait
+            Turbo::StreamsChannel.refresh_debouncer_for("stream", request_id: "456").wait
+          end
+        end
+      end
+    end
   end
 
   test "broadcasting action later" do
@@ -189,7 +235,6 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
       end
     end
   end
-
 
   test "broadcasting render now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("replace", target: "message_1", template: "Goodbye!") do

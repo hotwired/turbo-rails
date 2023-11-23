@@ -26,4 +26,12 @@ module Turbo::DriveHelper
   def turbo_page_requires_reload
     provide :head, tag.meta(name: "turbo-visit-control", content: "reload")
   end
+
+  def turbo_refreshes_with(method: :replace, scroll: :reset)
+    raise ArgumentError, "Invalid refresh option '#{method}'" unless method.in?(%i[ replace morph ])
+    raise ArgumentError, "Invalid scroll option '#{scroll}'" unless scroll.in?(%i[ reset preserve ])
+
+    provide :head, tag.meta(name: "turbo-refresh-method", content: method)
+    provide :head, tag.meta(name: "turbo-refresh-scroll", content: scroll)
+  end
 end

@@ -46,6 +46,12 @@ module Turbo
       end
     end
 
+    initializer "turbo.request_id_tracking" do
+      ActiveSupport.on_load(:action_controller) do
+        include Turbo::RequestIdTracking
+      end
+    end
+
     initializer "turbo.broadcastable" do
       ActiveSupport.on_load(:active_record) do
         include Turbo::Broadcastable

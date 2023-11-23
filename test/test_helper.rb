@@ -15,6 +15,10 @@ end
 
 class ActiveSupport::TestCase
   include ActiveJob::TestHelper
+
+  setup do
+    Turbo.current_request_id = nil
+  end
 end
 
 class ActionDispatch::IntegrationTest
