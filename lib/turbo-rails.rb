@@ -1,5 +1,5 @@
 require "turbo/engine"
-require 'active_support/core_ext/module/attribute_accessors_per_thread'
+require "active_support/core_ext/module/attribute_accessors_per_thread"
 
 module Turbo
   extend ActiveSupport::Autoload
