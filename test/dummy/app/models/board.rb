@@ -1,5 +1,5 @@
 class Board < ApplicationRecord
-    has_many :tasks
+  has_many :tasks
 
-    broadcasts_refreshes
+  broadcasts_refreshes
 end
