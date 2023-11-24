@@ -142,9 +142,11 @@ module Turbo::Broadcastable
     end
 
     # Same as <tt>#broadcasts_refreshes_to</tt>, but the designated stream for page refreshes is automatically set to
-    # the current model.
-    def broadcasts_refreshes
-      after_commit -> { broadcast_refresh_later }
+    # the current model, for creates - to the model plural name, which can be overriden by passing <tt>stream</tt>.
+    def broadcasts_refreshes(stream = model_name.plural)
+      after_create_commit  -> { broadcast_refresh_later_to(stream) }
+      after_update_commit  -> { broadcast_refresh_later }
+      after_destroy_commit -> { broadcast_refresh }
     end
 
     # All default targets will use the return of this method. Overwrite if you want something else than <tt>model_name.plural</tt>.

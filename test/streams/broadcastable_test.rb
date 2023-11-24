@@ -295,6 +295,42 @@ class Turbo::BroadcastableCommentTest < ActionCable::Channel::TestCase
   end
 end
 
+class Turbo::BroadcastableBoardTest < ActionCable::Channel::TestCase
+  include ActiveJob::TestHelper, Turbo::Streams::ActionHelper
+
+  test "creating a board broadcasts refreshes to a channel using models plural name when creating" do
+    assert_broadcast_on "boards", turbo_stream_action_tag("refresh") do
+      perform_enqueued_jobs do
+        board = Board.create!(name: "Board")
+        Turbo::StreamsChannel.refresh_debouncer_for(["boards"]).wait
+      end
+    end
+  end
+
+  test "updating a board broadcasts to the models channel" do
+    board = Board.suppressing_turbo_broadcasts do
+      Board.create!(name: "Hey")
+    end
+
+    assert_broadcast_on board.to_gid_param, turbo_stream_action_tag("refresh") do
+      perform_enqueued_jobs do
+        board.update!(name: "Ho")
+        Turbo::StreamsChannel.refresh_debouncer_for(board).wait
+      end
+    end
+  end
+
+  test "destroying a board broadcasts refreshes to the model channel" do
+    board = Board.suppressing_turbo_broadcasts do
+        Board.create!(name: "Hey")
+    end
+
+    assert_broadcast_on board.to_gid_param, turbo_stream_action_tag("refresh") do
+      board.destroy!
+    end
+  end
+end
+
 class Turbo::SuppressingBroadcastsTest < ActionCable::Channel::TestCase
   include ActiveJob::TestHelper, Turbo::Streams::ActionHelper
 
