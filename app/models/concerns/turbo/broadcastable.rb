@@ -405,7 +405,7 @@ module Turbo::Broadcastable
     Turbo::StreamsChannel.broadcast_render_to(*streamables, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
   end
 
-  # Same as <tt>broadcast_action_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
+  # Same as <tt>broadcast_render_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
   def broadcast_render_later(**rendering)
     broadcast_render_later_to self, **rendering
   end
