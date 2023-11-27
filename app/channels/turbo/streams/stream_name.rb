@@ -23,6 +23,9 @@ module Turbo::Streams::StreamName
   private
     def stream_name_from(streamables)
       if streamables.is_a?(Array)
+        if streamables.compact_blank.empty?
+          raise ArgumentError, "At least one streamable must be provided. You passed #{streamables.inspect}"
+        end
         streamables.map  { |streamable| stream_name_from(streamable) }.join(":")
       else
         streamables.then { |streamable| streamable.try(:to_gid_param) || streamable.to_param }

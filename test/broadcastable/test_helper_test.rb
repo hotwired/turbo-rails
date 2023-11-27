@@ -104,6 +104,14 @@ end
 class Turbo::Broadcastable::TestHelper::AssertTurboStreamBroadcastsTest < ActiveSupport::TestCase
   include Turbo::Broadcastable::TestHelper
 
+  test "#an exception is raised when the argument is nil" do
+    message = Message.new(id: 1)
+
+    assert_raises ArgumentError do
+      message.broadcast_replace_to nil
+    end
+  end
+
   test "#assert_turbo_stream_broadcasts passes when there is a broadcast" do
     message = Message.new(id: 1)
 
