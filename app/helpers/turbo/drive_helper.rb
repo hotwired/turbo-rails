@@ -1,22 +1,21 @@
+# Helpers to configure Turbo Drive via meta directives. They come in two
+# variants:
+#
+# The recommended option is to include +yield :head+ in the +<head>+ section
+# of the layout. Then you can use the helpers in any view.
+#
+# ==== Example
+#
+#   # app/views/application.html.erb
+#   <html><head><%= yield :head %></head><body><%= yield %></html>
+#
+#   # app/views/trays/index.html.erb
+#   <% turbo_exempts_page_from_cache %>
+#   <p>Page that shouldn't be cached by Turbo</p>
+#
+# Alternatively, you can use the +_tag+ variant of the helpers to only get the
+# HTML for the meta directive.
 module Turbo::DriveHelper
-  # Helpers to configure Turbo Drive via meta directives. They come in two
-  # variants:
-  #
-  # The recommended option is to include +yield :head+ in the +<head>+ section
-  # of the layout. Then you can use the helpers in any view.
-  #
-  # ==== Example
-  #
-  #   # app/views/application.html.erb
-  #   <html><head><%= yield :head %></head><body><%= yield %></html>
-  #
-  #   # app/views/trays/index.html.erb
-  #   <% turbo_exempts_page_from_cache %>
-  #   <p>Page that shouldn't be cached by Turbo</p>
-  #
-  # Alternatively, you can use the +_tag+ variant of the helpers to only get the
-  # HTML for the meta directive.
-
   # Pages that are more likely than not to be a cache miss can skip turbo cache to avoid visual jitter.
   # Cannot be used along with +turbo_exempts_page_from_preview+.
   def turbo_exempts_page_from_cache

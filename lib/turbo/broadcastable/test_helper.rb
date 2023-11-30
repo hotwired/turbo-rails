@@ -11,14 +11,14 @@ module Turbo
 
       # Asserts that `<turbo-stream>` elements were broadcast over Action Cable
       #
-      # === Arguments
+      # ==== Arguments
       #
       # * <tt>stream_name_or_object</tt> the objects used to generate the
       #   channel Action Cable name, or the name itself
       # * <tt>&block</tt> optional block executed before the
       #   assertion
       #
-      # === Options
+      # ==== Options
       #
       # * <tt>count:</tt> the number of `<turbo-stream>` elements that are
       # expected to be broadcast
@@ -70,7 +70,7 @@ module Turbo
 
       # Asserts that no `<turbo-stream>` elements were broadcast over Action Cable
       #
-      # === Arguments
+      # ==== Arguments
       #
       # * <tt>stream_name_or_object</tt> the objects used to generate the
       #   channel Action Cable name, or the name itself
@@ -113,7 +113,7 @@ module Turbo
 
       # Captures any `<turbo-stream>` elements that were broadcast over Action Cable
       #
-      # === Arguments
+      # ==== Arguments
       #
       # * <tt>stream_name_or_object</tt> the objects used to generate the
       #   channel Action Cable name, or the name itself

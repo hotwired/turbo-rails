@@ -6,7 +6,6 @@ On top of accelerating web applications, Turbo was built from the ground-up to f
 
 Turbo is a language-agnostic framework written in JavaScript, but this gem builds on top of those basics to make the integration with Rails as smooth as possible. You can deliver turbo updates via model callbacks over Action Cable, respond to controller actions with native navigation or standard redirects, and render turbo frames with helpers and layout-free responses.
 
-
 ## Navigate with Turbo Drive
 
 Turbo is a continuation of the ideas from the previous [Turbolinks](https://github.com/turbolinks/turbolinks) framework, and the heart of that past approach lives on as Turbo Drive. When installed, Turbo automatically intercepts all clicks on `<a href>` links to the same domain. When you click an eligible link, Turbo prevents the browser from following it. Instead, Turbo changes the browser’s URL using the History API, requests the new page using `fetch`, and then renders the HTML response.
@@ -122,7 +121,6 @@ The `Turbo` instance is automatically assigned to `window.Turbo` upon import:
 import "@hotwired/turbo-rails"
 ```
 
-
 ## Usage
 
 You can watch [the video introduction to Hotwire](https://hotwired.dev/#screencast), which focuses extensively on demonstrating Turbo in a Rails demo. Then you should familiarize yourself with [Turbo handbook](https://turbo.hotwired.dev/handbook/introduction) to understand Drive, Frames, and Streams in-depth. Finally, dive into the code documentation by starting with [`Turbo::FramesHelper`](https://github.com/hotwired/turbo-rails/blob/main/app/helpers/turbo/frames_helper.rb), [`Turbo::StreamsHelper`](https://github.com/hotwired/turbo-rails/blob/main/app/helpers/turbo/streams_helper.rb), [`Turbo::Streams::TagBuilder`](https://github.com/hotwired/turbo-rails/blob/main/app/models/turbo/streams/tag_builder.rb), and [`Turbo::Broadcastable`](https://github.com/hotwired/turbo-rails/blob/main/app/models/concerns/turbo/broadcastable.rb).
@@ -130,6 +128,17 @@ You can watch [the video introduction to Hotwire](https://hotwired.dev/#screenca
 ### RubyDoc Documentation
 
 For the API documentation covering this gem's classes and packages, [visit the RubyDoc page](https://rubydoc.info/github/hotwired/turbo-rails/main).
+Note that this documentation is updated automatically from the main branch, so it may contain features that are not released yet.
+
+- [Turbo Drive Helpers](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/DriveHelper)
+- [Turbo Frames Helpers](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/FramesHelper)
+- [Turbo Streams View Helpers](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/StreamsHelper)
+- [Turbo Streams Broadcast Methods](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/Broadcastable)
+- [Turbo Streams Channel](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/StreamsChannel)
+- [Turbo Native Navigation](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/Native/Navigation)
+- [Turbo Test Assertions](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/TestAssertions)
+- [Turbo Integration Test Assertions](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/TestAssertions/IntegrationTestAssertions)
+- [Turbo Broadcastable Test Helper](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/Broadcastable/TestHelper)
 
 ## Compatibility with Rails UJS
 
@@ -137,8 +146,7 @@ Turbo can coexist with Rails UJS, but you need to take a series of upgrade steps
 
 ## Testing
 
-
-The [`Turbo::TestAssertions`](./lib/turbo/test_assertions.rb) concern provides Turbo Stream test helpers that assert the presence or absence of `<turbo-stream>` elements in a rendered fragment of HTML. `Turbo::TestAssertions` are automatically included in [`ActiveSupport::TestCase`](https://edgeapi.rubyonrails.org/classes/ActiveSupport/TestCase.html) and depend on the presence of [`rails-dom-testing`](https://github.com/rails/rails-dom-testing/) assertions.
+The [`Turbo::TestAssertions`](./lib/turbo/test_assertions.rb) concern provides Turbo Stream test helpers that assert the presence or absence ofs  s  `<turbo-stream>` elements in a rendered fragment of HTML. `Turbo::TestAssertions` are automatically included in [`ActiveSaupport::TestCase`](https://edgeapi.rubyonrails.org/classes/ActiveSupport/TestCase.html) and depend on the presence of [`rails-dom-testing`](https://github.com/rails/rails-dom-testing/) assertions.
 
 The [`Turbo::TestAssertions::IntegrationTestAssertions`](./lib/turbo/test_assertions/integration_test_assertions.rb) are built on top of `Turbo::TestAssertions`, and add support for passing a `status:` keyword. They are automatically included in [`ActionDispatch::IntegrationTest`](https://edgeguides.rubyonrails.org/testing.html#integration-testing).
 
@@ -147,7 +155,6 @@ The [`Turbo::Broadcastable::TestHelper`](./lib/turbo/broadcastable/test_helper.r
 ## Development
 
 Run the tests with `./bin/test`.
-
 
 ## License
 

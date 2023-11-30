@@ -5,7 +5,7 @@
 # When that header is detected by the controller, we substitute our own minimal layout in place of the
 # application-supplied layout (since we're only working on an in-page frame, thus can skip the weight of the layout). We
 # use a minimal layout, rather than avoid the layout entirely, so that it's still possible to render content into the
-# <tt>head<tt>.
+# <tt>head</tt>.
 #
 # Accordingly, we ensure that the etag for the page is changed, such that a cache for a minimal-layout request isn't
 # served on a normal request and vice versa.
