@@ -21,7 +21,6 @@ module Turbo::Frames::FrameRequest
   extend ActiveSupport::Concern
 
   included do
-    layout -> { "turbo_rails/frame" if turbo_frame_request? }
     etag { :frame if turbo_frame_request? }
 
     helper_method :turbo_frame_request?, :turbo_frame_request_id
