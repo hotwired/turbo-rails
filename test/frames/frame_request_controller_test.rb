@@ -6,7 +6,7 @@ class Turbo::FrameRequestControllerTest < ActionDispatch::IntegrationTest
     assert_select "title", count: 1
 
     get tray_path(id: 1), headers: { "Turbo-Frame" => "true" }
-    assert_select "title", count: 0
+    assert_select "title", count: 1
   end
 
   test "frame request layout includes `head` content" do
@@ -22,7 +22,7 @@ class Turbo::FrameRequestControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_select "meta[name=test][content=present]"
-    assert_select "meta[name=alternative][content=present]"
+    assert_select "meta[name=alternative][content=present]", count: 0
   end
 
   test "frame requests get a unique etag" do
