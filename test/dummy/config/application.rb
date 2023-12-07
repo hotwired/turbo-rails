@@ -12,7 +12,12 @@ Bundler.require(*Rails.groups)
 module Dummy
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
-    config.load_defaults 6.1
+    config.load_defaults (
+      case (rails_version = ENV["RAILS_VERSION"])
+      when "main", nil then 7.1
+      else rails_version.to_f
+      end
+    )
 
     # Settings in config/environments/* take precedence over those specified here.
     # Application configuration can go into files in config/initializers

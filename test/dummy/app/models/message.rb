@@ -1,5 +1,3 @@
 class Message < ApplicationRecord
-  def to_s
-    content
-  end
+  delegate :to_s, to: :content, allow_nil: true
 end

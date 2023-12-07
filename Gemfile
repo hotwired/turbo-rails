@@ -2,7 +2,7 @@ source 'https://rubygems.org'
 
 gemspec
 
-rails_version = ENV.fetch("RAILS_VERSION", "6.1")
+rails_version = ENV.fetch("RAILS_VERSION", "7.1")
 
 if rails_version == "main"
   rails_constraint = { github: "rails/rails" }
