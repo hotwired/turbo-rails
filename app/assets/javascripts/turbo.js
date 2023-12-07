@@ -4810,7 +4810,7 @@ window.Turbo = Turbo;
 
 start();
 
-var turbo_es2017Esm = Object.freeze({
+var Turbo$1 = Object.freeze({
   __proto__: null,
   FetchEnctype: FetchEnctype,
   FetchMethod: FetchMethod,
@@ -4978,6 +4978,8 @@ function determineFormMethod(submitter) {
 function isBodyInit(body) {
   return body instanceof FormData || body instanceof URLSearchParams;
 }
+
+window.Turbo = Turbo$1;
 
 addEventListener("turbo:before-fetch-request", encodeMethodIntoRequestBody);
 
@@ -5514,4 +5516,4 @@ var index = Object.freeze({
   getConfig: getConfig
 });
 
-export { turbo_es2017Esm as Turbo, cable };
+export { Turbo$1 as Turbo, cable };

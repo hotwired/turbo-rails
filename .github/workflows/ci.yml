@@ -11,6 +11,7 @@ jobs:
         include:
           - { ruby: "2.7",  rails: "main", allow-fail: true }
           - { ruby: "3.2",  rails: "main", allow-fail: true }
+          - { ruby: "head", rails: "main", allow-fail: true }
 
     env:
       RAILS_VERSION: "${{ matrix.rails }}"
