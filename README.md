@@ -129,10 +129,7 @@ You can watch [the video introduction to Hotwire](https://hotwired.dev/#screenca
 
 ### RubyDoc Documentation
 
-For the API documentation covering this gem's classes and packages, [visit the
-RubyDoc page][].
-
-[visit the RubyDoc page](https://rubydoc.info/github/hotwired/turbo-rails/main)
+For the API documentation covering this gem's classes and packages, [visit the RubyDoc page](https://rubydoc.info/github/hotwired/turbo-rails/main)
 
 ## Compatibility with Rails UJS
 
