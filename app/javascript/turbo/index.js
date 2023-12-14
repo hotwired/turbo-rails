@@ -8,4 +8,6 @@ export { cable }
 
 import { encodeMethodIntoRequestBody } from "./fetch_requests"
 
+window.Turbo = Turbo
+
 addEventListener("turbo:before-fetch-request", encodeMethodIntoRequestBody)
