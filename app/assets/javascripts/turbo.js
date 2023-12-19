@@ -1,5 +1,5 @@
 /*!
-Turbo 8.0.0-beta.1
+Turbo 8.0.0-beta.2
 Copyright © 2023 37signals LLC
  */
 (function(prototype) {
@@ -485,12 +485,31 @@ async function around(callback, reader) {
   return [ before, after ];
 }
 
-function fetch(url, options = {}) {
+class LimitedSet extends Set {
+  constructor(maxSize) {
+    super();
+    this.maxSize = maxSize;
+  }
+  add(value) {
+    if (this.size >= this.maxSize) {
+      const iterator = this.values();
+      const oldestValue = iterator.next().value;
+      this.delete(oldestValue);
+    }
+    super.add(value);
+  }
+}
+
+const recentRequests = new LimitedSet(20);
+
+const nativeFetch = window.fetch;
+
+function fetchWithTurboHeaders(url, options = {}) {
   const modifiedHeaders = new Headers(options.headers || {});
   const requestUID = uuid();
-  window.Turbo.session.recentRequests.add(requestUID);
+  recentRequests.add(requestUID);
   modifiedHeaders.append("X-Turbo-Request-Id", requestUID);
-  return window.fetch(url, {
+  return nativeFetch(url, {
     ...options,
     headers: modifiedHeaders
   });
@@ -609,7 +628,7 @@ class FetchRequest {
     await this.#allowRequestToBeIntercepted(fetchOptions);
     try {
       this.delegate.requestStarted(this);
-      const response = await fetch(this.url.href, fetchOptions);
+      const response = await fetchWithTurboHeaders(this.url.href, fetchOptions);
       return await this.receive(response);
     } catch (error) {
       if (error.name !== "AbortError") {
@@ -848,6 +867,7 @@ class FormSubmission {
     this.state = FormSubmissionState.waiting;
     this.submitter?.setAttribute("disabled", "");
     this.setSubmitsWith();
+    markAsBusy(this.formElement);
     dispatch("turbo:submit-start", {
       target: this.formElement,
       detail: {
@@ -895,6 +915,7 @@ class FormSubmission {
     this.state = FormSubmissionState.stopped;
     this.submitter?.removeAttribute("disabled");
     this.resetSubmitterText();
+    clearBusyState(this.formElement);
     dispatch("turbo:submit-end", {
       target: this.formElement,
       detail: {
@@ -1175,6 +1196,12 @@ class View {
     } else {
       this.element.removeAttribute("data-turbo-preview");
     }
+  }
+  markVisitDirection(direction) {
+    this.element.setAttribute("data-turbo-visit-direction", direction);
+  }
+  unmarkVisitDirection() {
+    this.element.removeAttribute("data-turbo-visit-direction");
   }
   async renderSnapshot(renderer) {
     await renderer.render();
@@ -1480,14 +1507,14 @@ class FrameRenderer extends Renderer {
     return true;
   }
   async render() {
-    await nextAnimationFrame();
+    await nextRepaint();
     this.preservingPermanentElements((() => {
       this.loadFrameElement();
     }));
     this.scrollFrameIntoView();
-    await nextAnimationFrame();
+    await nextRepaint();
     this.focusFirstAutofocusableElement();
-    await nextAnimationFrame();
+    await nextRepaint();
     this.activateScriptElements();
   }
   loadFrameElement() {
@@ -1846,6 +1873,12 @@ const SystemStatusCode = {
   contentTypeMismatch: -2
 };
 
+const Direction = {
+  advance: "forward",
+  restore: "back",
+  replace: "none"
+};
+
 class Visit {
   identifier=uuid();
   timingMetrics={};
@@ -1861,7 +1894,7 @@ class Visit {
     this.delegate = delegate;
     this.location = location;
     this.restorationIdentifier = restorationIdentifier || uuid();
-    const {action: action, historyChanged: historyChanged, referrer: referrer, snapshot: snapshot, snapshotHTML: snapshotHTML, response: response, visitCachedSnapshot: visitCachedSnapshot, willRender: willRender, updateHistory: updateHistory, shouldCacheSnapshot: shouldCacheSnapshot, acceptsStreamResponse: acceptsStreamResponse} = {
+    const {action: action, historyChanged: historyChanged, referrer: referrer, snapshot: snapshot, snapshotHTML: snapshotHTML, response: response, visitCachedSnapshot: visitCachedSnapshot, willRender: willRender, updateHistory: updateHistory, shouldCacheSnapshot: shouldCacheSnapshot, acceptsStreamResponse: acceptsStreamResponse, direction: direction} = {
       ...defaultOptions,
       ...options
     };
@@ -1878,6 +1911,7 @@ class Visit {
     this.scrolled = !willRender;
     this.shouldCacheSnapshot = shouldCacheSnapshot;
     this.acceptsStreamResponse = acceptsStreamResponse;
+    this.direction = direction || Direction[action];
   }
   get adapter() {
     return this.delegate.adapter;
@@ -2098,7 +2132,7 @@ class Visit {
     this.finishRequest();
   }
   performScroll() {
-    if (!this.scrolled && !this.view.forceReloaded && !this.view.snapshot.shouldPreserveScrollPosition) {
+    if (!this.scrolled && !this.view.forceReloaded && !this.view.shouldPreserveScrollPosition(this)) {
       if (this.action == "restore") {
         this.scrollToRestoredPosition() || this.scrollToAnchor() || this.view.scrollToTop();
       } else {
@@ -2162,9 +2196,7 @@ class Visit {
   }
   async render(callback) {
     this.cancelRender();
-    await new Promise((resolve => {
-      this.frame = requestAnimationFrame((() => resolve()));
-    }));
+    this.frame = await nextRepaint();
     await callback();
     delete this.frame;
   }
@@ -2386,6 +2418,7 @@ class History {
   restorationData={};
   started=false;
   pageLoaded=false;
+  currentIndex=0;
   constructor(delegate) {
     this.delegate = delegate;
   }
@@ -2393,6 +2426,7 @@ class History {
     if (!this.started) {
       addEventListener("popstate", this.onPopState, false);
       addEventListener("load", this.onPageLoad, false);
+      this.currentIndex = history.state?.turbo?.restorationIndex || 0;
       this.started = true;
       this.replace(new URL(window.location.href));
     }
@@ -2411,9 +2445,11 @@ class History {
     this.update(history.replaceState, location, restorationIdentifier);
   }
   update(method, location, restorationIdentifier = uuid()) {
+    if (method === history.pushState) ++this.currentIndex;
     const state = {
       turbo: {
-        restorationIdentifier: restorationIdentifier
+        restorationIdentifier: restorationIdentifier,
+        restorationIndex: this.currentIndex
       }
     };
     method.call(history, state, "", location.href);
@@ -2448,9 +2484,11 @@ class History {
       const {turbo: turbo} = event.state || {};
       if (turbo) {
         this.location = new URL(window.location.href);
-        const {restorationIdentifier: restorationIdentifier} = turbo;
+        const {restorationIdentifier: restorationIdentifier, restorationIndex: restorationIndex} = turbo;
         this.restorationIdentifier = restorationIdentifier;
-        this.delegate.historyPoppedToLocationWithRestorationIdentifier(this.location, restorationIdentifier);
+        const direction = restorationIndex > this.currentIndex ? "forward" : "back";
+        this.delegate.historyPoppedToLocationWithRestorationIdentifierAndDirection(this.location, restorationIdentifier, direction);
+        this.currentIndex = restorationIndex;
       }
     }
   };
@@ -2725,7 +2763,7 @@ async function withAutofocusFromFragment(fragment, callback) {
     elementWithAutofocus.id = willAutofocusId;
   }
   callback();
-  await nextAnimationFrame();
+  await nextRepaint();
   const hasNoActiveElement = document.activeElement == null || document.activeElement == document.body;
   if (hasNoActiveElement && willAutofocusId) {
     const elementToAutofocus = document.getElementById(willAutofocusId);
@@ -3663,7 +3701,10 @@ class PageView extends View {
     return this.snapshotCache.get(location);
   }
   isPageRefresh(visit) {
-    return !visit || this.lastRenderedLocation.href === visit.location.href && visit.action === "replace";
+    return !visit || this.lastRenderedLocation.pathname === visit.location.pathname && visit.action === "replace";
+  }
+  shouldPreserveScrollPosition(visit) {
+    return this.isPageRefresh(visit) && this.snapshot.shouldPreserveScrollPosition;
   }
   get snapshot() {
     return PageSnapshot.fromElement(this.element);
@@ -3672,24 +3713,25 @@ class PageView extends View {
 
 class Preloader {
   selector="a[data-turbo-preload]";
-  constructor(delegate) {
+  constructor(delegate, snapshotCache) {
     this.delegate = delegate;
-  }
-  get snapshotCache() {
-    return this.delegate.navigator.view.snapshotCache;
+    this.snapshotCache = snapshotCache;
   }
   start() {
     if (document.readyState === "loading") {
-      return document.addEventListener("DOMContentLoaded", (() => {
-        this.preloadOnLoadLinksForView(document.body);
-      }));
+      document.addEventListener("DOMContentLoaded", this.#preloadAll);
     } else {
       this.preloadOnLoadLinksForView(document.body);
     }
   }
+  stop() {
+    document.removeEventListener("DOMContentLoaded", this.#preloadAll);
+  }
   preloadOnLoadLinksForView(element) {
     for (const link of element.querySelectorAll(this.selector)) {
-      this.preloadURL(link);
+      if (this.delegate.shouldPreloadLink(link)) {
+        this.preloadURL(link);
+      }
     }
   }
   async preloadURL(link) {
@@ -3697,33 +3739,27 @@ class Preloader {
     if (this.snapshotCache.has(location)) {
       return;
     }
+    const fetchRequest = new FetchRequest(this, FetchMethod.get, location, new URLSearchParams, link);
+    await fetchRequest.perform();
+  }
+  prepareRequest(fetchRequest) {
+    fetchRequest.headers["Sec-Purpose"] = "prefetch";
+  }
+  async requestSucceededWithResponse(fetchRequest, fetchResponse) {
     try {
-      const response = await fetch(location.toString(), {
-        headers: {
-          "Sec-Purpose": "prefetch",
-          Accept: "text/html"
-        }
-      });
-      const responseText = await response.text();
-      const snapshot = PageSnapshot.fromHTMLString(responseText);
-      this.snapshotCache.put(location, snapshot);
+      const responseHTML = await fetchResponse.responseHTML;
+      const snapshot = PageSnapshot.fromHTMLString(responseHTML);
+      this.snapshotCache.put(fetchRequest.url, snapshot);
     } catch (_) {}
   }
-}
-
-class LimitedSet extends Set {
-  constructor(maxSize) {
-    super();
-    this.maxSize = maxSize;
-  }
-  add(value) {
-    if (this.size >= this.maxSize) {
-      const iterator = this.values();
-      const oldestValue = iterator.next().value;
-      this.delete(oldestValue);
-    }
-    super.add(value);
-  }
+  requestStarted(fetchRequest) {}
+  requestErrored(fetchRequest) {}
+  requestFinished(fetchRequest) {}
+  requestPreventedHandlingResponse(fetchRequest, fetchResponse) {}
+  requestFailedWithResponse(fetchRequest, fetchResponse) {}
+  #preloadAll=() => {
+    this.preloadOnLoadLinksForView(document.body);
+  };
 }
 
 class Cache {
@@ -3750,7 +3786,6 @@ class Cache {
 class Session {
   navigator=new Navigator(this);
   history=new History(this);
-  preloader=new Preloader(this);
   view=new PageView(this, document.documentElement);
   adapter=new BrowserAdapter(this);
   pageObserver=new PageObserver(this);
@@ -3763,12 +3798,15 @@ class Session {
   frameRedirector=new FrameRedirector(this, document.documentElement);
   streamMessageRenderer=new StreamMessageRenderer;
   cache=new Cache(this);
-  recentRequests=new LimitedSet(20);
   drive=true;
   enabled=true;
   progressBarDelay=500;
   started=false;
   formMode="on";
+  constructor(recentRequests) {
+    this.recentRequests = recentRequests;
+    this.preloader = new Preloader(this, this.view.snapshotCache);
+  }
   start() {
     if (!this.started) {
       this.pageObserver.start();
@@ -3799,6 +3837,7 @@ class Session {
       this.streamObserver.stop();
       this.frameRedirector.stop();
       this.history.stop();
+      this.preloader.stop();
       this.started = false;
     }
   }
@@ -3847,11 +3886,24 @@ class Session {
   get restorationIdentifier() {
     return this.history.restorationIdentifier;
   }
-  historyPoppedToLocationWithRestorationIdentifier(location, restorationIdentifier) {
+  shouldPreloadLink(element) {
+    const isUnsafe = element.hasAttribute("data-turbo-method");
+    const isStream = element.hasAttribute("data-turbo-stream");
+    const frameTarget = element.getAttribute("data-turbo-frame");
+    const frame = frameTarget == "_top" ? null : document.getElementById(frameTarget) || findClosestRecursively(element, "turbo-frame:not([disabled])");
+    if (isUnsafe || isStream || frame instanceof FrameElement) {
+      return false;
+    } else {
+      const location = new URL(element.href);
+      return this.elementIsNavigatable(element) && locationIsVisitable(location, this.snapshot.rootLocation);
+    }
+  }
+  historyPoppedToLocationWithRestorationIdentifierAndDirection(location, restorationIdentifier, direction) {
     if (this.enabled) {
       this.navigator.startVisit(location, restorationIdentifier, {
         action: "restore",
-        historyChanged: true
+        historyChanged: true,
+        direction: direction
       });
     } else {
       this.adapter.pageInvalidated({
@@ -3889,6 +3941,7 @@ class Session {
   visitStarted(visit) {
     if (!visit.acceptsStreamResponse) {
       markAsBusy(document.documentElement);
+      this.view.markVisitDirection(visit.direction);
     }
     extendURLWithDeprecatedProperties(visit.location);
     if (!visit.silent) {
@@ -3896,6 +3949,7 @@ class Session {
     }
   }
   visitCompleted(visit) {
+    this.view.unmarkVisitDirection();
     clearBusyState(document.documentElement);
     this.notifyApplicationAfterPageLoad(visit.getTimingMetrics());
   }
@@ -4086,7 +4140,7 @@ const deprecatedLocationPropertyDescriptors = {
   }
 };
 
-const session = new Session;
+const session = new Session(recentRequests);
 
 const {cache: cache, navigator: navigator$1} = session;
 
@@ -4139,7 +4193,7 @@ var Turbo = Object.freeze({
   PageRenderer: PageRenderer,
   PageSnapshot: PageSnapshot,
   FrameRenderer: FrameRenderer,
-  fetch: fetch,
+  fetch: fetchWithTurboHeaders,
   start: start,
   registerAdapter: registerAdapter,
   visit: visit,
@@ -4806,7 +4860,10 @@ if (customElements.get("turbo-stream-source") === undefined) {
   }
 })();
 
-window.Turbo = Turbo;
+window.Turbo = {
+  ...Turbo,
+  StreamActions: StreamActions
+};
 
 start();
 
@@ -4828,7 +4885,7 @@ var Turbo$1 = Object.freeze({
   clearCache: clearCache,
   connectStreamSource: connectStreamSource,
   disconnectStreamSource: disconnectStreamSource,
-  fetch: fetch,
+  fetch: fetchWithTurboHeaders,
   fetchEnctypeFromString: fetchEnctypeFromString,
   fetchMethodFromString: fetchMethodFromString,
   isSafe: isSafe,
