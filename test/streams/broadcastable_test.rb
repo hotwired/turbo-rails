@@ -301,7 +301,7 @@ class Turbo::BroadcastableBoardTest < ActionCable::Channel::TestCase
   test "creating a board broadcasts refreshes to a channel using models plural name when creating" do
     assert_broadcast_on "boards", turbo_stream_action_tag("refresh") do
       perform_enqueued_jobs do
-        board = Board.create!(name: "Board")
+        Board.create!(name: "Board")
         Turbo::StreamsChannel.refresh_debouncer_for(["boards"]).wait
       end
     end

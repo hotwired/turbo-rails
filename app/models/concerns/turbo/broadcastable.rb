@@ -294,7 +294,7 @@ module Turbo::Broadcastable
   end
 
   def broadcast_refresh_to(*streamables)
-    Turbo::StreamsChannel.broadcast_refresh_to *streamables unless suppressed_turbo_broadcasts?
+    Turbo::StreamsChannel.broadcast_refresh_to(*streamables) unless suppressed_turbo_broadcasts?
   end
 
   def broadcast_refresh
