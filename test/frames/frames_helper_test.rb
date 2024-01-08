@@ -21,6 +21,26 @@ class Turbo::FramesHelperTest < ActionView::TestCase
     assert_dom_equal %(<turbo-frame id="message_1"></turbo-frame>), turbo_frame_tag(record)
   end
 
+  test "frame with invalid argument should raise ArgumentError" do
+    assert_raises ArgumentError, "ArgumentError: You must supply a frame id" do
+      record = nil
+
+      turbo_frame_tag(record)
+    end
+
+    assert_raises ArgumentError, "ArgumentError: You must supply a frame id" do
+      record = []
+
+      turbo_frame_tag(record)
+    end
+
+    assert_raises ArgumentError, "ArgumentError: You must supply a frame id" do
+      record = ''
+
+      turbo_frame_tag(record)
+    end
+  end
+
   test "string frame within a model frame" do
     record = Article.new(id: 1)
 
