@@ -42,7 +42,7 @@ module Turbo::FramesHelper
   # Raises an +ArgumentError+ if called without a frame id.
   #   <%= turbo_frame_tag(nil) %> # => ArgumentError: You must supply a frame id
   def turbo_frame_tag(*ids, src: nil, target: nil, **attributes, &block)
-    raise ArgumentError, "You must supply a frame id" if ids.all? { |id| id.blank? }
+    raise ArgumentError, "You must supply a frame id" if ids.all?(&:blank?)
 
     id = ids.first.respond_to?(:to_key) ? ActionView::RecordIdentifier.dom_id(*ids) : ids.join('_')
     src = url_for(src) if src.present?
