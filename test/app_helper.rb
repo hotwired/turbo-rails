@@ -2,6 +2,15 @@ require "rails"
 require "rails/test_help"
 require "fileutils"
 
+if Gem::Version.new(Rails.version) < Gem::Version.new("7.1")
+  module Rails::Generators::AppName
+    private
+      def valid_const?
+        true
+      end
+  end
+end
+
 module RailsAppHelpers
   private
   def create_new_rails_app(app_dir, options=[])
