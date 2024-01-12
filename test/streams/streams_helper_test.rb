@@ -3,6 +3,8 @@ require "test_helper"
 class TestChannel < ApplicationCable::Channel; end
 
 class Turbo::StreamsHelperTest < ActionView::TestCase
+  attr_accessor :formats
+
   test "with streamable" do
     assert_dom_equal \
       %(<turbo-cable-stream-source channel="Turbo::StreamsChannel" signed-stream-name="#{Turbo::StreamsChannel.signed_stream_name("messages")}"></turbo-cable-stream-source>),
@@ -33,4 +35,12 @@ class Turbo::StreamsHelperTest < ActionView::TestCase
       turbo_stream_from("messages", channel: "NonExistentChannel", data: {payload: 1})
   end
 
+  test "custom turbo_stream builder actions" do
+    assert_dom_equal <<~HTML.strip, turbo_stream.highlight("an-id")
+      <turbo-stream action="highlight" target="an-id"><template></template></turbo-stream>
+    HTML
+    assert_dom_equal <<~HTML.strip, turbo_stream.highlight_all(".a-selector")
+      <turbo-stream action="highlight" targets=".a-selector"><template></template></turbo-stream>
+    HTML
+  end
 end

@@ -22,6 +22,24 @@
 #   <%= turbo_stream.append dom_id(topic_merge) do %>
 #     <%= link_to topic_merge.topic.name, topic_path(topic_merge.topic) %>
 #   <% end %>
+#
+# To integrate with custom actions, extend this class in response to the :turbo_streams_tag_builder load hook:
+#
+#   ActiveSupport.on_load :turbo_streams_tag_builder do
+#     def highlight(target)
+#       action :highlight, target
+#     end
+#
+#     def highlight_all(targets)
+#       action_all :highlight, targets
+#     end
+#   end
+#
+#   turbo_stream.highlight "my-element"
+#   # => <turbo-stream action="highlight" target="my-element"><template></template></turbo-stream>
+#
+#   turbo_stream.highlight_all ".my-selector"
+#   # => <turbo-stream action="highlight" targets=".my-selector"><template></template></turbo-stream>
 class Turbo::Streams::TagBuilder
   include Turbo::Streams::ActionHelper
 
@@ -246,4 +264,6 @@ class Turbo::Streams::TagBuilder
         @view_context.render(partial: record, formats: :html)
       end
     end
+
+  ActiveSupport.run_load_hooks :turbo_streams_tag_builder, self
 end
