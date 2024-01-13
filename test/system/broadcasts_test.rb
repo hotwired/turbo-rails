@@ -121,7 +121,7 @@ class BroadcastsTest < ApplicationSystemTestCase
   private
 
   def wait_for_stream_to_be_connected
-    assert_selector "turbo-cable-stream-source[connected]", visible: false
+    assert_selector "turbo-cable-stream-source[connected]", visible: false, style: { display: "none" }
   end
 
   def assert_broadcasts_text(text, to:, &block)

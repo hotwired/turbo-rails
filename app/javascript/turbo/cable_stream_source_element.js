@@ -2,7 +2,18 @@ import { connectStreamSource, disconnectStreamSource } from "@hotwired/turbo"
 import { subscribeTo } from "./cable"
 import snakeize from "./snakeize"
 
+const template = Object.assign(document.createElement("template"), {
+  innerHTML: "<style>:host { display: none; }</style>"
+})
+
 class TurboCableStreamSourceElement extends HTMLElement {
+  constructor() {
+    super()
+
+    this.attachShadow({ mode: "open" })
+    this.shadowRoot.appendChild(template.content.cloneNode(true))
+  }
+
   async connectedCallback() {
     connectStreamSource(this)
     this.subscription = await subscribeTo(this.channel, {
