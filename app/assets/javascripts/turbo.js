@@ -1,5 +1,5 @@
 /*!
-Turbo 8.0.0-beta.3
+Turbo 8.0.0-beta.4
 Copyright © 2024 37signals LLC
  */
 (function(prototype) {
@@ -1623,8 +1623,6 @@ function readScrollBehavior(value, defaultValue) {
   }
 }
 
-const ProgressBarID = "turbo-progress-bar";
-
 class ProgressBar {
   static animationDuration=300;
   static get defaultCSS() {
@@ -1712,8 +1710,6 @@ class ProgressBar {
   }
   createStylesheetElement() {
     const element = document.createElement("style");
-    element.id = ProgressBarID;
-    element.setAttribute("data-turbo-permanent", "");
     element.type = "text/css";
     element.textContent = ProgressBar.defaultCSS;
     if (this.cspNonce) {
@@ -2639,13 +2635,10 @@ class LinkPrefetchObserver {
   prepareRequest(request) {
     const link = request.target;
     request.headers["Sec-Purpose"] = "prefetch";
-    if (link.dataset.turboFrame && link.dataset.turboFrame !== "_top") {
-      request.headers["Turbo-Frame"] = link.dataset.turboFrame;
-    } else if (link.dataset.turboFrame !== "_top") {
-      const turboFrame = link.closest("turbo-frame");
-      if (turboFrame) {
-        request.headers["Turbo-Frame"] = turboFrame.id;
-      }
+    const turboFrame = link.closest("turbo-frame");
+    const turboFrameTarget = link.getAttribute("data-turbo-frame") || turboFrame?.getAttribute("target") || turboFrame?.id;
+    if (turboFrameTarget && turboFrameTarget !== "_top") {
+      request.headers["Turbo-Frame"] = turboFrameTarget;
     }
     if (link.hasAttribute("data-turbo-stream")) {
       request.acceptResponseType("text/vnd.turbo-stream.html");
@@ -3756,7 +3749,7 @@ class PageRenderer extends Renderer {
     await mergedHeadElements;
     await newStylesheetElements;
     if (this.willRender) {
-      this.removeUnusedHeadStylesheetElements();
+      this.removeUnusedDynamicStylesheetElements();
     }
   }
   async replaceBody() {
@@ -3781,8 +3774,8 @@ class PageRenderer extends Renderer {
       document.head.appendChild(activateScriptElement(element));
     }
   }
-  removeUnusedHeadStylesheetElements() {
-    for (const element of this.unusedHeadStylesheetElements) {
+  removeUnusedDynamicStylesheetElements() {
+    for (const element of this.unusedDynamicStylesheetElements) {
       document.head.removeChild(element);
     }
   }
@@ -3838,8 +3831,8 @@ class PageRenderer extends Renderer {
   async assignNewBody() {
     await this.renderElement(this.currentElement, this.newElement);
   }
-  get unusedHeadStylesheetElements() {
-    return this.oldHeadStylesheetElements.filter((element => !(element.hasAttribute("data-turbo-permanent") || element.hasAttribute("data-tag-name"))));
+  get unusedDynamicStylesheetElements() {
+    return this.oldHeadStylesheetElements.filter((element => element.getAttribute("data-turbo-track") === "dynamic"));
   }
   get oldHeadStylesheetElements() {
     return this.currentHeadSnapshot.getStylesheetElementsNotInSnapshot(this.newHeadSnapshot);
