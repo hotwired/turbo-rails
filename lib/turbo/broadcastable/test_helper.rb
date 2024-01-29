@@ -64,7 +64,7 @@ module Turbo
         else
           broadcasts = "Turbo Stream broadcast".pluralize(count)
 
-          assert count == payloads.count, "Expected #{count} #{broadcasts} on #{stream_name.inspect}, but there were none"
+          assert count == payloads.count, "Expected #{count} #{broadcasts} on #{stream_name.inspect}, but there were #{payloads.count}"
         end
       end
 
