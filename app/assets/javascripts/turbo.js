@@ -1,5 +1,5 @@
 /*!
-Turbo 8.0.0-rc.1
+Turbo 8.0.0-rc.2
 Copyright © 2024 37signals LLC
  */
 (function(prototype) {
@@ -3148,7 +3148,7 @@ var Idiomorph = function() {
     }
   }
   function ignoreValueOfActiveElement(possibleActiveElement, ctx) {
-    return ctx.ignoreActiveValue && possibleActiveElement === document.activeElement;
+    return ctx.ignoreActiveValue && possibleActiveElement === document.activeElement && possibleActiveElement !== document.body;
   }
   function morphOldNodeTo(oldNode, newContent, ctx) {
     if (ctx.ignoreActive && oldNode === document.activeElement) ; else if (newContent == null) {
