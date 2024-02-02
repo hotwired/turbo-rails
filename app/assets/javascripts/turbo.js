@@ -1,5 +1,5 @@
 /*!
-Turbo 8.0.0-beta.4
+Turbo 8.0.0-rc.1
 Copyright © 2024 37signals LLC
  */
 (function(prototype) {
@@ -1228,7 +1228,8 @@ class View {
     return window;
   }
   async render(renderer) {
-    const {isPreview: isPreview, shouldRender: shouldRender, newSnapshot: snapshot} = renderer;
+    const {isPreview: isPreview, shouldRender: shouldRender, willRender: willRender, newSnapshot: snapshot} = renderer;
+    const shouldInvalidate = willRender;
     if (shouldRender) {
       try {
         this.renderPromise = new Promise((resolve => this.#resolveRenderPromise = resolve));
@@ -1237,7 +1238,8 @@ class View {
         const renderInterception = new Promise((resolve => this.#resolveInterceptionPromise = resolve));
         const options = {
           resume: this.#resolveInterceptionPromise,
-          render: this.renderer.renderElement
+          render: this.renderer.renderElement,
+          renderMethod: this.renderer.renderMethod
         };
         const immediateRender = this.delegate.allowsImmediateRender(snapshot, options);
         if (!immediateRender) await renderInterception;
@@ -1250,7 +1252,7 @@ class View {
         this.#resolveRenderPromise(undefined);
         delete this.renderPromise;
       }
-    } else {
+    } else if (shouldInvalidate) {
       this.invalidate(renderer.reloadReason);
     }
   }
@@ -1965,6 +1967,7 @@ class Visit {
     this.snapshotHTML = snapshotHTML;
     this.response = response;
     this.isSamePage = this.delegate.locationWithActionIsSamePage(this.location, this.action);
+    this.isPageRefresh = this.view.isPageRefresh(this);
     this.visitCachedSnapshot = visitCachedSnapshot;
     this.willRender = willRender;
     this.updateHistory = updateHistory;
@@ -2106,7 +2109,7 @@ class Visit {
       const isPreview = this.shouldIssueRequest();
       this.render((async () => {
         this.cacheSnapshot();
-        if (this.isSamePage) {
+        if (this.isSamePage || this.isPageRefresh) {
           this.adapter.visitRendered(this);
         } else {
           if (this.view.renderPromise) await this.view.renderPromise;
@@ -2634,14 +2637,14 @@ class LinkPrefetchObserver {
   };
   prepareRequest(request) {
     const link = request.target;
-    request.headers["Sec-Purpose"] = "prefetch";
+    request.headers["X-Sec-Purpose"] = "prefetch";
     const turboFrame = link.closest("turbo-frame");
     const turboFrameTarget = link.getAttribute("data-turbo-frame") || turboFrame?.getAttribute("target") || turboFrame?.id;
     if (turboFrameTarget && turboFrameTarget !== "_top") {
       request.headers["Turbo-Frame"] = turboFrameTarget;
     }
     if (link.hasAttribute("data-turbo-stream")) {
-      request.acceptResponseType("text/vnd.turbo-stream.html");
+      request.acceptResponseType(StreamMessage.contentType);
     }
   }
   requestSucceededWithResponse() {}
@@ -2655,7 +2658,7 @@ class LinkPrefetchObserver {
   }
   #isPrefetchable(link) {
     const href = link.getAttribute("href");
-    if (!href || href === "#" || link.dataset.turbo === "false" || link.dataset.turboPrefetch === "false") {
+    if (!href || href === "#" || link.getAttribute("data-turbo") === "false" || link.getAttribute("data-turbo-prefetch") === "false") {
       return false;
     }
     if (link.origin !== document.location.origin) {
@@ -2667,17 +2670,15 @@ class LinkPrefetchObserver {
     if (link.pathname + link.search === document.location.pathname + document.location.search) {
       return false;
     }
-    if (link.dataset.turboMethod && link.dataset.turboMethod !== "get") {
+    const turboMethod = link.getAttribute("data-turbo-method");
+    if (turboMethod && turboMethod !== "get") {
       return false;
     }
     if (targetsIframe(link)) {
       return false;
     }
-    if (link.pathname + link.search === document.location.pathname + document.location.search) {
-      return false;
-    }
     const turboPrefetchParent = findClosestRecursively(link, "[data-turbo-prefetch]");
-    if (turboPrefetchParent && turboPrefetchParent.dataset.turboPrefetch === "false") {
+    if (turboPrefetchParent && turboPrefetchParent.getAttribute("data-turbo-prefetch") === "false") {
       return false;
     }
     return true;
@@ -3616,76 +3617,6 @@ var Idiomorph = function() {
   };
 }();
 
-class MorphRenderer extends Renderer {
-  async render() {
-    if (this.willRender) await this.#morphBody();
-  }
-  get renderMethod() {
-    return "morph";
-  }
-  async #morphBody() {
-    this.#morphElements(this.currentElement, this.newElement);
-    this.#reloadRemoteFrames();
-    dispatch("turbo:morph", {
-      detail: {
-        currentElement: this.currentElement,
-        newElement: this.newElement
-      }
-    });
-  }
-  #morphElements(currentElement, newElement, morphStyle = "outerHTML") {
-    this.isMorphingTurboFrame = this.#isFrameReloadedWithMorph(currentElement);
-    Idiomorph.morph(currentElement, newElement, {
-      morphStyle: morphStyle,
-      callbacks: {
-        beforeNodeAdded: this.#shouldAddElement,
-        beforeNodeMorphed: this.#shouldMorphElement,
-        beforeNodeRemoved: this.#shouldRemoveElement
-      }
-    });
-  }
-  #shouldAddElement=node => !(node.id && node.hasAttribute("data-turbo-permanent") && document.getElementById(node.id));
-  #shouldMorphElement=(oldNode, newNode) => {
-    if (oldNode instanceof HTMLElement) {
-      return !oldNode.hasAttribute("data-turbo-permanent") && (this.isMorphingTurboFrame || !this.#isFrameReloadedWithMorph(oldNode));
-    } else {
-      return true;
-    }
-  };
-  #shouldRemoveElement=node => this.#shouldMorphElement(node);
-  #reloadRemoteFrames() {
-    this.#remoteFrames().forEach((frame => {
-      if (this.#isFrameReloadedWithMorph(frame)) {
-        this.#renderFrameWithMorph(frame);
-        frame.reload();
-      }
-    }));
-  }
-  #renderFrameWithMorph(frame) {
-    frame.addEventListener("turbo:before-frame-render", (event => {
-      event.detail.render = this.#morphFrameUpdate;
-    }), {
-      once: true
-    });
-  }
-  #morphFrameUpdate=(currentElement, newElement) => {
-    dispatch("turbo:before-frame-morph", {
-      target: currentElement,
-      detail: {
-        currentElement: currentElement,
-        newElement: newElement
-      }
-    });
-    this.#morphElements(currentElement, newElement.children, "innerHTML");
-  };
-  #isFrameReloadedWithMorph(element) {
-    return element.src && element.refresh === "morph";
-  }
-  #remoteFrames() {
-    return Array.from(document.querySelectorAll("turbo-frame[src]")).filter((frame => !frame.closest("[data-turbo-permanent]")));
-  }
-}
-
 class PageRenderer extends Renderer {
   static renderElement(currentElement, newElement) {
     if (document.body && newElement instanceof HTMLBodyElement) {
@@ -3854,6 +3785,109 @@ class PageRenderer extends Renderer {
   }
 }
 
+class MorphRenderer extends PageRenderer {
+  async render() {
+    if (this.willRender) await this.#morphBody();
+  }
+  get renderMethod() {
+    return "morph";
+  }
+  async #morphBody() {
+    this.#morphElements(this.currentElement, this.newElement);
+    this.#reloadRemoteFrames();
+    dispatch("turbo:morph", {
+      detail: {
+        currentElement: this.currentElement,
+        newElement: this.newElement
+      }
+    });
+  }
+  #morphElements(currentElement, newElement, morphStyle = "outerHTML") {
+    this.isMorphingTurboFrame = this.#isFrameReloadedWithMorph(currentElement);
+    Idiomorph.morph(currentElement, newElement, {
+      ignoreActiveValue: true,
+      morphStyle: morphStyle,
+      callbacks: {
+        beforeNodeAdded: this.#shouldAddElement,
+        beforeNodeMorphed: this.#shouldMorphElement,
+        beforeAttributeUpdated: this.#shouldUpdateAttribute,
+        beforeNodeRemoved: this.#shouldRemoveElement,
+        afterNodeMorphed: this.#didMorphElement
+      }
+    });
+  }
+  #shouldAddElement=node => !(node.id && node.hasAttribute("data-turbo-permanent") && document.getElementById(node.id));
+  #shouldMorphElement=(oldNode, newNode) => {
+    if (oldNode instanceof HTMLElement) {
+      if (!oldNode.hasAttribute("data-turbo-permanent") && (this.isMorphingTurboFrame || !this.#isFrameReloadedWithMorph(oldNode))) {
+        const event = dispatch("turbo:before-morph-element", {
+          cancelable: true,
+          target: oldNode,
+          detail: {
+            newElement: newNode
+          }
+        });
+        return !event.defaultPrevented;
+      } else {
+        return false;
+      }
+    }
+  };
+  #shouldUpdateAttribute=(attributeName, target, mutationType) => {
+    const event = dispatch("turbo:before-morph-attribute", {
+      cancelable: true,
+      target: target,
+      detail: {
+        attributeName: attributeName,
+        mutationType: mutationType
+      }
+    });
+    return !event.defaultPrevented;
+  };
+  #didMorphElement=(oldNode, newNode) => {
+    if (newNode instanceof HTMLElement) {
+      dispatch("turbo:morph-element", {
+        target: oldNode,
+        detail: {
+          newElement: newNode
+        }
+      });
+    }
+  };
+  #shouldRemoveElement=node => this.#shouldMorphElement(node);
+  #reloadRemoteFrames() {
+    this.#remoteFrames().forEach((frame => {
+      if (this.#isFrameReloadedWithMorph(frame)) {
+        this.#renderFrameWithMorph(frame);
+        frame.reload();
+      }
+    }));
+  }
+  #renderFrameWithMorph(frame) {
+    frame.addEventListener("turbo:before-frame-render", (event => {
+      event.detail.render = this.#morphFrameUpdate;
+    }), {
+      once: true
+    });
+  }
+  #morphFrameUpdate=(currentElement, newElement) => {
+    dispatch("turbo:before-frame-morph", {
+      target: currentElement,
+      detail: {
+        currentElement: currentElement,
+        newElement: newElement
+      }
+    });
+    this.#morphElements(currentElement, newElement.children, "innerHTML");
+  };
+  #isFrameReloadedWithMorph(element) {
+    return element.src && element.refresh === "morph";
+  }
+  #remoteFrames() {
+    return Array.from(document.querySelectorAll("turbo-frame[src]")).filter((frame => !frame.closest("[data-turbo-permanent]")));
+  }
+}
+
 class SnapshotCache {
   keys=[];
   snapshots={};
@@ -3980,7 +4014,7 @@ class Preloader {
     await fetchRequest.perform();
   }
   prepareRequest(fetchRequest) {
-    fetchRequest.headers["Sec-Purpose"] = "prefetch";
+    fetchRequest.headers["X-Sec-Purpose"] = "prefetch";
   }
   async requestSucceededWithResponse(fetchRequest, fetchResponse) {
     try {
@@ -4090,8 +4124,9 @@ class Session {
   visit(location, options = {}) {
     const frameElement = options.frame ? document.getElementById(options.frame) : null;
     if (frameElement instanceof FrameElement) {
+      const action = options.action || getVisitAction(frameElement);
+      frameElement.delegate.proposeVisitIfNavigatedWithAction(frameElement, action);
       frameElement.src = location.toString();
-      frameElement.loaded;
     } else {
       this.navigator.proposeVisit(expandURL(location), options);
     }
@@ -4561,7 +4596,7 @@ class FrameController {
     }
   }
   elementAppearedInViewport(element) {
-    this.proposeVisitIfNavigatedWithAction(element, element);
+    this.proposeVisitIfNavigatedWithAction(element, getVisitAction(element));
     this.#loadSourceURL();
   }
   willSubmitFormLinkToLocation(link) {
@@ -4621,7 +4656,7 @@ class FrameController {
   }
   formSubmissionSucceededWithResponse(formSubmission, response) {
     const frame = this.#findFrameElement(formSubmission.formElement, formSubmission.submitter);
-    frame.delegate.proposeVisitIfNavigatedWithAction(frame, formSubmission.formElement, formSubmission.submitter);
+    frame.delegate.proposeVisitIfNavigatedWithAction(frame, getVisitAction(formSubmission.submitter, formSubmission.formElement, frame));
     frame.delegate.loadResponse(response);
     if (!formSubmission.isSafe) {
       session.clearCache();
@@ -4698,13 +4733,13 @@ class FrameController {
   }
   #navigateFrame(element, url, submitter) {
     const frame = this.#findFrameElement(element, submitter);
-    frame.delegate.proposeVisitIfNavigatedWithAction(frame, element, submitter);
+    frame.delegate.proposeVisitIfNavigatedWithAction(frame, getVisitAction(submitter, element, frame));
     this.#withCurrentNavigationElement(element, (() => {
       frame.src = url;
     }));
   }
-  proposeVisitIfNavigatedWithAction(frame, element, submitter) {
-    this.action = getVisitAction(submitter, element, frame);
+  proposeVisitIfNavigatedWithAction(frame, action = null) {
+    this.action = action;
     if (this.action) {
       const pageSnapshot = PageSnapshot.fromElement(frame).clone();
       const {visitCachedSnapshot: visitCachedSnapshot} = frame.delegate;
