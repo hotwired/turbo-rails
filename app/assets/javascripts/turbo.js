@@ -1,5 +1,5 @@
 /*!
-Turbo 8.0.0-rc.2
+Turbo 8.0.0-rc.3
 Copyright © 2024 37signals LLC
  */
 (function(prototype) {
@@ -2611,7 +2611,7 @@ class LinkPrefetchObserver {
     this.started = true;
   };
   #tryToPrefetchRequest=event => {
-    if (getMetaContent("turbo-prefetch") !== "true") return;
+    if (getMetaContent("turbo-prefetch") === "false") return;
     const target = event.target;
     const isLink = target.matches && target.matches("a[href]:not([target^=_]):not([download])");
     if (isLink && this.#isPrefetchable(target)) {
@@ -2658,7 +2658,14 @@ class LinkPrefetchObserver {
   }
   #isPrefetchable(link) {
     const href = link.getAttribute("href");
-    if (!href || href === "#" || link.getAttribute("data-turbo") === "false" || link.getAttribute("data-turbo-prefetch") === "false") {
+    if (!href || href.startsWith("#") || link.getAttribute("data-turbo") === "false" || link.getAttribute("data-turbo-prefetch") === "false") {
+      return false;
+    }
+    const event = dispatch("turbo:before-prefetch", {
+      target: link,
+      cancelable: true
+    });
+    if (event.defaultPrevented) {
       return false;
     }
     if (link.origin !== document.location.origin) {
