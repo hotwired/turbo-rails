@@ -42,6 +42,6 @@ module Turbo::FramesHelper
     id = ids.first.respond_to?(:to_key) ? ActionView::RecordIdentifier.dom_id(*ids) : ids.join('_')
     src = url_for(src) if src.present?
 
-    tag_builder.tag_string(:turbo_frame, **attributes.merge(id: id, src: src, target: target).compact, &block)
+    content_tag(:turbo_frame, nil, **attributes.merge(id: id, src: src, target: target).compact, &block)
   end
 end
