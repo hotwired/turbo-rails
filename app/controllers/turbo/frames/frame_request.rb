@@ -33,6 +33,6 @@ module Turbo::Frames::FrameRequest
     end
 
     def turbo_frame_request_id
-      request.headers["Turbo-Frame"]
+      request&.headers["Turbo-Frame"]
     end
 end
