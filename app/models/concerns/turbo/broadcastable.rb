@@ -79,15 +79,16 @@
 #
 # == Page refreshes
 #
-# You can broadcast a "page refresh" to all clients subscribed to a stream. This is useful when you need to
-# broadcast a lot of partial updates, and the entire content is not easily updatable using Turbo stream actions like replace, append, prepend, or remove.
+# You can broadcast "page refresh" stream actions. This will make subscribed clients reload the 
+# page. For pages that configure morphing and scroll preservation, this will translate into smooth
+# updates when it only updates the content that changed.
+
+# This approach is an alternative to fine-grained stream actions targeting specific DOM elements. It
+# offers good fidelity with a much simpler programming model. As a tradeoff, the fidelity you can reach
+# is often not as high as with targeted stream actions since it renders the entire page again.
 #
-# It's recommended to use page refreshes as the primary option for broadcasting changes.
-# This approach allows you to remove the coupling between models and views to render complex partial updates without sacrificing the desired high UI fidelity.
-# We hope this makes using the other available Turbo Stream actions less necessary.
-#
-# The +broadcast_refreshes+ class method configures the model to broadcast a "page refresh" on creates, updates, and destroys to a stream
-# name derived at runtime by the <tt>stream</tt> symbol invocation. Examples
+# The +broadcast_refreshes+ class method configures the model to broadcast a "page refresh" on creates, 
+# updates, and destroys to a stream name derived at runtime by the <tt>stream</tt> symbol invocation. Examples
 #
 #   class Board < ApplicationRecord
 #     broadcast_refreshes
@@ -96,7 +97,8 @@
 # In this example, when a board is created, updated, or destroyed, a Turbo Stream for a
 # page refresh will be broadcasted to all clients subscribed to the "boards" stream.
 #
-# This works great in hierarchical structures, where the child record touches parent records automatically to invalidate the cache:
+# This works great in hierarchical structures, where the child record touches parent records automatically
+# to invalidate the cache:
 #
 #   class Column < ApplicationRecord
 #     belongs_to :board, touch: true # +Board+ will trigger a page refresh on column changes
@@ -109,9 +111,10 @@
 #     broadcast_refreshes_to :board
 #   end
 #
-# To achieve more granular control, , you can also broadcast a "page refresh" to a stream name derived from the passed <tt>streamables</tt> by using
-# the instance-level methods <tt>broadcast_refresh_to</tt> or <tt>broadcast_refresh_later_to</tt>.
-# These methods are particularly useful when you want to trigger a page refresh for more specific scenarios. Example:
+# For more granular control, you can also broadcast a "page refresh" to a stream name derived 
+# from the passed <tt>streamables</tt> by using the instance-level methods <tt>broadcast_refresh_to</tt> or
+# <tt>broadcast_refresh_later_to</tt>. These methods are particularly useful when you want to trigger 
+# a page refresh for more specific scenarios. Example:
 #
 #   class Clearance < ApplicationRecord
 #     belongs_to :petitioner, class_name: "Contact"
@@ -125,11 +128,13 @@
 #       end
 #   end
 #
-# In this example, a "page refresh" is broadcast to the stream named "identity:2:clearances" after a new clearance is created.
-# All clients subscribed to this stream will refresh the page to reflect the changes.
+# In this example, a "page refresh" is broadcast to the stream named "identity:<identity-id>:clearances" 
+# after a new clearance is created. All clients subscribed to this stream will refresh the page to reflect
+# the changes.
 #
-# When broadcasting page refreshes, Turbo will automatically debounce multiple calls in a row to only broadcast the last one. This is meant for scenarios where you process records in mass. Because of the nature of such signals, it makes no sense to broadcast them repeatedly and individually.
-#
+# When broadcasting page refreshes, Turbo will automatically debounce multiple calls in a row to only broadcast the last one. 
+# This is meant for scenarios where you process records in mass. Because of the nature of such signals, it makes no sense to
+# broadcast them repeatedly and individually.
 # == Suppressing broadcasts
 #
 # Sometimes, you need to disable broadcasts in certain scenarios. You can use <tt>.suppressing_turbo_broadcasts</tt> to create
