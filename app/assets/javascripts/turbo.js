@@ -1,5 +1,5 @@
 /*!
-Turbo 8.0.0
+Turbo 8.0.1
 Copyright © 2024 37signals LLC
  */
 (function(prototype) {
@@ -2011,10 +2011,10 @@ class Visit {
   complete() {
     if (this.state == VisitState.started) {
       this.recordTimingMetric(TimingMetric.visitEnd);
+      this.adapter.visitCompleted(this);
       this.state = VisitState.completed;
       this.followRedirect();
       if (!this.followedRedirect) {
-        this.adapter.visitCompleted(this);
         this.delegate.visitCompleted(this);
       }
     }
