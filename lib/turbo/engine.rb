@@ -84,6 +84,7 @@ module Turbo
         require "turbo/broadcastable/test_helper"
 
         include Turbo::TestAssertions
+        include Turbo::Broadcastable::TestHelper
       end
 
       ActiveSupport.on_load(:action_dispatch_integration_test) do
