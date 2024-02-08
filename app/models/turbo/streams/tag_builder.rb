@@ -261,6 +261,8 @@ class Turbo::Streams::TagBuilder
   private
     def render_template(target, content = nil, allow_inferred_rendering: true, **rendering, &block)
       case
+      when target.respond_to?(:render_in) && content.nil?
+        target.render_in(@view_context, &block)
       when content.respond_to?(:render_in)
         content.render_in(@view_context, &block)
       when content

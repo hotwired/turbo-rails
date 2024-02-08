@@ -3,7 +3,31 @@ require "test_helper"
 class TestChannel < ApplicationCable::Channel; end
 
 class Turbo::StreamsHelperTest < ActionView::TestCase
+  class Component
+    extend ActiveModel::Naming
+
+    def initialize(id:, content:) = (@id, @content = id, content)
+    def render_in(...) = @content
+    def to_key = [@id]
+  end
+
   attr_accessor :formats
+
+  test "supports valid :renderable option object with nil content" do
+    component = Component.new(id: 1, content: "Hello, world")
+
+    assert_dom_equal <<~HTML.strip, turbo_stream.update(component)
+      <turbo-stream action="update" target="streams_helper_test_component_1"><template>Hello, world</template></turbo-stream>
+    HTML
+  end
+
+  test "supports valid :renderable option object with content" do
+    component = Component.new(id: 1, content: "Hello, world")
+
+    assert_dom_equal <<~HTML.strip, turbo_stream.update(component, "Raw content")
+      <turbo-stream action="update" target="streams_helper_test_component_1"><template>Raw content</template></turbo-stream>
+    HTML
+  end
 
   test "with streamable" do
     assert_dom_equal \
@@ -73,6 +97,14 @@ class Turbo::StreamsHelperTest < ActionView::TestCase
     HTML
     assert_dom_equal <<~HTML.strip, turbo_stream.highlight_all(".a-selector")
       <turbo-stream action="highlight" targets=".a-selector"><template></template></turbo-stream>
+    HTML
+  end
+
+  test "supports valid :partial option objects" do
+    message = Message.new(id: 1, content: "Hello, world")
+
+    assert_dom_equal <<~HTML.strip, turbo_stream.update(message)
+      <turbo-stream action="update" target="message_1"><template><p>Hello, world</p></template></turbo-stream>
     HTML
   end
 end
