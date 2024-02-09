@@ -81,10 +81,14 @@ module Turbo
     initializer "turbo.test_assertions" do
       ActiveSupport.on_load(:active_support_test_case) do
         require "turbo/test_assertions"
-        require "turbo/broadcastable/test_helper"
-
         include Turbo::TestAssertions
-        include Turbo::Broadcastable::TestHelper
+      end
+
+      ActiveSupport.on_load(:action_cable) do
+        ActiveSupport.on_load(:active_support_test_case) do
+          require "turbo/broadcastable/test_helper"
+          include Turbo::Broadcastable::TestHelper
+        end
       end
 
       ActiveSupport.on_load(:action_dispatch_integration_test) do
