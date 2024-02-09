@@ -51,7 +51,7 @@ module Turbo::DriveHelper
   # Configure how to handle page refreshes. A page refresh happens when
   # Turbo loads the current page again with a *replace* visit:
   #
-  # === Parameters:
+  # ==== Parameters:
   #
   # * <tt>method</tt> - Method to update the +<body>+ of the page
   #   during a page refresh. It can be one of:
@@ -64,7 +64,7 @@ module Turbo::DriveHelper
   #   * +reset:+: Resets scroll to the top, left corner. This is the default.
   #   * +preserve:+: Keeps the scroll.
   #
-  # === Example Usage:
+  # ==== Example Usage:
   #
   #   turbo_refreshes_with(method: :morph, scroll: :preserve)
   def turbo_refreshes_with(method: :replace, scroll: :reset)
