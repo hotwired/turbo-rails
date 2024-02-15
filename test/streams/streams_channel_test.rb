@@ -255,4 +255,34 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
       Turbo::StreamsChannel.broadcast_stream_to "stream", content: "direct"
     end
   end
+
+  test "broadcasting morph now" do
+    options = { partial: "messages/message", locals: { message: "hello!" } }
+  
+    assert_broadcast_on "stream", turbo_stream_action_tag("morph", target: "message_1", template: render(options)) do
+      Turbo::StreamsChannel.broadcast_morph_to "stream", target: "message_1", **options
+    end
+  
+    assert_broadcast_on "stream", turbo_stream_action_tag("morph", targets: ".message", template: render(options)) do
+      Turbo::StreamsChannel.broadcast_morph_to "stream", targets: ".message", **options
+    end
+  end
+  
+  test "broadcasting morph later" do
+    options = { partial: "messages/message", locals: { message: "hello!" } }
+  
+    assert_broadcast_on "stream", turbo_stream_action_tag("morph", target: "message_1", template: render(options)) do
+      perform_enqueued_jobs do
+        Turbo::StreamsChannel.broadcast_morph_later_to \
+          "stream", target: "message_1", **options
+      end
+    end
+  
+    assert_broadcast_on "stream", turbo_stream_action_tag("morph", targets: ".message", template: render(options)) do
+      perform_enqueued_jobs do
+        Turbo::StreamsChannel.broadcast_morph_later_to \
+          "stream", targets: ".message", **options
+      end
+    end
+  end
 end

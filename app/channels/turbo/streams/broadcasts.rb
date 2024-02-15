@@ -95,6 +95,14 @@ module Turbo::Streams::Broadcasts
     Turbo::ThreadDebouncer.for("turbo-refresh-debouncer-#{stream_name_from(streamables.including(request_id))}")
   end
 
+  def broadcast_morph_to(*streamables, **opts)
+    broadcast_action_to(*streamables, action: :morph, **opts)
+  end
+
+  def broadcast_morph_later_to(*streamables, **opts)
+    broadcast_action_later_to(*streamables, action: :morph, **opts)
+  end
+
   private
     def render_format(format, **rendering)
       ApplicationController.render(formats: [ format ], **rendering)
