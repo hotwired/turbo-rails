@@ -1,5 +1,5 @@
 /*!
-Turbo 8.0.2
+Turbo 8.0.3
 Copyright © 2024 37signals LLC
  */
 (function(prototype) {
@@ -3818,7 +3818,6 @@ class MorphRenderer extends PageRenderer {
   #morphElements(currentElement, newElement, morphStyle = "outerHTML") {
     this.isMorphingTurboFrame = this.#isFrameReloadedWithMorph(currentElement);
     Idiomorph.morph(currentElement, newElement, {
-      ignoreActiveValue: true,
       morphStyle: morphStyle,
       callbacks: {
         beforeNodeAdded: this.#shouldAddElement,
@@ -4147,9 +4146,9 @@ class Session {
   refresh(url, requestId) {
     const isRecentRequest = requestId && this.recentRequests.has(requestId);
     if (!isRecentRequest) {
-      this.cache.exemptPageFromPreview();
       this.visit(url, {
-        action: "replace"
+        action: "replace",
+        shouldCacheSnapshot: false
       });
     }
   }
