@@ -2642,6 +2642,7 @@ class LinkPrefetchObserver {
   prepareRequest(request) {
     const link = request.target;
     request.headers["X-Sec-Purpose"] = "prefetch";
+    request.headers["Turbo-Action"] = getVisitAction(link);
     const turboFrame = link.closest("turbo-frame");
     const turboFrameTarget = link.getAttribute("data-turbo-frame") || turboFrame?.getAttribute("target") || turboFrame?.id;
     if (turboFrameTarget && turboFrameTarget !== "_top") {
@@ -4633,11 +4634,12 @@ class FrameController {
     }
     this.formSubmission = new FormSubmission(this, element, submitter);
     const {fetchRequest: fetchRequest} = this.formSubmission;
-    this.prepareRequest(fetchRequest);
+    this.prepareRequest(fetchRequest, submitter);
     this.formSubmission.start();
   }
-  prepareRequest(request) {
+  prepareRequest(request, formSubmitter) {
     request.headers["Turbo-Frame"] = this.id;
+    request.headers["Turbo-Action"] = getVisitAction(formSubmitter || this.element);
     if (this.currentNavigationElement?.hasAttribute("data-turbo-stream")) {
       request.acceptResponseType(StreamMessage.contentType);
     }
