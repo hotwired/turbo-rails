@@ -37,6 +37,6 @@ module Turbo::Frames::FrameRequest
     end
 
     def turbo_frame_with_navigation?
-      %w[advance restore].include?(request&.headers["Turbo-Action"])
+      %w[advance restore].include?(request.headers["Turbo-Action"])
     end
 end
