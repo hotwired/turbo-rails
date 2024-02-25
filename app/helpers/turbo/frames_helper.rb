@@ -36,9 +36,6 @@ module Turbo::FramesHelper
   #   <%= turbo_frame_tag(Article.find(1), "comments") %>
   #   # => <turbo-frame id="article_1_comments"></turbo-frame>
   #
-  #   <%= turbo_frame_tag(Article.find(1), Comment.new) %>
-  #   # => <turbo-frame id="comments_article_1"></turbo-frame>
-  #
   # Raises an +ArgumentError+ if called without a frame id.
   #   <%= turbo_frame_tag(nil) %> # => ArgumentError: You must supply a frame id
   def turbo_frame_tag(*ids, src: nil, target: nil, **attributes, &block)
