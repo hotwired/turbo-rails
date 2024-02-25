@@ -10,7 +10,7 @@ module Turbo
     # Assert that the rendered fragment of HTML contains a `<turbo-stream>`
     # element.
     #
-    # === Options
+    # ==== Options
     #
     # * <tt>:action</tt> [String] matches the element's <tt>[action]</tt>
     #   attribute
@@ -55,7 +55,7 @@ module Turbo
     # Assert that the rendered fragment of HTML does not contain a `<turbo-stream>`
     # element.
     #
-    # === Options
+    # ==== Options
     #
     # * <tt>:action</tt> [String] matches the element's <tt>[action]</tt>
     #   attribute

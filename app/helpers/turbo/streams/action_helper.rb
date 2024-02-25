@@ -22,7 +22,6 @@ module Turbo::Streams::ActionHelper
   #   message = Message.find(1)
   #   turbo_stream_action_tag "remove", target: [message, :special]
   #   # => <turbo-stream action="remove" target="special_message_1"></turbo-stream>
-  #
   def turbo_stream_action_tag(action, target: nil, targets: nil, template: nil, **attributes)
     template = action.to_sym.in?(%i[ remove refresh ]) ? "" : tag.template(template.to_s.html_safe)
 
@@ -35,6 +34,10 @@ module Turbo::Streams::ActionHelper
     end
   end
 
+  # Creates a `turbo-stream` tag with an `action="refresh"` attribute. Example:
+  #
+  #   turbo_stream_refresh_tag
+  #   # => <turbo-stream action="refresh"></turbo-stream>
   def turbo_stream_refresh_tag(request_id: Turbo.current_request_id, **attributes)
     turbo_stream_action_tag(:refresh, **{ "request-id": request_id }.compact, **attributes)
   end

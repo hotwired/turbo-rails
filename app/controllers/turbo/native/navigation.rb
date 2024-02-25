@@ -15,29 +15,32 @@ module Turbo::Native::Navigation
     request.user_agent.to_s.match?(/Turbo Native/)
   end
   
-  # Tell the Turbo Native app to dismiss a modal (if presented) or pop a screen off of the navigation stack.
+  # Tell the Turbo Native app to dismiss a modal (if presented) or pop a screen off of the navigation stack. Otherwise redirect to the given URL if Turbo Native is not present.
   def recede_or_redirect_to(url, **options)
     turbo_native_action_or_redirect url, :recede, :to, options
   end
 
-  # Tell the Turbo Native app to ignore this navigation.
+  # Tell the Turbo Native app to ignore this navigation, otherwise redirect to the given URL if Turbo Native is not present.
   def resume_or_redirect_to(url, **options)
     turbo_native_action_or_redirect url, :resume, :to, options
   end
 
-  # Tell the Turbo Native app to refresh the current screen.
+  # Tell the Turbo Native app to refresh the current screen, otherwise redirect to the given URL if Turbo Native is not present.
   def refresh_or_redirect_to(url, **options)
     turbo_native_action_or_redirect url, :refresh, :to, options
   end
 
+  # Same as <tt>recede_or_redirect_to</tt> but redirects to the previous page or provided fallback location if the Turbo Native app is not present.
   def recede_or_redirect_back_or_to(url, **options)
     turbo_native_action_or_redirect url, :recede, :back, options
   end
 
+  # Same as <tt>resume_or_redirect_to</tt> but redirects to the previous page or provided fallback location if the Turbo Native app is not present.
   def resume_or_redirect_back_or_to(url, **options)
     turbo_native_action_or_redirect url, :resume, :back, options
   end
 
+  # Same as <tt>refresh_or_redirect_to</tt> but redirects to the previous page or provided fallback location if the Turbo Native app is not present.
   def refresh_or_redirect_back_or_to(url, **options)
     turbo_native_action_or_redirect url, :refresh, :back, options
   end

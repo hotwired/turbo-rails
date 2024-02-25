@@ -4,7 +4,7 @@ module Turbo
       # Assert that the Turbo Stream request's response body's HTML contains a
       # `<turbo-stream>` element.
       #
-      # === Options
+      # ==== Options
       #
       # * <tt>:status</tt> [Integer, Symbol] the HTTP response status
       # * <tt>:action</tt> [String] matches the element's <tt>[action]</tt>
@@ -47,7 +47,7 @@ module Turbo
       # Assert that the Turbo Stream request's response body's HTML does not
       # contain a `<turbo-stream>` element.
       #
-      # === Options
+      # ==== Options
       #
       # * <tt>:status</tt> [Integer, Symbol] the HTTP response status
       # * <tt>:action</tt> [String] matches the element's <tt>[action]</tt>
