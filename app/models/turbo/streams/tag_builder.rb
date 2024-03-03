@@ -228,6 +228,18 @@ class Turbo::Streams::TagBuilder
     action_all :prepend, targets, content, **rendering, &block
   end
 
+  # Creates a `turbo-stream` tag with an `[action="refresh"`] attribute and a
+  # `[request-id]` attribute that defaults to `Turbo.current_request_id`:
+  #
+  #   turbo_stream.refresh
+  #   # => <turbo-stream action="refresh" request-id="ef083d55-7516-41b1-ad28-16f553399c6a"></turbo-stream>
+  #
+  #   turbo_stream.refresh request_id: "abc123"
+  #   # => <turbo-stream action="refresh" request-id="abc123"></turbo-stream>
+  def refresh(...)
+    turbo_stream_refresh_tag(...)
+  end
+
   # Send an action of the type <tt>name</tt> to <tt>target</tt>. Options described in the concrete methods.
   def action(name, target, content = nil, allow_inferred_rendering: true, **rendering, &block)
     template = render_template(target, content, allow_inferred_rendering: allow_inferred_rendering, **rendering, &block)
