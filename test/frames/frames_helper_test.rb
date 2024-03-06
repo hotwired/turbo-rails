@@ -21,6 +21,10 @@ class Turbo::FramesHelperTest < ActionView::TestCase
     assert_dom_equal %(<turbo-frame id="message_1"></turbo-frame>), turbo_frame_tag(record)
   end
 
+  test "frame with model class argument" do
+    assert_dom_equal %(<turbo-frame id="new_message"></turbo-frame>), turbo_frame_tag(Message)
+  end
+
   test "string frame within a model frame" do
     record = Article.new(id: 1)
 

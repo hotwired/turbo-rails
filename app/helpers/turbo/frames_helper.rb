@@ -33,10 +33,13 @@ module Turbo::FramesHelper
   #   <%= turbo_frame_tag(Article.find(1)) %>
   #   # => <turbo-frame id="article_1"></turbo-frame>
   #
+  #   <%= turbo_frame_tag(Article) %>
+  #   # => <turbo-frame id="new_article"></turbo-frame>
+  #
   #   <%= turbo_frame_tag(Article.find(1), "comments") %>
   #   # => <turbo-frame id="comments_article_1"></turbo-frame>
   def turbo_frame_tag(*ids, src: nil, target: nil, **attributes, &block)
-    id = ids.first.respond_to?(:to_key) ? ActionView::RecordIdentifier.dom_id(*ids) : ids.join('_')
+    id = ids.first.respond_to?(:to_key) || ids.first.is_a?(Class) ? ActionView::RecordIdentifier.dom_id(*ids) : ids.join('_')
     src = url_for(src) if src.present?
 
     tag.turbo_frame(**attributes.merge(id: id, src: src, target: target).compact, &block)
