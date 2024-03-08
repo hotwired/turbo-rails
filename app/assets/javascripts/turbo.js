@@ -1,5 +1,5 @@
 /*!
-Turbo 8.0.3
+Turbo 8.0.4
 Copyright © 2024 37signals LLC
  */
 (function(prototype) {
@@ -72,7 +72,7 @@ class FrameElement extends HTMLElement {
   static delegateConstructor=undefined;
   loaded=Promise.resolve();
   static get observedAttributes() {
-    return [ "disabled", "complete", "loading", "src" ];
+    return [ "disabled", "loading", "src" ];
   }
   constructor() {
     super();
@@ -90,11 +90,9 @@ class FrameElement extends HTMLElement {
   attributeChangedCallback(name) {
     if (name == "loading") {
       this.delegate.loadingStyleChanged();
-    } else if (name == "complete") {
-      this.delegate.completeChanged();
     } else if (name == "src") {
       this.delegate.sourceURLChanged();
-    } else {
+    } else if (name == "disabled") {
       this.delegate.disabledChanged();
     }
   }
@@ -4561,16 +4559,10 @@ class FrameController {
   }
   sourceURLReloaded() {
     const {src: src} = this.element;
-    this.#ignoringChangesToAttribute("complete", (() => {
-      this.element.removeAttribute("complete");
-    }));
+    this.element.removeAttribute("complete");
     this.element.src = null;
     this.element.src = src;
     return this.element.loaded;
-  }
-  completeChanged() {
-    if (this.#isIgnoringChangesTo("complete")) return;
-    this.#loadSourceURL();
   }
   loadingStyleChanged() {
     if (this.loadingStyle == FrameLoadingStyle.lazy) {
@@ -4903,13 +4895,11 @@ class FrameController {
     return this.element.hasAttribute("complete");
   }
   set complete(value) {
-    this.#ignoringChangesToAttribute("complete", (() => {
-      if (value) {
-        this.element.setAttribute("complete", "");
-      } else {
-        this.element.removeAttribute("complete");
-      }
-    }));
+    if (value) {
+      this.element.setAttribute("complete", "");
+    } else {
+      this.element.removeAttribute("complete");
+    }
   }
   get isActive() {
     return this.element.isActive && this.#connected;
