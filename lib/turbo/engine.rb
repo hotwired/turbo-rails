@@ -15,8 +15,25 @@ module Turbo
       #{root}/app/jobs
     )
 
+    # If the parent application does not use Action Cable, app/channels cannot
+    # be eager loaded, because it references the ActionCable constant.
+    #
+    # When turbo-rails depends on Rails 7 or above, the entire block can be
+    # reduced to
+    #
+    #   unless defined?(ActionCable)
+    #     Rails.autoloaders.once.do_not_eager_load("#{root}/app/channels")
+    #   end
+    #
     initializer "turbo.no_action_cable", before: :set_eager_load_paths do
-      config.eager_load_paths.delete("#{root}/app/channels") unless defined?(ActionCable)
+      unless defined?(ActionCable)
+        if Rails.autoloaders.zeitwerk_enabled?
+          Rails.autoloaders.once.do_not_eager_load("#{root}/app/channels")
+        else
+          # This else branch only runs in Rails 6.x + classic mode.
+          config.eager_load_paths.delete("#{root}/app/channels")
+        end
+      end
     end
 
     # If you don't want to precompile Turbo's assets (eg. because you're using webpack),
