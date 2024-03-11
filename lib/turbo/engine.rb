@@ -15,6 +15,27 @@ module Turbo
       #{root}/app/jobs
     )
 
+    # If the parent application does not use Active Job, app/jobs cannot
+    # be eager loaded, because it references the ActiveJob constant.
+    #
+    # When turbo-rails depends on Rails 7 or above, the entire block can be
+    # reduced to
+    #
+    #   unless defined?(ActiveJob)
+    #     Rails.autoloaders.once.do_not_eager_load("#{root}/app/jobs")
+    #   end
+    #
+    initializer "turbo.no_active_job", before: :set_eager_load_paths do
+      unless defined?(ActiveJob)
+        if Rails.autoloaders.zeitwerk_enabled?
+          Rails.autoloaders.once.do_not_eager_load("#{root}/app/jobs")
+        else
+          # This else branch only runs in Rails 6.x + classic mode.
+          config.eager_load_paths.delete("#{root}/app/jobs")
+        end
+      end
+    end
+
     # If the parent application does not use Action Cable, app/channels cannot
     # be eager loaded, because it references the ActionCable constant.
     #
