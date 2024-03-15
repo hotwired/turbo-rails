@@ -104,11 +104,11 @@
 #     belongs_to :board, touch: true # +Board+ will trigger a page refresh on column changes
 #   end
 #
-# You can also specify the streamable declaratively by passing a symbol to the +broadcast_refreshes_to+ method:
+# You can also specify the streamable declaratively by passing a symbol to the +broadcasts_refreshes_to+ method:
 #
 #   class Column < ApplicationRecord
 #     belongs_to :board
-#     broadcast_refreshes_to :board
+#     broadcasts_refreshes_to :board
 #   end
 #
 # For more granular control, you can also broadcast a "page refresh" to a stream name derived 
