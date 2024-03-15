@@ -228,6 +228,32 @@ class Turbo::Streams::TagBuilder
     action_all :prepend, targets, content, **rendering, &block
   end
 
+  # Morph the <tt>target</tt> in the dom with either the <tt>content</tt> passed in or a rendering result determined
+  # by the <tt>rendering</tt> keyword arguments, the content in the block, or the rendering of the target as a record. Examples:
+  #
+  #   <%= turbo_stream.morph "clearance_5", "<div id='clearance_5'>Morph the dom target identified by clearance_5</div>" %>
+  #   <%= turbo_stream.morph clearance %>
+  #   <%= turbo_stream.morph clearance, partial: "clearances/clearance", locals: { title: "Hello" } %>
+  #   <%= turbo_stream.morph "clearance_5" do %>
+  #     <div id='clearance_5'>Morph the dom target identified by clearance_5</div>
+  #   <% end %>
+  def morph(target, content = nil, **rendering, &block)
+    action :morph, target, content, **rendering, &block
+  end
+
+  # Morph the <tt>targets</tt> in the dom with either the <tt>content</tt> passed in or a rendering result determined
+  # by the <tt>rendering</tt> keyword arguments, the content in the block, or the rendering of the targets as a record. Examples:
+  #
+  #   <%= turbo_stream.morph_all ".clearance_item", "<div class='clearance_item'>Morph the dom target identified by the class clearance_item</div>" %>
+  #   <%= turbo_stream.morph_all clearance %>
+  #   <%= turbo_stream.morph_all clearance, partial: "clearances/clearance", locals: { title: "Hello" } %>
+  #   <%= turbo_stream.morph_all ".clearance_item" do %>
+  #     <div class='clearance_item'>Morph the dom target identified by the class clearance_item</div>
+  #   <% end %>
+  def morph_all(targets, content = nil, **rendering, &block)
+    action_all :morph, targets, content, **rendering, &block
+  end
+
   # Send an action of the type <tt>name</tt> to <tt>target</tt>. Options described in the concrete methods.
   def action(name, target, content = nil, allow_inferred_rendering: true, **rendering, &block)
     template = render_template(target, content, allow_inferred_rendering: allow_inferred_rendering, **rendering, &block)

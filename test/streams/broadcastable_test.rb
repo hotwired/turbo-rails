@@ -224,6 +224,30 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
       @message.broadcast_render_to @profile
     end
   end
+
+  test "broadcasting morph to stream now" do
+    assert_broadcast_on "stream", turbo_stream_action_tag("morph", target: "message_1", template: render(@message)) do
+      @message.broadcast_morph_to "stream", target: "message_1"
+    end
+  end
+
+  test "broadcasting morph to stream now targeting children-only children-only" do
+    assert_broadcast_on "stream", turbo_stream_action_tag("morph", target: "message_1", 'children-only': true, template: render(@message)) do
+      @message.broadcast_morph_to "stream", target: "message_1", attributes: { 'children-only': true }
+    end
+  end
+  
+  test "broadcasting morph now" do
+    assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("morph", target: "message_1", template: render(@message)) do
+      @message.broadcast_morph target: "message_1"
+    end
+  end
+
+  test "broadcasting morph now targeting children-only" do
+    assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("morph", target: "message_1", 'children-only': true, template: render(@message)) do
+      @message.broadcast_morph target: "message_1", attributes: { 'children-only': true }
+    end
+  end
 end
 
 class Turbo::BroadcastableArticleTest < ActionCable::Channel::TestCase
@@ -518,6 +542,30 @@ class Turbo::SuppressingBroadcastsTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "suppressing broadcasting morph to stream now" do
+    assert_no_broadcasts_when_suppressing do
+      @message.broadcast_morph_to "stream"
+    end
+  end
+  
+  test "suppressing broadcasting morph to stream later" do
+    assert_no_broadcasts_later_when_supressing do
+      @message.broadcast_morph_later_to "stream"
+    end
+  end
+  
+  test "suppressing broadcasting morph now" do
+    assert_no_broadcasts_when_suppressing do
+      @message.broadcast_morph
+    end
+  end
+  
+  test "suppressing broadcasting morph later" do
+    assert_no_broadcasts_later_when_supressing do
+      @message.broadcast_morph_later
+    end
+  end
+
   private
     def assert_no_broadcasts_when_suppressing
       assert_no_broadcasts @message.to_gid_param do
@@ -535,5 +583,3 @@ class Turbo::SuppressingBroadcastsTest < ActionCable::Channel::TestCase
       end
     end
 end
-
-

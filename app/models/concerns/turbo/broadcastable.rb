@@ -491,6 +491,29 @@ module Turbo::Broadcastable
     Turbo::StreamsChannel.broadcast_render_later_to(*streamables, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
   end
 
+  # Broadcast a morph action to the stream name identified by the passed <tt>streamables</tt>. Example:
+  # sends <turbo-stream action="morph" target="clearance_5"><template><div id="clearance_5">My Clearance</div></template></turbo-stream>
+  # to the stream named "identity:2:clearances"
+  # clearance.broadcast_morph_to examiner.identity, :clearances
+  def broadcast_morph_to(*streamables, **rendering)
+    Turbo::StreamsChannel.broadcast_morph_to(*streamables, target: self, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
+  end
+
+  # Same as <tt>broadcast_morph_to</tt> but the designated stream is automatically set to the current model.
+  def broadcast_morph(**rendering)
+    broadcast_morph_to(self, target: self, **rendering)
+  end
+
+  # Same as <tt>broadcast_morph_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
+  def broadcast_morph_later_to(*streamables, **rendering)
+    Turbo::StreamsChannel.broadcast_morph_later_to(*streamables, target: self, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
+  end
+
+  # Same as <tt>broadcast_morph_later_to</tt> but the designated stream is automatically set to the current model.
+  def broadcast_morph_later(target: broadcast_target_default, **rendering)
+    broadcast_morph_later_to self, **rendering
+  end
+
   private
     def broadcast_target_default
       self.class.broadcast_target_default
