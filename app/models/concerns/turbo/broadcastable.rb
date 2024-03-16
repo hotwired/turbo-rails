@@ -246,8 +246,8 @@ module Turbo::Broadcastable
   end
 
   # Same as <tt>#broadcast_remove_to</tt>, but the designated stream is automatically set to the current model.
-  def broadcast_remove
-    broadcast_remove_to self
+  def broadcast_remove(target: self)
+    broadcast_remove_to self, target: target
   end
 
   # Replace this broadcastable model in the dom for subscribers of the stream name identified by the passed
@@ -260,8 +260,8 @@ module Turbo::Broadcastable
   #   # Sends <turbo-stream action="replace" target="clearance_5"><template><div id="clearance_5">Other partial</div></template></turbo-stream>
   #   # to the stream named "identity:2:clearances"
   #   clearance.broadcast_replace_to examiner.identity, :clearances, partial: "clearances/other_partial", locals: { a: 1 }
-  def broadcast_replace_to(*streamables, **rendering)
-    Turbo::StreamsChannel.broadcast_replace_to(*streamables, target: self, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
+  def broadcast_replace_to(*streamables, target: self, **rendering)
+    Turbo::StreamsChannel.broadcast_replace_to(*streamables, target: target, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
   end
 
   # Same as <tt>#broadcast_replace_to</tt>, but the designated stream is automatically set to the current model.
@@ -279,8 +279,8 @@ module Turbo::Broadcastable
   #   # Sends <turbo-stream action="update" target="clearance_5"><template><div id="clearance_5">Other partial</div></template></turbo-stream>
   #   # to the stream named "identity:2:clearances"
   #   clearance.broadcast_update_to examiner.identity, :clearances, partial: "clearances/other_partial", locals: { a: 1 }
-  def broadcast_update_to(*streamables, **rendering)
-    Turbo::StreamsChannel.broadcast_update_to(*streamables, target: self, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
+  def broadcast_update_to(*streamables, target: self, **rendering)
+    Turbo::StreamsChannel.broadcast_update_to(*streamables, target: target, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
   end
 
   # Same as <tt>#broadcast_update_to</tt>, but the designated stream is automatically set to the current model.
@@ -390,8 +390,8 @@ module Turbo::Broadcastable
   end
 
   # Same as <tt>broadcast_replace_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
-  def broadcast_replace_later_to(*streamables, **rendering)
-    Turbo::StreamsChannel.broadcast_replace_later_to(*streamables, target: self, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
+  def broadcast_replace_later_to(*streamables, target: self, **rendering)
+    Turbo::StreamsChannel.broadcast_replace_later_to(*streamables, target: target, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
   end
 
   # Same as <tt>#broadcast_replace_later_to</tt>, but the designated stream is automatically set to the current model.
@@ -400,8 +400,8 @@ module Turbo::Broadcastable
   end
 
   # Same as <tt>broadcast_update_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
-  def broadcast_update_later_to(*streamables, **rendering)
-    Turbo::StreamsChannel.broadcast_update_later_to(*streamables, target: self, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
+  def broadcast_update_later_to(*streamables, target: self, **rendering)
+    Turbo::StreamsChannel.broadcast_update_later_to(*streamables, target: target, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
   end
 
   # Same as <tt>#broadcast_update_later_to</tt>, but the designated stream is automatically set to the current model.
@@ -495,18 +495,18 @@ module Turbo::Broadcastable
   # sends <turbo-stream action="morph" target="clearance_5"><template><div id="clearance_5">My Clearance</div></template></turbo-stream>
   # to the stream named "identity:2:clearances"
   # clearance.broadcast_morph_to examiner.identity, :clearances
-  def broadcast_morph_to(*streamables, **rendering)
-    Turbo::StreamsChannel.broadcast_morph_to(*streamables, target: self, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
+  def broadcast_morph_to(*streamables, target: self, **rendering)
+    Turbo::StreamsChannel.broadcast_morph_to(*streamables, target: target, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
   end
 
   # Same as <tt>broadcast_morph_to</tt> but the designated stream is automatically set to the current model.
-  def broadcast_morph(**rendering)
-    broadcast_morph_to(self, target: self, **rendering)
+  def broadcast_morph(target: self, **rendering)
+    broadcast_morph_to(self, target: target, **rendering)
   end
 
   # Same as <tt>broadcast_morph_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
-  def broadcast_morph_later_to(*streamables, **rendering)
-    Turbo::StreamsChannel.broadcast_morph_later_to(*streamables, target: self, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
+  def broadcast_morph_later_to(*streamables, target: self, **rendering)
+    Turbo::StreamsChannel.broadcast_morph_later_to(*streamables, target: target, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
   end
 
   # Same as <tt>broadcast_morph_later_to</tt> but the designated stream is automatically set to the current model.
