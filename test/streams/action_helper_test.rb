@@ -19,6 +19,16 @@ class Turbo::ActionHelperTest < ActionCable::Channel::TestCase
     assert_equal stream, turbo_stream_action_tag("append", target: [message, :special])
   end
 
+  test "target uses custom to_a" do
+    klass = Class.new(Message) do
+      def to_a; raise "DO NOT CALL ME"; end
+      def self.name; "CustomToAClass"; end
+    end
+
+    stream = "<turbo-stream action=\"append\" target=\"new_custom_to_a_class\"><template></template></turbo-stream>"
+    assert_equal stream, turbo_stream_action_tag("append", target: klass.new)
+  end
+
   test "no template" do
     stream = "<turbo-stream action=\"append\" target=\"message_1\"><template></template></turbo-stream>"
 
