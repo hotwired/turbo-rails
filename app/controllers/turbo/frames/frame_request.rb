@@ -24,7 +24,7 @@ module Turbo::Frames::FrameRequest
     layout -> { "turbo_rails/frame" if turbo_frame_request? }
     etag { :frame if turbo_frame_request? }
 
-    helper_method :turbo_frame_request_id
+    helper_method :turbo_frame_request?, :turbo_frame_request_id
   end
 
   private
