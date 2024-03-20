@@ -9,27 +9,27 @@
 # helper modules like <tt>Turbo::Streams::StreamName</tt>:
 #
 #   class CustomChannel < ActionCable::Channel::Base
-#      extend Turbo::Streams::Broadcasts, Turbo::Streams::StreamName
-#      include Turbo::Streams::StreamName::ClassMethods
+#     extend Turbo::Streams::Broadcasts, Turbo::Streams::StreamName
+#     include Turbo::Streams::StreamName::ClassMethods
 #
-#      def subscribed
-#        if (stream_name = verified_stream_name_from_params).present? &&
+#     def subscribed
+#       if (stream_name = verified_stream_name_from_params).present? &&
 #           subscription_allowed?
-#          stream_from stream_name
-#        else
-#          reject
-#        end
-#      end
+#         stream_from stream_name
+#       else
+#         reject
+#       end
+#     end
 #
-#      def subscription_allowed?
-#         # ...
-#      end
+#     def subscription_allowed?
+#       # ...
+#     end
 #   end
 #
-#  This channel can be connected to a web page using <tt>:channel</tt> option in
-#  <tt>turbo_stream_from</tt> helper:
+# This channel can be connected to a web page using <tt>:channel</tt> option in
+# <tt>turbo_stream_from</tt> helper:
 #
-#    <%= turbo_stream_from 'room', channel: CustomChannel %>
+#   <%= turbo_stream_from 'room', channel: CustomChannel %>
 #
 class Turbo::StreamsChannel < ActionCable::Channel::Base
   extend Turbo::Streams::Broadcasts, Turbo::Streams::StreamName
