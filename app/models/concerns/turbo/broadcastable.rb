@@ -79,7 +79,7 @@
 #
 # == Page refreshes
 #
-# You can broadcast "page refresh" stream actions. This will make subscribed clients reload the 
+# You can broadcast "page refresh" stream actions. This will make subscribed clients reload the
 # page. For pages that configure morphing and scroll preservation, this will translate into smooth
 # updates when it only updates the content that changed.
 
@@ -87,11 +87,11 @@
 # offers good fidelity with a much simpler programming model. As a tradeoff, the fidelity you can reach
 # is often not as high as with targeted stream actions since it renders the entire page again.
 #
-# The +broadcast_refreshes+ class method configures the model to broadcast a "page refresh" on creates, 
+# The +broadcasts_refreshes+ class method configures the model to broadcast a "page refresh" on creates,
 # updates, and destroys to a stream name derived at runtime by the <tt>stream</tt> symbol invocation. Examples
 #
 #   class Board < ApplicationRecord
-#     broadcast_refreshes
+#     broadcasts_refreshes
 #   end
 #
 # In this example, when a board is created, updated, or destroyed, a Turbo Stream for a
@@ -104,16 +104,16 @@
 #     belongs_to :board, touch: true # +Board+ will trigger a page refresh on column changes
 #   end
 #
-# You can also specify the streamable declaratively by passing a symbol to the +broadcast_refreshes_to+ method:
+# You can also specify the streamable declaratively by passing a symbol to the +broadcasts_refreshes_to+ method:
 #
 #   class Column < ApplicationRecord
 #     belongs_to :board
-#     broadcast_refreshes_to :board
+#     broadcasts_refreshes_to :board
 #   end
 #
-# For more granular control, you can also broadcast a "page refresh" to a stream name derived 
+# For more granular control, you can also broadcast a "page refresh" to a stream name derived
 # from the passed <tt>streamables</tt> by using the instance-level methods <tt>broadcast_refresh_to</tt> or
-# <tt>broadcast_refresh_later_to</tt>. These methods are particularly useful when you want to trigger 
+# <tt>broadcast_refresh_later_to</tt>. These methods are particularly useful when you want to trigger
 # a page refresh for more specific scenarios. Example:
 #
 #   class Clearance < ApplicationRecord
@@ -128,11 +128,11 @@
 #       end
 #   end
 #
-# In this example, a "page refresh" is broadcast to the stream named "identity:<identity-id>:clearances" 
+# In this example, a "page refresh" is broadcast to the stream named "identity:<identity-id>:clearances"
 # after a new clearance is created. All clients subscribed to this stream will refresh the page to reflect
 # the changes.
 #
-# When broadcasting page refreshes, Turbo will automatically debounce multiple calls in a row to only broadcast the last one. 
+# When broadcasting page refreshes, Turbo will automatically debounce multiple calls in a row to only broadcast the last one.
 # This is meant for scenarios where you process records in mass. Because of the nature of such signals, it makes no sense to
 # broadcast them repeatedly and individually.
 # == Suppressing broadcasts
