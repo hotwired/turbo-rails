@@ -87,11 +87,11 @@
 # offers good fidelity with a much simpler programming model. As a tradeoff, the fidelity you can reach
 # is often not as high as with targeted stream actions since it renders the entire page again.
 #
-# The +broadcast_refreshes+ class method configures the model to broadcast a "page refresh" on creates, 
+# The +broadcasts_refreshes+ class method configures the model to broadcast a "page refresh" on creates,
 # updates, and destroys to a stream name derived at runtime by the <tt>stream</tt> symbol invocation. Examples
 #
 #   class Board < ApplicationRecord
-#     broadcast_refreshes
+#     broadcasts_refreshes
 #   end
 #
 # In this example, when a board is created, updated, or destroyed, a Turbo Stream for a
