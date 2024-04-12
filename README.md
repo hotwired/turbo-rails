@@ -56,7 +56,7 @@ When the user clicks on the `Edit this todo` link, as a direct response to this 
 
 ### A note on custom layouts
 
-In order to render turbo frame requests without the application layout, Turbo registers a custom [layout method](https://api.rubyonrails.org/classes/ActionView/Layouts/ClassMethods.html#method-i-layout). 
+In order to render turbo frame requests without the application layout, Turbo registers a custom [layout method](https://api.rubyonrails.org/classes/ActionView/Layouts/ClassMethods.html#method-i-layout).
 If your application uses custom layout resolution, you have to make sure to return `"turbo_rails/frame"` (or `false` for TurboRails < 1.4.0) for turbo frame requests:
 
 ```ruby
@@ -64,7 +64,7 @@ layout :custom_layout
 
 def custom_layout
   return "turbo_rails/frame" if turbo_frame_request?
-  
+
   # ... your custom layout logic
 ```
 
@@ -81,7 +81,7 @@ layout :custom_layout
 
 def custom_layout
   return "turbo_rails/frame" if turbo_frame_request?
-  
+
   "some_static_layout"
 ```
 
@@ -151,6 +151,26 @@ The [`Turbo::TestAssertions`](./lib/turbo/test_assertions.rb) concern provides T
 The [`Turbo::TestAssertions::IntegrationTestAssertions`](./lib/turbo/test_assertions/integration_test_assertions.rb) are built on top of `Turbo::TestAssertions`, and add support for passing a `status:` keyword. They are automatically included in [`ActionDispatch::IntegrationTest`](https://edgeguides.rubyonrails.org/testing.html#integration-testing).
 
 The [`Turbo::Broadcastable::TestHelper`](./lib/turbo/broadcastable/test_helper.rb) concern provides Action Cable-aware test helpers that assert that `<turbo-stream>` elements were or were not broadcast over Action Cable. `Turbo::Broadcastable::TestHelper` is automatically included in [`ActiveSupport::TestCase`](https://edgeapi.rubyonrails.org/classes/ActiveSupport/TestCase.html).
+
+### Rendering Outside of a Request
+
+Turbo utilizes [ActionController::Renderer][] to render templates and partials
+outside the context of the request-response cycle. If you need to render a
+Turbo-aware template, partial, or component, use [ActionController::Renderer][]:
+
+```ruby
+ApplicationController.renderer.render template: "posts/show", assigns: { post: Post.first } # => "<html>…"
+PostsController.renderer.render :show, assigns: { post: Post.first } # => "<html>…"
+```
+
+As a shortcut, you can also call render directly on the controller class itself:
+
+```ruby
+ApplicationController.render template: "posts/show", assigns: { post: Post.first } # => "<html>…"
+PostsController.render :show, assigns: { post: Post.first } # => "<html>…"
+```
+
+[ActionController::Renderer]: https://api.rubyonrails.org/classes/ActionController/Renderer.html
 
 ## Development
 
