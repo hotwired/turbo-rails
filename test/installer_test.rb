@@ -11,7 +11,9 @@ class InstallerTest < ActiveSupport::TestCase
       end
       run_command("bin/rails", "turbo:install")
 
-      assert_match %(import "@hotwired/turbo-rails"\n), File.read("app/javascript/application.js")
+      if Gem::Version.new(Rails.version) >= Gem::Version.new("7.0")
+        assert_match %(import "@hotwired/turbo-rails"\n), File.read("app/javascript/application.js")
+      end
 
       if Rails::VERSION::MAJOR >= 7
         assert_match %(pin "@hotwired/turbo-rails", to: "turbo.min.js"), File.read("config/importmap.rb")
@@ -39,6 +41,7 @@ class InstallerTest < ActiveSupport::TestCase
       run_command("bin/rails", "turbo:install")
 
       assert_match "// pre-existing", File.read("app/javascript/application.js")
+      assert_match %(import "@hotwired/turbo-rails"\n), File.read("app/javascript/application.js")
     end
   end
 
