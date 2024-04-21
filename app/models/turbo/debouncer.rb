@@ -1,4 +1,5 @@
 class Turbo::Debouncer
+  attr_accessor :cleanup
   attr_reader :delay, :scheduled_task
 
   DEFAULT_DELAY = 0.5
@@ -8,9 +9,11 @@ class Turbo::Debouncer
     @scheduled_task = nil
   end
 
-  def debounce(&block)
+  def throttle(&block)
     scheduled_task&.cancel unless scheduled_task&.complete?
-    @scheduled_task = Concurrent::ScheduledTask.execute(delay, &block)
+    @scheduled_task = Concurrent::ScheduledTask.execute(delay) do
+      block.call.tap { cleanup&.call }
+    end
   end
 
   def wait

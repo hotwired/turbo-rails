@@ -108,14 +108,14 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
     end
   end
 
-  test "broadcasting refresh later is debounced" do
+  test "broadcasting refresh later is throttled" do
     assert_broadcast_on @message.to_gid_param, turbo_stream_refresh_tag do
       assert_broadcasts(@message.to_gid_param, 1) do
         perform_enqueued_jobs do
           assert_no_changes -> { Thread.current.keys.size } do
-            # Not leaking thread variables once the debounced code executes
+            # Not leaking thread variables once the throttled code executes
             3.times { @message.broadcast_refresh_later }
-            Turbo::StreamsChannel.refresh_debouncer_for(@message).wait
+            Turbo::StreamsChannel.refresh_throttler_for(@message).wait
           end
         end
       end
@@ -326,7 +326,7 @@ class Turbo::BroadcastableBoardTest < ActionCable::Channel::TestCase
     assert_broadcast_on "boards", turbo_stream_action_tag("refresh") do
       perform_enqueued_jobs do
         Board.create!(name: "Board")
-        Turbo::StreamsChannel.refresh_debouncer_for(["boards"]).wait
+        Turbo::StreamsChannel.refresh_throttler_for(["boards"]).wait
       end
     end
   end
@@ -339,7 +339,7 @@ class Turbo::BroadcastableBoardTest < ActionCable::Channel::TestCase
     assert_broadcast_on board.to_gid_param, turbo_stream_action_tag("refresh") do
       perform_enqueued_jobs do
         board.update!(name: "Ho")
-        Turbo::StreamsChannel.refresh_debouncer_for(board).wait
+        Turbo::StreamsChannel.refresh_throttler_for(board).wait
       end
     end
   end

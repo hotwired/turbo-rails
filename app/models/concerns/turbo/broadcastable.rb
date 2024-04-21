@@ -206,15 +206,15 @@ module Turbo::Broadcastable
     #     belongs_to :board
     #     broadcasts_refreshes_to ->(message) { [ message.board, :messages ] }
     #   end
-    def broadcasts_refreshes_to(stream)
-      after_commit -> { broadcast_refresh_later_to(stream.try(:call, self) || send(stream)) }
+    def broadcasts_refreshes_to(stream, **opts)
+      after_commit -> { broadcast_refresh_later_to(stream.try(:call, self) || send(stream), **opts) }
     end
 
     # Same as <tt>#broadcasts_refreshes_to</tt>, but the designated stream for page refreshes is automatically set to
     # the current model, for creates - to the model plural name, which can be overriden by passing <tt>stream</tt>.
-    def broadcasts_refreshes(stream = model_name.plural)
-      after_create_commit  -> { broadcast_refresh_later_to(stream) }
-      after_update_commit  -> { broadcast_refresh_later }
+    def broadcasts_refreshes(stream = model_name.plural, **opts)
+      after_create_commit  -> { broadcast_refresh_later_to(stream, **opts) }
+      after_update_commit  -> { broadcast_refresh_later(**opts) }
       after_destroy_commit -> { broadcast_refresh }
     end
 
@@ -430,13 +430,13 @@ module Turbo::Broadcastable
   end
 
   #  Same as <tt>broadcast_refresh_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
-  def broadcast_refresh_later_to(*streamables)
-    Turbo::StreamsChannel.broadcast_refresh_later_to(*streamables, request_id: Turbo.current_request_id) unless suppressed_turbo_broadcasts?
+  def broadcast_refresh_later_to(*streamables, **opts)
+    Turbo::StreamsChannel.broadcast_refresh_later_to(*streamables, request_id: Turbo.current_request_id, **opts) unless suppressed_turbo_broadcasts?
   end
 
   #  Same as <tt>#broadcast_refresh_later_to</tt>, but the designated stream is automatically set to the current model.
-  def broadcast_refresh_later
-    broadcast_refresh_later_to self
+  def broadcast_refresh_later(**opts)
+    broadcast_refresh_later_to(self, **opts)
   end
 
   # Same as <tt>broadcast_action_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
