@@ -1,23 +1,27 @@
 class Turbo::RateLimiter
   attr_accessor :cleanup
-  attr_reader :count, :interval, :scheduled_task
+  attr_reader :count, :max, :interval, :scheduled_task
 
-  DEFAUL_COUNT = 1
+  DEFAUL_MAX = 1
   DEFAULT_INTERVAL = 2
 
-  def initialize(count: DEFAUL_COUNT, interval: DEFAULT_INTERVAL)
+  def initialize(max: DEFAUL_MAX, interval: DEFAULT_INTERVAL)
     @interval = interval
-    @count = count
+    @max = max
+    @count = 0
   end
 
   def throttle(&block)
+    return if count >= max
+
+    @count += 1
+    block.call
+
     return if @scheduled_task && !@scheduled_task.complete?
 
     @scheduled_task = Concurrent::ScheduledTask.execute(delay) do
       cleanup&.call
     end
-
-    block.call
   end
 
   def wait
