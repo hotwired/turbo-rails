@@ -39,8 +39,6 @@ class Turbo::ThreadThrottler
 
 
     def extract_throttler_class(throttler)
-      throttler = throttler.call if throttler.respond_to?(:call)
-
       case throttler
       when Symbol
         "Turbo::#{throttler.to_s.camelize}".constantize
