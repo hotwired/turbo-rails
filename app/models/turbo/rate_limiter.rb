@@ -3,7 +3,7 @@ class Turbo::RateLimiter
   attr_reader :count, :interval, :scheduled_task
 
   DEFAUL_COUNT = 1
-  DEFAULT_INTERVAL = 0.5
+  DEFAULT_INTERVAL = 2
 
   def initialize(count: DEFAUL_COUNT, interval: DEFAULT_INTERVAL)
     @interval = interval
