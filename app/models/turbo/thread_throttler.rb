@@ -26,13 +26,39 @@ class Turbo::ThreadThrottler
     attr_reader :key, :throttler, :thread
 
     def build_throttler(throttler)
+      klass, args = extract_throttler_class_and_arguments(throttler)
+      klass.new(**args)
+    end
+
+    def extract_throttler_class_and_arguments(throttler)
+      [
+        extract_throttler_class(throttler), 
+        extract_throttler_arguments(throttler)
+      ]
+    end
+
+
+    def extract_throttler_class(throttler)
+      throttler = throttler.call if throttler.respond_to?(:call)
+
       case throttler
-      when Symbol, String
-        "Turbo::#{throttler.to_s.camelize}".constantize.new
+      when Symbol
+        "Turbo::#{throttler.to_s.camelize}".constantize
+      when String
+        throttler.constantize
       when Hash
-        "Turbo::#{throttler.fetch(:type).to_s.camelize}".constantize.new(**throttler.except(:type))
+        extract_throttler_class(throttler.fetch(:type))
       else
         throttler
+      end
+    end
+
+    def extract_throttler_arguments(throttler)
+      case throttler
+      when Hash
+        throttler.except(:type)
+      else
+        {}
       end
     end
 end
