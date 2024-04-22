@@ -132,9 +132,41 @@
 # after a new clearance is created. All clients subscribed to this stream will refresh the page to reflect
 # the changes.
 #
-# When broadcasting page refreshes, Turbo will automatically debounce multiple calls in a row to only broadcast the last one. 
+# When broadcasting page refreshes, Turbo will automatically throttle multiple calls in a row. 
 # This is meant for scenarios where you process records in mass. Because of the nature of such signals, it makes no sense to
 # broadcast them repeatedly and individually.
+#
+# By default, page refreshes are throttled with a trailing-edge debouncer with a delay of 0.5 sec. This means that when 
+# multiple calls are made only the last one will be executed after 0.5 seconds have passed.
+#
+# You can change this behavior the +throttle_with:+ option.
+#
+#   class Import < ApplicationRecord
+#     # This changes the delay on the debouncer from 0.5 to 0.1 seconds
+#     broadcast_refreshes throttle_with: { type: :debouncer, delay 0.1 }
+#   end
+#
+# Alternatively, you can throttle with a rate limmiter which will only allow a maximum number of calls in a given interval.
+#
+#   class Import < ApplicationRecord
+#     # This will broadcast at most 2 refreshes every 5 seconds
+#     broadcast_refreshes throttle_with: { type: :rate_limiter, max: 2, interval: 5 }
+#   end
+#
+# If `throttle_with` isn't explicitly set, Turbo will use the default, or whatever is set by `Turbo.with_throttler`.
+#
+#   class Import < ApplicationRecord
+#     broadcast_refreshes
+#   end
+#
+#   class ImportProcessorJob < ApplicationJob
+#     def perform(import)
+#       Turbo.with_throttler(type: :rate_limiter, max: 2, interval: 5) do
+#         import.process
+#       end
+#     end
+#   end
+#
 # == Suppressing broadcasts
 #
 # Sometimes, you need to disable broadcasts in certain scenarios. You can use <tt>.suppressing_turbo_broadcasts</tt> to create
