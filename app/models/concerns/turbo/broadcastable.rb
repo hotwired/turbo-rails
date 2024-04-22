@@ -139,7 +139,7 @@
 # By default, page refreshes are throttled with a trailing-edge debouncer with a delay of 0.5 sec. This means that when 
 # multiple calls are made only the last one will be executed after 0.5 seconds have passed.
 #
-# You can change this behavior the +throttle_with:+ option.
+# You can change this behavior with the +throttle_with:+ option.
 #
 #   class Import < ApplicationRecord
 #     # This changes the delay on the debouncer from 0.5 to 0.1 seconds
