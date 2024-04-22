@@ -3,8 +3,8 @@
 class Turbo::ThreadThrottler
   delegate :wait, to: :throttler
 
-  def self.for(key, throttler: nil)
-    Thread.current[key] ||= new(key, Thread.current, throttler || :debouncer)
+  def self.for(key, throttler:)
+    Thread.current[key] ||= new(key, Thread.current, throttler)
   end
 
   private_class_method :new

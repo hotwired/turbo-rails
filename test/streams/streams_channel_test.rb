@@ -224,13 +224,13 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
         assert_broadcast_on "stream", turbo_stream_refresh_tag("request-id": "123") do
           assert_broadcast_on "stream", turbo_stream_refresh_tag("request-id": "456") do
             Turbo.current_request_id = "123"
-            3.times { Turbo::StreamsChannel.broadcast_refresh_later_to "stream", throttler: :rate_limiter }
+            3.times { Turbo::StreamsChannel.broadcast_refresh_later_to "stream", throttle_with: :rate_limiter }
 
             Turbo.current_request_id = "456"
-            3.times { Turbo::StreamsChannel.broadcast_refresh_later_to "stream", throttler: :rate_limiter }
+            3.times { Turbo::StreamsChannel.broadcast_refresh_later_to "stream", throttle_with: :rate_limiter }
 
-            Turbo::StreamsChannel.refresh_throttler_for("stream", request_id: "123", throttler: :rate_limiter).wait
-            Turbo::StreamsChannel.refresh_throttler_for("stream", request_id: "456", throttler: :rate_limiter).wait
+            Turbo::StreamsChannel.refresh_throttler_for("stream", request_id: "123", throttle_with: :rate_limiter).wait
+            Turbo::StreamsChannel.refresh_throttler_for("stream", request_id: "456", throttle_with: :rate_limiter).wait
           end
         end
       end
