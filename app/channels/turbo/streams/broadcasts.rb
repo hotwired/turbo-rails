@@ -68,7 +68,7 @@ module Turbo::Streams::Broadcasts
     broadcast_action_later_to(*streamables, action: :prepend, **opts)
   end
 
-  def broadcast_refresh_later_to(*streamables, request_id: Turbo.current_request_id, throttle_with: :debouncer, **opts)
+  def broadcast_refresh_later_to(*streamables, request_id: Turbo.current_request_id, throttle_with: Turbo.current_throttler, **opts)
     refresh_throttler_for(*streamables, request_id: request_id, throttle_with: throttle_with).throttle do
       Turbo::Streams::BroadcastStreamJob.perform_later stream_name_from(streamables), content: turbo_stream_refresh_tag(request_id: request_id, **opts)
     end
