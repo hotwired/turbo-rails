@@ -31,10 +31,12 @@ class Turbo::RateLimiterTest < ActiveSupport::TestCase
   end
 
   test "calls the cleanup block after it executes" do
-    debouncer = Turbo::RateLimiter.new(max: 2, interval: 0.2)
     calls = []
-
-    debouncer.cleanup = -> { calls << :cleanup }
+    debouncer = Turbo::RateLimiter.new(
+      max: 2, 
+      interval: 0.2,
+      cleanup: -> { calls << :cleanup }
+    )
 
     debouncer.throttle { calls << :first}
     debouncer.throttle { calls << :second}

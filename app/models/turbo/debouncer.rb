@@ -4,9 +4,10 @@ class Turbo::Debouncer
 
   DEFAULT_DELAY = 0.5
 
-  def initialize(delay: DEFAULT_DELAY)
+  def initialize(delay: DEFAULT_DELAY, cleanup: nil)
     @delay = delay
     @scheduled_task = nil
+    @cleanup = cleanup
   end
 
   def throttle(&block)

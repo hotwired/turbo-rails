@@ -24,10 +24,8 @@ class Turbo::DebouncerTest < ActiveSupport::TestCase
   end
 
   test "calls the cleanup block after it executes" do
-    debouncer = Turbo::Debouncer.new(delay: 0.2)
     calls = []
-
-    debouncer.cleanup = -> { calls << :cleanup }
+    debouncer = Turbo::Debouncer.new(delay: 0.2, cleanup: -> { calls << :cleanup })
 
     debouncer.throttle { calls << :first}
 
