@@ -174,7 +174,7 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
     assert_broadcast_on "stream", turbo_stream_refresh_tag do
       perform_enqueued_jobs do
         Turbo::StreamsChannel.broadcast_refresh_later_to "stream"
-        Turbo::StreamsChannel.refresh_debouncer_for("stream").wait
+        Turbo::StreamsChannel.refresh_throttler_for("stream").wait
       end
     end
 
@@ -182,24 +182,24 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
     assert_broadcast_on "stream", turbo_stream_refresh_tag(request_id: "123") do
       perform_enqueued_jobs do
         Turbo::StreamsChannel.broadcast_refresh_later_to "stream"
-        Turbo::StreamsChannel.refresh_debouncer_for("stream", request_id: "123").wait
+        Turbo::StreamsChannel.refresh_throttler_for("stream", request_id: "123").wait
       end
     end
   end
 
-  test "broadcasting refresh later is debounced" do
+  test "broadcasting refresh later is throttled" do
     assert_broadcast_on "stream", turbo_stream_refresh_tag do
       assert_broadcasts("stream", 1) do
         perform_enqueued_jobs do
           Turbo::StreamsChannel.broadcast_refresh_later_to "stream"
 
-          Turbo::StreamsChannel.refresh_debouncer_for("stream").wait
+          Turbo::StreamsChannel.refresh_throttler_for("stream").wait
         end
       end
     end
   end
 
-  test "broadcasting refresh later is debounced considering the current request id" do
+  test "broadcasting refresh later is throttled considering the current request id" do
     assert_broadcasts("stream", 2) do
       perform_enqueued_jobs do
         assert_broadcast_on "stream", turbo_stream_refresh_tag("request-id": "123") do
@@ -210,8 +210,27 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
             Turbo.current_request_id = "456"
             3.times { Turbo::StreamsChannel.broadcast_refresh_later_to "stream" }
 
-            Turbo::StreamsChannel.refresh_debouncer_for("stream", request_id: "123").wait
-            Turbo::StreamsChannel.refresh_debouncer_for("stream", request_id: "456").wait
+            Turbo::StreamsChannel.refresh_throttler_for("stream", request_id: "123").wait
+            Turbo::StreamsChannel.refresh_throttler_for("stream", request_id: "456").wait
+          end
+        end
+      end
+    end
+  end
+
+  test "broadcasting refresh later is throttled considering the current request id when using the rate limit throttler" do
+    assert_broadcasts("stream", 2) do
+      perform_enqueued_jobs do
+        assert_broadcast_on "stream", turbo_stream_refresh_tag("request-id": "123") do
+          assert_broadcast_on "stream", turbo_stream_refresh_tag("request-id": "456") do
+            Turbo.current_request_id = "123"
+            3.times { Turbo::StreamsChannel.broadcast_refresh_later_to "stream", throttle_with: :rate_limiter }
+
+            Turbo.current_request_id = "456"
+            3.times { Turbo::StreamsChannel.broadcast_refresh_later_to "stream", throttle_with: :rate_limiter }
+
+            Turbo::StreamsChannel.refresh_throttler_for("stream", request_id: "123", throttle_with: :rate_limiter).wait
+            Turbo::StreamsChannel.refresh_throttler_for("stream", request_id: "456", throttle_with: :rate_limiter).wait
           end
         end
       end

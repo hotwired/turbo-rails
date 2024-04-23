@@ -7,6 +7,7 @@ module Turbo
   mattr_accessor :draw_routes, default: true
 
   thread_mattr_accessor :current_request_id
+  thread_mattr_accessor :current_throttler, default: :debouncer
 
   class << self
     attr_writer :signed_stream_verifier_key
@@ -24,6 +25,13 @@ module Turbo
       yield
     ensure
       self.current_request_id = old_request_id
+    end
+
+    def with_throttler(throttler)
+      old_throttler, self.current_throttler = self.current_throttler, throttler
+      yield
+    ensure
+      self.current_throttler = old_throttler
     end
   end
 end

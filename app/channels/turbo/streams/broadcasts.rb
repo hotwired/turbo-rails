@@ -68,8 +68,8 @@ module Turbo::Streams::Broadcasts
     broadcast_action_later_to(*streamables, action: :prepend, **opts)
   end
 
-  def broadcast_refresh_later_to(*streamables, request_id: Turbo.current_request_id, **opts)
-    refresh_debouncer_for(*streamables, request_id: request_id).debounce do
+  def broadcast_refresh_later_to(*streamables, request_id: Turbo.current_request_id, throttle_with: Turbo.current_throttler, **opts)
+    refresh_throttler_for(*streamables, request_id: request_id, throttle_with: throttle_with).throttle do
       Turbo::Streams::BroadcastStreamJob.perform_later stream_name_from(streamables), content: turbo_stream_refresh_tag(request_id: request_id, **opts)
     end
   end
@@ -91,8 +91,11 @@ module Turbo::Streams::Broadcasts
     ActionCable.server.broadcast stream_name_from(streamables), content
   end
 
-  def refresh_debouncer_for(*streamables, request_id: nil) # :nodoc:
-    Turbo::ThreadDebouncer.for("turbo-refresh-debouncer-#{stream_name_from(streamables.including(request_id))}")
+  def refresh_throttler_for(*streamables, throttle_with: nil, request_id: nil) # :nodoc:
+    Turbo::ThreadThrottler.for(
+      "turbo-refresh-throttler-#{stream_name_from(streamables.including(request_id))}", 
+      throttler: throttle_with
+    )
   end
 
   def broadcast_morph_to(*streamables, **opts)

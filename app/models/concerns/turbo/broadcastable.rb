@@ -132,9 +132,41 @@
 # after a new clearance is created. All clients subscribed to this stream will refresh the page to reflect
 # the changes.
 #
-# When broadcasting page refreshes, Turbo will automatically debounce multiple calls in a row to only broadcast the last one. 
+# When broadcasting page refreshes, Turbo will automatically throttle multiple calls in a row. 
 # This is meant for scenarios where you process records in mass. Because of the nature of such signals, it makes no sense to
 # broadcast them repeatedly and individually.
+#
+# By default, page refreshes are throttled with a trailing-edge debouncer with a delay of 0.5 sec. This means that when 
+# multiple calls are made only the last one will be executed after 0.5 seconds have passed.
+#
+# You can change this behavior with the +throttle_with:+ option.
+#
+#   class Import < ApplicationRecord
+#     # This changes the delay on the debouncer from 0.5 to 0.1 seconds
+#     broadcast_refreshes throttle_with: { type: :debouncer, delay 0.1 }
+#   end
+#
+# Alternatively, you can throttle with a rate limmiter which will only allow a maximum number of calls in a given interval.
+#
+#   class Import < ApplicationRecord
+#     # This will broadcast at most 2 refreshes every 5 seconds
+#     broadcast_refreshes throttle_with: { type: :rate_limiter, max: 2, interval: 5 }
+#   end
+#
+# If `throttle_with` isn't explicitly set, Turbo will use the default, or whatever is set by `Turbo.with_throttler`.
+#
+#   class Import < ApplicationRecord
+#     broadcast_refreshes
+#   end
+#
+#   class ImportProcessorJob < ApplicationJob
+#     def perform(import)
+#       Turbo.with_throttler(type: :rate_limiter, max: 2, interval: 5) do
+#         import.process
+#       end
+#     end
+#   end
+#
 # == Suppressing broadcasts
 #
 # Sometimes, you need to disable broadcasts in certain scenarios. You can use <tt>.suppressing_turbo_broadcasts</tt> to create
@@ -206,15 +238,15 @@ module Turbo::Broadcastable
     #     belongs_to :board
     #     broadcasts_refreshes_to ->(message) { [ message.board, :messages ] }
     #   end
-    def broadcasts_refreshes_to(stream)
-      after_commit -> { broadcast_refresh_later_to(stream.try(:call, self) || send(stream)) }
+    def broadcasts_refreshes_to(stream, **opts)
+      after_commit -> { broadcast_refresh_later_to(stream.try(:call, self) || send(stream), **opts) }
     end
 
     # Same as <tt>#broadcasts_refreshes_to</tt>, but the designated stream for page refreshes is automatically set to
     # the current model, for creates - to the model plural name, which can be overriden by passing <tt>stream</tt>.
-    def broadcasts_refreshes(stream = model_name.plural)
-      after_create_commit  -> { broadcast_refresh_later_to(stream) }
-      after_update_commit  -> { broadcast_refresh_later }
+    def broadcasts_refreshes(stream = model_name.plural, **opts)
+      after_create_commit  -> { broadcast_refresh_later_to(stream, **opts) }
+      after_update_commit  -> { broadcast_refresh_later(**opts) }
       after_destroy_commit -> { broadcast_refresh }
     end
 
@@ -430,13 +462,13 @@ module Turbo::Broadcastable
   end
 
   #  Same as <tt>broadcast_refresh_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
-  def broadcast_refresh_later_to(*streamables)
-    Turbo::StreamsChannel.broadcast_refresh_later_to(*streamables, request_id: Turbo.current_request_id) unless suppressed_turbo_broadcasts?
+  def broadcast_refresh_later_to(*streamables, **opts)
+    Turbo::StreamsChannel.broadcast_refresh_later_to(*streamables, request_id: Turbo.current_request_id, **opts) unless suppressed_turbo_broadcasts?
   end
 
   #  Same as <tt>#broadcast_refresh_later_to</tt>, but the designated stream is automatically set to the current model.
-  def broadcast_refresh_later
-    broadcast_refresh_later_to self
+  def broadcast_refresh_later(**opts)
+    broadcast_refresh_later_to(self, **opts)
   end
 
   # Same as <tt>broadcast_action_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
