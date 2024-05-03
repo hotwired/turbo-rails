@@ -87,11 +87,11 @@
 # offers good fidelity with a much simpler programming model. As a tradeoff, the fidelity you can reach
 # is often not as high as with targeted stream actions since it renders the entire page again.
 #
-# The +broadcast_refreshes+ class method configures the model to broadcast a "page refresh" on creates, 
+# The +broadcasts_refreshes+ class method configures the model to broadcast a "page refresh" on creates, 
 # updates, and destroys to a stream name derived at runtime by the <tt>stream</tt> symbol invocation. Examples
 #
 #   class Board < ApplicationRecord
-#     broadcast_refreshes
+#     broadcasts_refreshes
 #   end
 #
 # In this example, when a board is created, updated, or destroyed, a Turbo Stream for a
@@ -104,11 +104,11 @@
 #     belongs_to :board, touch: true # +Board+ will trigger a page refresh on column changes
 #   end
 #
-# You can also specify the streamable declaratively by passing a symbol to the +broadcast_refreshes_to+ method:
+# You can also specify the streamable declaratively by passing a symbol to the +broadcasts_refreshes_to+ method:
 #
 #   class Column < ApplicationRecord
 #     belongs_to :board
-#     broadcast_refreshes_to :board
+#     broadcasts_refreshes_to :board
 #   end
 #
 # For more granular control, you can also broadcast a "page refresh" to a stream name derived 
