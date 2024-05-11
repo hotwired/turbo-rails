@@ -3,6 +3,8 @@
     <%= yield :head %>
   </head>
   <body>
-    <%= yield %>
+    <%= turbo_frame_tag turbo_frame_request_id do %>
+      <%= yield %>
+    <% end %>
   </body>
 </html>
