@@ -19,6 +19,9 @@ module Turbo::Streams::ActionHelper
   #   turbo_stream_action_tag "remove", target: message
   #   # => <turbo-stream action="remove" target="message_1"></turbo-stream>
   #
+  #   turbo_stream_action_tag "remove", target: Message
+  #   # => <turbo-stream action="remove" target="new_message"></turbo-stream>
+  #
   #   message = Message.find(1)
   #   turbo_stream_action_tag "remove", target: [message, :special]
   #   # => <turbo-stream action="remove" target="special_message_1"></turbo-stream>
@@ -44,7 +47,7 @@ module Turbo::Streams::ActionHelper
 
   private
     def convert_to_turbo_stream_dom_id(target, include_selector: false)
-      if Array(target).any? { |value| value.respond_to?(:to_key) }
+      if Array(target).any? { |value| value.respond_to?(:to_key) || value.is_a?(Class) }
         "#{"#" if include_selector}#{ActionView::RecordIdentifier.dom_id(*target)}"
       else
         target
