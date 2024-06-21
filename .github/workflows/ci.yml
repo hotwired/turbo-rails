@@ -29,6 +29,7 @@ jobs:
           rubygems: latest
           bundler-cache: true
 
+      - uses: oven-sh/setup-bun@v1
       - name: Run tests
         id: test
         run: bundle exec rake TESTOPT=-vdc
