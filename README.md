@@ -74,7 +74,7 @@ If you are using a custom, but "static" layout,
 layout "some_static_layout"
 ```
 
-you **have** to change it to a layout method in order to conditionally return `false` for turbo frame requests:
+you **have** to change it to a layout method in order to conditionally return `"turbo_rails/frame"` for turbo frame requests:
 
 ```ruby
 layout :custom_layout
