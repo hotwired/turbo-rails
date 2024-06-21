@@ -82,7 +82,7 @@
 # You can broadcast "page refresh" stream actions. This will make subscribed clients reload the
 # page. For pages that configure morphing and scroll preservation, this will translate into smooth
 # updates when it only updates the content that changed.
-
+#
 # This approach is an alternative to fine-grained stream actions targeting specific DOM elements. It
 # offers good fidelity with a much simpler programming model. As a tradeoff, the fidelity you can reach
 # is often not as high as with targeted stream actions since it renders the entire page again.
