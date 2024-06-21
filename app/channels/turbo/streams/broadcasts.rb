@@ -75,8 +75,13 @@ module Turbo::Streams::Broadcasts
   end
 
   def broadcast_action_later_to(*streamables, action:, target: nil, targets: nil, attributes: {}, **rendering)
-    Turbo::Streams::ActionBroadcastJob.perform_later \
-      stream_name_from(streamables), action: action, target: target, targets: targets, attributes: attributes, **rendering
+    streamables.flatten!
+    streamables.compact_blank!
+
+    if streamables.present?
+      Turbo::Streams::ActionBroadcastJob.perform_later \
+        stream_name_from(streamables), action: action, target: target, targets: targets, attributes: attributes, **rendering
+    end
   end
 
   def broadcast_render_to(*streamables, **rendering)
@@ -88,7 +93,12 @@ module Turbo::Streams::Broadcasts
   end
 
   def broadcast_stream_to(*streamables, content:)
-    ActionCable.server.broadcast stream_name_from(streamables), content
+    streamables.flatten!
+    streamables.compact_blank!
+
+    if streamables.present?
+      ActionCable.server.broadcast stream_name_from(streamables), content
+    end
   end
 
   def refresh_debouncer_for(*streamables, request_id: nil) # :nodoc:

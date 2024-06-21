@@ -1,10 +1,29 @@
 require "test_helper"
 require "action_cable"
+require "minitest/mock"
 
 class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
   include ActiveJob::TestHelper, Turbo::Streams::ActionHelper
 
   setup { @message = Message.new(id: 1, content: "Hello!") }
+
+  test "broadcasting ignores blank streamables" do
+    ActionCable.server.stub :broadcast, proc { flunk "expected no broadcasts" } do
+      @message.broadcast_remove_to nil
+      @message.broadcast_remove_to [nil]
+      @message.broadcast_remove_to ""
+      @message.broadcast_remove_to [""]
+    end
+  end
+
+  test "broadcasting later ignores blank streamables" do
+    assert_no_enqueued_jobs do
+      @message.broadcast_append_later_to nil
+      @message.broadcast_append_later_to [nil]
+      @message.broadcast_append_later_to ""
+      @message.broadcast_append_later_to [""]
+    end
+  end
 
   test "broadcasting remove to stream now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("remove", target: "message_1") do
