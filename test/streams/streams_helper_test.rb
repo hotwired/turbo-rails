@@ -35,6 +35,18 @@ class Turbo::StreamsHelperTest < ActionView::TestCase
       turbo_stream_from("messages", channel: "NonExistentChannel", data: {payload: 1})
   end
 
+  test "turbo_stream.refresh" do
+    assert_dom_equal <<~HTML, turbo_stream.refresh
+      <turbo-stream action="refresh"></turbo-stream>
+    HTML
+    assert_dom_equal <<~HTML, Turbo.with_request_id("abc123") { turbo_stream.refresh }
+      <turbo-stream request-id="abc123" action="refresh"></turbo-stream>
+    HTML
+    assert_dom_equal <<~HTML, turbo_stream.refresh(request_id: "def456")
+      <turbo-stream request-id="def456" action="refresh"></turbo-stream>
+    HTML
+  end
+
   test "custom turbo_stream builder actions" do
     assert_dom_equal <<~HTML.strip, turbo_stream.highlight("an-id")
       <turbo-stream action="highlight" target="an-id"><template></template></turbo-stream>
