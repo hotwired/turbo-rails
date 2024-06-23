@@ -79,6 +79,8 @@ module Turbo::Streams::Broadcasts
     streamables.compact_blank!
 
     if streamables.present?
+      target = convert_to_turbo_stream_dom_id(target)
+      targets = convert_to_turbo_stream_dom_id(targets, include_selector: true)
       Turbo::Streams::ActionBroadcastJob.perform_later \
         stream_name_from(streamables), action: action, target: target, targets: targets, attributes: attributes, **rendering
     end
