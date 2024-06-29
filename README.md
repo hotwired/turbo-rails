@@ -176,6 +176,24 @@ PostsController.render :show, assigns: { post: Post.first } # => "<html>…"
 
 Run the tests with `./bin/test`.
 
+### Using local Turbo version
+
+Often you might want to test changes made locally to [Turbo lib](https://github.com/hotwired/turbo) itself. To package your local development version of Turbo you can use [yarn link](https://classic.yarnpkg.com/lang/en/docs/cli/link/) feature:
+
+```sh
+cd <local-turbo-dir>
+yarn link
+
+cd <local-turbo-rails-dir>
+yarn link @hotwired/turbo
+
+# Build the JS distribution files...
+yarn build
+# ...and commit the changes
+```
+
+Now you can reference your version of turbo-rails in your Rails projects packaged with your local version of Turbo.
+
 ## License
 
 Turbo is released under the [MIT License](https://opensource.org/licenses/MIT).
