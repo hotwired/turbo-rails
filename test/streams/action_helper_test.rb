@@ -11,6 +11,14 @@ class Turbo::ActionHelperTest < ActionCable::Channel::TestCase
     assert_equal stream, turbo_stream_action_tag("append", target: message)
   end
 
+  test "target is a model class" do
+    message = Message
+
+    stream = "<turbo-stream action=\"append\" target=\"new_message\"><template></template></turbo-stream>"
+
+    assert_equal stream, turbo_stream_action_tag("append", target: message)
+  end
+
   test "target passed as array of dom_id arguments" do
     message = Message.new(id: 1)
 
