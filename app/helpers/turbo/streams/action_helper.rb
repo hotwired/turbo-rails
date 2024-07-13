@@ -44,8 +44,9 @@ module Turbo::Streams::ActionHelper
 
   private
     def convert_to_turbo_stream_dom_id(target, include_selector: false)
-      if Array(target).any? { |value| value.respond_to?(:to_key) }
-        "#{"#" if include_selector}#{ActionView::RecordIdentifier.dom_id(*target)}"
+      target_array = Array.wrap(target)
+      if target_array.any? { |value| value.respond_to?(:to_key) }
+        "#{"#" if include_selector}#{ActionView::RecordIdentifier.dom_id(*target_array)}"
       else
         target
       end
