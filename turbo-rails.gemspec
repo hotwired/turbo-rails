@@ -16,4 +16,6 @@ Gem::Specification.new do |s|
   s.add_dependency "railties", ">= 6.0.0"
 
   s.files = Dir["{app,config,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
+
+  s.metadata["changelog_uri"] = "https://github.com/hotwired/turbo-rails/releases"
 end
