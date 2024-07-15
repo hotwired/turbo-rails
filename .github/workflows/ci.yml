@@ -14,6 +14,8 @@ jobs:
           - { ruby: "head", rails: "main", allow-fail: true }
 
     env:
+      FERRUM_PROCESS_TIMEOUT: 25
+      FERRUM_DEFAULT_TIMEOUT: 15
       RAILS_VERSION: "${{ matrix.rails }}"
 
     name: ${{ format('Tests (Ruby {0}, Rails {1})', matrix.ruby, matrix.rails) }}
