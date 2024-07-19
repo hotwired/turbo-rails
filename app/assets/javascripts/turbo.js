@@ -1,5 +1,5 @@
 /*!
-Turbo 8.0.4
+Turbo 8.0.5
 Copyright © 2024 37signals LLC
  */
 (function(prototype) {
@@ -483,13 +483,17 @@ async function around(callback, reader) {
   return [ before, after ];
 }
 
-function doesNotTargetIFrame(anchor) {
-  if (anchor.hasAttribute("target")) {
-    for (const element of document.getElementsByName(anchor.target)) {
+function doesNotTargetIFrame(name) {
+  if (name === "_blank") {
+    return false;
+  } else if (name) {
+    for (const element of document.getElementsByName(name)) {
       if (element instanceof HTMLIFrameElement) return false;
     }
+    return true;
+  } else {
+    return true;
   }
-  return true;
 }
 
 function findLinkFromClickTarget(target) {
@@ -596,7 +600,7 @@ class FetchRequest {
     this.fetchOptions = {
       credentials: "same-origin",
       redirect: "follow",
-      method: method,
+      method: method.toUpperCase(),
       headers: {
         ...this.defaultHeaders
       },
@@ -616,7 +620,7 @@ class FetchRequest {
     const [url, body] = buildResourceAndBody(this.url, fetchMethod, fetchBody, this.enctype);
     this.url = url;
     this.fetchOptions.body = body;
-    this.fetchOptions.method = fetchMethod;
+    this.fetchOptions.method = fetchMethod.toUpperCase();
   }
   get headers() {
     return this.fetchOptions.headers;
@@ -1166,15 +1170,8 @@ function submissionDoesNotDismissDialog(form, submitter) {
 }
 
 function submissionDoesNotTargetIFrame(form, submitter) {
-  if (submitter?.hasAttribute("formtarget") || form.hasAttribute("target")) {
-    const target = submitter?.getAttribute("formtarget") || form.target;
-    for (const element of document.getElementsByName(target)) {
-      if (element instanceof HTMLIFrameElement) return false;
-    }
-    return true;
-  } else {
-    return true;
-  }
+  const target = submitter?.getAttribute("formtarget") || form.getAttribute("target");
+  return doesNotTargetIFrame(target);
 }
 
 class View {
@@ -1307,14 +1304,14 @@ class LinkInterceptor {
     document.removeEventListener("turbo:before-visit", this.willVisit);
   }
   clickBubbled=event => {
-    if (this.respondsToEventTarget(event.target)) {
+    if (this.clickEventIsSignificant(event)) {
       this.clickEvent = event;
     } else {
       delete this.clickEvent;
     }
   };
   linkClicked=event => {
-    if (this.clickEvent && this.respondsToEventTarget(event.target) && event.target instanceof Element) {
+    if (this.clickEvent && this.clickEventIsSignificant(event)) {
       if (this.delegate.shouldInterceptLinkClick(event.target, event.detail.url, event.detail.originalEvent)) {
         this.clickEvent.preventDefault();
         event.preventDefault();
@@ -1326,9 +1323,10 @@ class LinkInterceptor {
   willVisit=_event => {
     delete this.clickEvent;
   };
-  respondsToEventTarget(target) {
-    const element = target instanceof Element ? target : target instanceof Node ? target.parentElement : null;
-    return element && element.closest("turbo-frame, html") == this.element;
+  clickEventIsSignificant(event) {
+    const target = event.composed ? event.target?.parentElement : event.target;
+    const element = findLinkFromClickTarget(target) || target;
+    return element instanceof Element && element.closest("turbo-frame, html") == this.element;
   }
 }
 
@@ -1358,7 +1356,7 @@ class LinkClickObserver {
     if (event instanceof MouseEvent && this.clickEventIsSignificant(event)) {
       const target = event.composedPath && event.composedPath()[0] || event.target;
       const link = findLinkFromClickTarget(target);
-      if (link && doesNotTargetIFrame(link)) {
+      if (link && doesNotTargetIFrame(link.target)) {
         const location = getLocationForLink(link);
         if (this.delegate.willFollowLinkToLocation(link, location, event)) {
           event.preventDefault();
@@ -1496,6 +1494,9 @@ class Renderer {
   get shouldRender() {
     return true;
   }
+  get shouldAutofocus() {
+    return true;
+  }
   get reloadReason() {
     return;
   }
@@ -1513,9 +1514,11 @@ class Renderer {
     await Bardo.preservingPermanentElements(this, this.permanentElementMap, callback);
   }
   focusFirstAutofocusableElement() {
-    const element = this.connectedSnapshot.firstAutofocusableElement;
-    if (element) {
-      element.focus();
+    if (this.shouldAutofocus) {
+      const element = this.connectedSnapshot.firstAutofocusableElement;
+      if (element) {
+        element.focus();
+      }
     }
   }
   enteringBardo(currentPermanentElement) {
@@ -2629,7 +2632,7 @@ class LinkPrefetchObserver {
     this.#prefetchedLink = null;
   };
   #tryToUsePrefetchedRequest=event => {
-    if (event.target.tagName !== "FORM" && event.detail.fetchOptions.method === "get") {
+    if (event.target.tagName !== "FORM" && event.detail.fetchOptions.method === "GET") {
       const cached = prefetchCache.get(event.detail.url.toString());
       if (cached) {
         event.detail.fetchRequest = cached;
@@ -2798,6 +2801,7 @@ class Navigator {
   }
   visitCompleted(visit) {
     this.delegate.visitCompleted(visit);
+    delete this.currentVisit;
   }
   locationWithActionIsSamePage(location, action) {
     const anchor = getAnchor(location);
@@ -3628,6 +3632,80 @@ var Idiomorph = function() {
   };
 }();
 
+function morphElements(currentElement, newElement, {callbacks: callbacks, ...options} = {}) {
+  Idiomorph.morph(currentElement, newElement, {
+    ...options,
+    callbacks: new DefaultIdiomorphCallbacks(callbacks)
+  });
+}
+
+function morphChildren(currentElement, newElement) {
+  morphElements(currentElement, newElement.children, {
+    morphStyle: "innerHTML"
+  });
+}
+
+class DefaultIdiomorphCallbacks {
+  #beforeNodeMorphed;
+  constructor({beforeNodeMorphed: beforeNodeMorphed} = {}) {
+    this.#beforeNodeMorphed = beforeNodeMorphed || (() => true);
+  }
+  beforeNodeAdded=node => !(node.id && node.hasAttribute("data-turbo-permanent") && document.getElementById(node.id));
+  beforeNodeMorphed=(currentElement, newElement) => {
+    if (currentElement instanceof Element) {
+      if (!currentElement.hasAttribute("data-turbo-permanent") && this.#beforeNodeMorphed(currentElement, newElement)) {
+        const event = dispatch("turbo:before-morph-element", {
+          cancelable: true,
+          target: currentElement,
+          detail: {
+            currentElement: currentElement,
+            newElement: newElement
+          }
+        });
+        return !event.defaultPrevented;
+      } else {
+        return false;
+      }
+    }
+  };
+  beforeAttributeUpdated=(attributeName, target, mutationType) => {
+    const event = dispatch("turbo:before-morph-attribute", {
+      cancelable: true,
+      target: target,
+      detail: {
+        attributeName: attributeName,
+        mutationType: mutationType
+      }
+    });
+    return !event.defaultPrevented;
+  };
+  beforeNodeRemoved=node => this.beforeNodeMorphed(node);
+  afterNodeMorphed=(currentElement, newElement) => {
+    if (currentElement instanceof Element) {
+      dispatch("turbo:morph-element", {
+        target: currentElement,
+        detail: {
+          currentElement: currentElement,
+          newElement: newElement
+        }
+      });
+    }
+  };
+}
+
+class MorphingFrameRenderer extends FrameRenderer {
+  static renderElement(currentElement, newElement) {
+    dispatch("turbo:before-frame-morph", {
+      target: currentElement,
+      detail: {
+        currentElement: currentElement,
+        newElement: newElement
+      }
+    });
+    morphChildren(currentElement, newElement);
+  }
+}
+
 class PageRenderer extends Renderer {
   static renderElement(currentElement, newElement) {
     if (document.body && newElement instanceof HTMLBodyElement) {
@@ -3796,106 +3874,45 @@ class PageRenderer extends Renderer {
   }
 }
 
-class MorphRenderer extends PageRenderer {
-  async render() {
-    if (this.willRender) await this.#morphBody();
-  }
-  get renderMethod() {
-    return "morph";
-  }
-  async #morphBody() {
-    this.#morphElements(this.currentElement, this.newElement);
-    this.#reloadRemoteFrames();
-    dispatch("turbo:morph", {
-      detail: {
-        currentElement: this.currentElement,
-        newElement: this.newElement
-      }
-    });
-  }
-  #morphElements(currentElement, newElement, morphStyle = "outerHTML") {
-    this.isMorphingTurboFrame = this.#isFrameReloadedWithMorph(currentElement);
-    Idiomorph.morph(currentElement, newElement, {
-      morphStyle: morphStyle,
+class MorphingPageRenderer extends PageRenderer {
+  static renderElement(currentElement, newElement) {
+    morphElements(currentElement, newElement, {
       callbacks: {
-        beforeNodeAdded: this.#shouldAddElement,
-        beforeNodeMorphed: this.#shouldMorphElement,
-        beforeAttributeUpdated: this.#shouldUpdateAttribute,
-        beforeNodeRemoved: this.#shouldRemoveElement,
-        afterNodeMorphed: this.#didMorphElement
+        beforeNodeMorphed: element => !canRefreshFrame(element)
       }
     });
-  }
-  #shouldAddElement=node => !(node.id && node.hasAttribute("data-turbo-permanent") && document.getElementById(node.id));
-  #shouldMorphElement=(oldNode, newNode) => {
-    if (oldNode instanceof HTMLElement) {
-      if (!oldNode.hasAttribute("data-turbo-permanent") && (this.isMorphingTurboFrame || !this.#isFrameReloadedWithMorph(oldNode))) {
-        const event = dispatch("turbo:before-morph-element", {
-          cancelable: true,
-          target: oldNode,
-          detail: {
-            newElement: newNode
-          }
-        });
-        return !event.defaultPrevented;
-      } else {
-        return false;
-      }
+    for (const frame of currentElement.querySelectorAll("turbo-frame")) {
+      if (canRefreshFrame(frame)) refreshFrame(frame);
     }
-  };
-  #shouldUpdateAttribute=(attributeName, target, mutationType) => {
-    const event = dispatch("turbo:before-morph-attribute", {
-      cancelable: true,
-      target: target,
-      detail: {
-        attributeName: attributeName,
-        mutationType: mutationType
-      }
-    });
-    return !event.defaultPrevented;
-  };
-  #didMorphElement=(oldNode, newNode) => {
-    if (newNode instanceof HTMLElement) {
-      dispatch("turbo:morph-element", {
-        target: oldNode,
-        detail: {
-          newElement: newNode
-        }
-      });
-    }
-  };
-  #shouldRemoveElement=node => this.#shouldMorphElement(node);
-  #reloadRemoteFrames() {
-    this.#remoteFrames().forEach((frame => {
-      if (this.#isFrameReloadedWithMorph(frame)) {
-        this.#renderFrameWithMorph(frame);
-        frame.reload();
-      }
-    }));
-  }
-  #renderFrameWithMorph(frame) {
-    frame.addEventListener("turbo:before-frame-render", (event => {
-      event.detail.render = this.#morphFrameUpdate;
-    }), {
-      once: true
-    });
-  }
-  #morphFrameUpdate=(currentElement, newElement) => {
-    dispatch("turbo:before-frame-morph", {
-      target: currentElement,
+    dispatch("turbo:morph", {
       detail: {
         currentElement: currentElement,
         newElement: newElement
       }
     });
-    this.#morphElements(currentElement, newElement.children, "innerHTML");
-  };
-  #isFrameReloadedWithMorph(element) {
-    return element.src && element.refresh === "morph";
   }
-  #remoteFrames() {
-    return Array.from(document.querySelectorAll("turbo-frame[src]")).filter((frame => !frame.closest("[data-turbo-permanent]")));
+  async preservingPermanentElements(callback) {
+    return await callback();
   }
+  get renderMethod() {
+    return "morph";
+  }
+  get shouldAutofocus() {
+    return false;
+  }
+}
+
+function canRefreshFrame(frame) {
+  return frame instanceof FrameElement && frame.src && frame.refresh === "morph" && !frame.closest("[data-turbo-permanent]");
+}
+
+function refreshFrame(frame) {
+  frame.addEventListener("turbo:before-frame-render", (({detail: detail}) => {
+    detail.render = MorphingFrameRenderer.renderElement;
+  }), {
+    once: true
+  });
+  frame.reload();
 }
 
 class SnapshotCache {
@@ -3951,8 +3968,8 @@ class PageView extends View {
   }
   renderPage(snapshot, isPreview = false, willRender = true, visit) {
     const shouldMorphPage = this.isPageRefresh(visit) && this.snapshot.shouldMorphPage;
-    const rendererClass = shouldMorphPage ? MorphRenderer : PageRenderer;
-    const renderer = new rendererClass(this.snapshot, snapshot, PageRenderer.renderElement, isPreview, willRender);
+    const rendererClass = shouldMorphPage ? MorphingPageRenderer : PageRenderer;
+    const renderer = new rendererClass(this.snapshot, snapshot, rendererClass.renderElement, isPreview, willRender);
     if (!renderer.shouldRender) {
       this.forceReloaded = true;
     } else {
@@ -4143,7 +4160,7 @@ class Session {
   }
   refresh(url, requestId) {
     const isRecentRequest = requestId && this.recentRequests.has(requestId);
-    if (!isRecentRequest) {
+    if (!isRecentRequest && !this.navigator.currentVisit) {
       this.visit(url, {
         action: "replace",
         shouldCacheSnapshot: false
@@ -4969,12 +4986,24 @@ const StreamActions = {
     this.targetElements.forEach((e => e.remove()));
   },
   replace() {
-    this.targetElements.forEach((e => e.replaceWith(this.templateContent)));
+    const method = this.getAttribute("method");
+    this.targetElements.forEach((targetElement => {
+      if (method === "morph") {
+        morphElements(targetElement, this.templateContent);
+      } else {
+        targetElement.replaceWith(this.templateContent);
+      }
+    }));
   },
   update() {
+    const method = this.getAttribute("method");
     this.targetElements.forEach((targetElement => {
-      targetElement.innerHTML = "";
-      targetElement.append(this.templateContent);
+      if (method === "morph") {
+        morphChildren(targetElement, this.templateContent);
+      } else {
+        targetElement.innerHTML = "";
+        targetElement.append(this.templateContent);
+      }
     }));
   },
   refresh() {
