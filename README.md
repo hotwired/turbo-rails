@@ -194,6 +194,14 @@ yarn build
 
 Now you can reference your version of turbo-rails in your Rails projects packaged with your local version of Turbo.
 
+## Contributing
+
+Having a way to reproduce your issue will help people confirm, investigate, and ultimately fix your issue. You can do this by providing an executable test case. To make this process easier, we have prepared an [executable bug report Rails application](./bug_report_template.rb) for you to use as a starting point.
+
+This template includes the boilerplate code to set up a System Test case. Copy the content of the template into a `.rb` file and make the necessary changes to demonstrate the issue. You can execute it by running `ruby the_file.rb` in your terminal. If all goes well, you should see your test case failing.
+
+You can then share your executable test case as a gist or paste the content into the issue description.
+
 ## License
 
 Turbo is released under the [MIT License](https://opensource.org/licenses/MIT).

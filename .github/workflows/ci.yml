@@ -31,6 +31,9 @@ jobs:
           rubygems: latest
           bundler-cache: true
 
+      - name: Run Bug Template Tests
+        run: ruby bug_report_template.rb || ruby bug_report_template.rb
+
       - name: Run tests
         id: test
         run: bundle exec rake TESTOPT=-vdc
