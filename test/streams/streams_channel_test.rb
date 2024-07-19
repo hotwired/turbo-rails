@@ -286,31 +286,53 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
     end
   end
 
-  test "broadcasting morph now" do
-    options = { partial: "messages/message", locals: { message: "hello!" } }
-  
-    assert_broadcast_on "stream", turbo_stream_action_tag("morph", target: "message_1", template: render(options)) do
-      Turbo::StreamsChannel.broadcast_morph_to "stream", target: "message_1", **options
+  test "broadcasting actions with method morph now" do
+    options = { attributes: { method: :morph }, partial: "messages/message", locals: { message: "hello!" } }
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("replace", target: "message_1", method: :morph, template: render(options)) do
+      Turbo::StreamsChannel.broadcast_replace_to "stream", target: "message_1", **options
     end
-  
-    assert_broadcast_on "stream", turbo_stream_action_tag("morph", targets: ".message", template: render(options)) do
-      Turbo::StreamsChannel.broadcast_morph_to "stream", targets: ".message", **options
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("replace", targets: ".message", method: :morph,template: render(options)) do
+      Turbo::StreamsChannel.broadcast_replace_to "stream", targets: ".message", **options
+    end
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("update", target: "message_1", method: :morph, template: render(options)) do
+      Turbo::StreamsChannel.broadcast_update_to "stream", target: "message_1", **options
+    end
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("update", targets: ".message", method: :morph, template: render(options)) do
+      Turbo::StreamsChannel.broadcast_update_to "stream", targets: ".message", **options
     end
   end
-  
-  test "broadcasting morph later" do
-    options = { partial: "messages/message", locals: { message: "hello!" } }
-  
-    assert_broadcast_on "stream", turbo_stream_action_tag("morph", target: "message_1", template: render(options)) do
+
+  test "broadcasting actions with method morph later" do
+    options = { attributes: { method: :morph }, partial: "messages/message", locals: { message: "hello!" } }
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("replace", target: "message_1", method: :morph, template: render(options)) do
       perform_enqueued_jobs do
-        Turbo::StreamsChannel.broadcast_morph_later_to \
+        Turbo::StreamsChannel.broadcast_replace_later_to \
           "stream", target: "message_1", **options
       end
     end
-  
-    assert_broadcast_on "stream", turbo_stream_action_tag("morph", targets: ".message", template: render(options)) do
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("replace", targets: ".message", method: :morph, template: render(options)) do
       perform_enqueued_jobs do
-        Turbo::StreamsChannel.broadcast_morph_later_to \
+        Turbo::StreamsChannel.broadcast_replace_later_to \
+          "stream", targets: ".message", **options
+      end
+    end
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("update", target: "message_1", method: :morph, template: render(options)) do
+      perform_enqueued_jobs do
+        Turbo::StreamsChannel.broadcast_update_later_to \
+          "stream", target: "message_1", **options
+      end
+    end
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("update", targets: ".message", method: :morph, template: render(options)) do
+      perform_enqueued_jobs do
+        Turbo::StreamsChannel.broadcast_update_later_to \
           "stream", targets: ".message", **options
       end
     end
