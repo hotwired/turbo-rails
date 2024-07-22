@@ -13,10 +13,9 @@ class Turbo::StreamsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "show all turbo actions" do
-    message_1 = Message.new(id: 1, content: "My message")
-    message_5 = Message.new(id: 5, content: "OLLA!")
+    message_1, message_5 = Message.create!([{ id: 1, content: "My message" }, { id: 5, content: "OLLA!" }])
 
-    get message_path(id: 1), as: :turbo_stream
+    get message_path(message_1, other_message: message_5), as: :turbo_stream
 
     assert_dom_equal <<~HTML, @response.body
       <turbo-stream action="remove" target="message_1"></turbo-stream>
