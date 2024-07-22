@@ -5,7 +5,8 @@
   "module": "app/javascript/turbo/index.js",
   "main": "app/assets/javascripts/turbo.js",
   "files": [
-    "app/javascript/turbo"
+    "app/javascript/turbo",
+    "app/assets/javascripts"
   ],
   "scripts": {
     "build": "rollup -c",
