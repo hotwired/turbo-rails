@@ -5330,6 +5330,7 @@ function walk(obj) {
 }
 
 class TurboCableStreamSourceElement extends HTMLElement {
+  static observedAttributes=[ "channel", "signed-stream-name" ];
   async connectedCallback() {
     connectStreamSource(this);
     this.subscription = await subscribeTo(this.channel, {
@@ -5341,6 +5342,13 @@ class TurboCableStreamSourceElement extends HTMLElement {
   disconnectedCallback() {
     disconnectStreamSource(this);
     if (this.subscription) this.subscription.unsubscribe();
+    this.subscriptionDisconnected();
+  }
+  attributeChangedCallback() {
+    if (this.subscription) {
+      this.disconnectedCallback();
+      this.connectedCallback();
+    }
   }
   dispatchMessageEvent(data) {
     const event = new MessageEvent("message", {

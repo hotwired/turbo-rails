@@ -1,3 +1,7 @@
 <h1>Message #<%= @message.id %></h1>
 
 <%= turbo_stream_from @message %>
+
+<div id="<%= dom_id @message %>">
+  <%= render @message %>
+</div>

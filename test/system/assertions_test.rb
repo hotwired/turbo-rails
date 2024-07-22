@@ -2,7 +2,7 @@ require "application_system_test_case"
 
 class AssertionsTest < ApplicationSystemTestCase
   test "#assert_turbo_cable_stream_source treats the locator as :signed_stream_name filter" do
-    message = Message.new(id: 1)
+    message = Message.create!
 
     visit message_path(message)
 
@@ -22,7 +22,7 @@ class AssertionsTest < ApplicationSystemTestCase
   end
 
   test "#assert_turbo_cable_stream_source supports record filters" do
-    message = Message.new(id: 1)
+    message = Message.create!
 
     visit message_path(message)
 
