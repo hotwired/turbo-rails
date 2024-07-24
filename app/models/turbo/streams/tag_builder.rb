@@ -238,7 +238,7 @@ class Turbo::Streams::TagBuilder
   #     <div id='clearance_5'>Morph the dom target identified by clearance_5</div>
   #   <% end %>
   def morph(target, content = nil, **rendering, &block)
-    action :morph, target, content, **rendering, &block
+    action :update, target, content, method: "morph", **rendering, &block
   end
 
   # Morph the <tt>targets</tt> in the dom with either the <tt>content</tt> passed in or a rendering result determined
@@ -255,10 +255,13 @@ class Turbo::Streams::TagBuilder
   end
 
   # Send an action of the type <tt>name</tt> to <tt>target</tt>. Options described in the concrete methods.
-  def action(name, target, content = nil, allow_inferred_rendering: true, **rendering, &block)
+  def action(name, target, content = nil, allow_inferred_rendering: true, method: nil, **rendering, &block)
     template = render_template(target, content, allow_inferred_rendering: allow_inferred_rendering, **rendering, &block)
 
-    turbo_stream_action_tag name, target: target, template: template
+    attributes = { target: target, template: template }
+    attributes[:method] = method if method
+
+    turbo_stream_action_tag name, **attributes
   end
 
   # Send an action of the type <tt>name</tt> to <tt>targets</tt>. Options described in the concrete methods.
