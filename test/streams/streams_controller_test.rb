@@ -23,6 +23,7 @@ class Turbo::StreamsControllerTest < ActionDispatch::IntegrationTest
       <turbo-stream action="replace" target="message_1"><template>#{render(message_1)}</template></turbo-stream>
       <turbo-stream action="replace" target="message_1"><template>Something else</template></turbo-stream>
       <turbo-stream action="replace" target="message_5"><template>Something fifth</template></turbo-stream>
+      <turbo-stream method="morph" action="replace" target="message_5"><template>Something fifth</template></turbo-stream>
       <turbo-stream action="replace" target="message_5"><template>#{render(message_5)}</template></turbo-stream>
       <turbo-stream action="append" target="messages"><template>#{render(message_1)}</template></turbo-stream>
       <turbo-stream action="append" target="messages"><template>#{render(message_5)}</template></turbo-stream>
