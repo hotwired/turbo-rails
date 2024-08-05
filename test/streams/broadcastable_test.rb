@@ -31,6 +31,18 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "broadcasting remove to stream now with a targets" do
+    assert_broadcast_on "stream", turbo_stream_action_tag("remove", target: 'message_1') do
+      @message.broadcast_remove_to "stream", target: 'message_1'
+    end
+  end
+
+  test "broadcasting remove to stream now with multiple targets" do
+    assert_broadcast_on "stream", turbo_stream_action_tag("remove", target: nil, targets: '.message_1') do
+      @message.broadcast_remove_to "stream", target: nil, targets: ".message_1"
+    end
+  end
+
   test "broadcasting remove now" do
     assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("remove", target: "message_1") do
       @message.broadcast_remove

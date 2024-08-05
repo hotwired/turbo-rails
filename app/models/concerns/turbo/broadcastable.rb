@@ -241,8 +241,8 @@ module Turbo::Broadcastable
   #
   #   # Sends <turbo-stream action="remove" target="clearance_5"></turbo-stream> to the stream named "identity:2:clearances"
   #   clearance.broadcast_remove_to examiner.identity, :clearances
-  def broadcast_remove_to(*streamables, target: self)
-    Turbo::StreamsChannel.broadcast_remove_to(*streamables, target: target) unless suppressed_turbo_broadcasts?
+  def broadcast_remove_to(*streamables, **rendering)
+    Turbo::StreamsChannel.broadcast_remove_to(*streamables, target: self, **rendering) unless suppressed_turbo_broadcasts?
   end
 
   # Same as <tt>#broadcast_remove_to</tt>, but the designated stream is automatically set to the current model.
