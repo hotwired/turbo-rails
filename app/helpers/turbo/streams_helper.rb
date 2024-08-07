@@ -48,7 +48,13 @@ module Turbo::StreamsHelper
   # It is also possible to pass additional parameters to the channel by passing them through `data` attributes:
   #
   #   <%= turbo_stream_from "room", channel: RoomChannel, data: {room_name: "room #1"} %>
+  #
+  # Raises an +ArgumentError+ if any streamables are blank
+  #
+  #   <%= turbo_stream_from("") %> # => ArgumentError: streamables can't be blank
+  #   <%= turbo_stream_from("channel", nil, "messages") %> # => ArgumentError: streamables can't be blank
   def turbo_stream_from(*streamables, **attributes)
+    raise ArgumentError, "streamables can't be blank" if streamables.any?(&:blank?)
     attributes[:channel] = attributes[:channel]&.to_s || "Turbo::StreamsChannel"
     attributes[:"signed-stream-name"] = Turbo::StreamsChannel.signed_stream_name(streamables)
 
