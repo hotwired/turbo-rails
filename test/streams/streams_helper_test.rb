@@ -11,6 +11,24 @@ class Turbo::StreamsHelperTest < ActionView::TestCase
       turbo_stream_from("messages")
   end
 
+  test "with invalid streamables" do
+    assert_raises ArgumentError, "streamables can't be blank" do
+      turbo_stream_from("")
+    end
+
+    assert_raises ArgumentError, "streamables can't be blank" do
+      turbo_stream_from(nil)
+    end
+
+    assert_raises ArgumentError, "streamables can't be blank" do
+      turbo_stream_from("channel", nil, "messages")
+    end
+
+    assert_raises ArgumentError, "streamables can't be blank" do
+      turbo_stream_from("channel", "", "messages")
+    end
+  end
+
   test "with streamable and html attributes" do
     assert_dom_equal \
       %(<turbo-cable-stream-source channel="Turbo::StreamsChannel" signed-stream-name="#{Turbo::StreamsChannel.signed_stream_name("messages")}" data-stream-target="source"></turbo-cable-stream-source>),
