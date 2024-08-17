@@ -23,6 +23,8 @@ class Turbo::StreamsControllerTest < ActionDispatch::IntegrationTest
       <turbo-stream action="replace" target="message_1"><template>#{render(message_1)}</template></turbo-stream>
       <turbo-stream action="replace" target="message_1"><template>Something else</template></turbo-stream>
       <turbo-stream action="replace" target="message_5"><template>Something fifth</template></turbo-stream>
+      <turbo-stream method="morph" action="replace" target="message_5"><template>Something fifth</template></turbo-stream>
+      <turbo-stream method="morph" action="update" target="message_5"><template>Something fifth</template></turbo-stream>
       <turbo-stream action="replace" target="message_5"><template>#{render(message_5)}</template></turbo-stream>
       <turbo-stream action="append" target="messages"><template>#{render(message_1)}</template></turbo-stream>
       <turbo-stream action="append" target="messages"><template>#{render(message_5)}</template></turbo-stream>
@@ -37,7 +39,7 @@ class Turbo::StreamsControllerTest < ActionDispatch::IntegrationTest
 
     patch message_path(id: 1), as: :turbo_stream
 
-    assert_turbo_stream action: :replace, count: 4
+    assert_turbo_stream action: :replace, count: 5
     assert_turbo_stream action: :replace, targets: "#message_4" do
       assert_select 'template', 'Something fourth'
     end
@@ -46,6 +48,8 @@ class Turbo::StreamsControllerTest < ActionDispatch::IntegrationTest
       <turbo-stream action="replace" targets="#message_1"><template>#{render(message_1)}</template></turbo-stream>
       <turbo-stream action="replace" targets="#message_1"><template>Something else</template></turbo-stream>
       <turbo-stream action="replace" targets="#message_4"><template>Something fourth</template></turbo-stream>
+      <turbo-stream method="morph" action="replace" targets="#message_5"><template>Something fifth</template></turbo-stream>
+      <turbo-stream method="morph" action="update" targets="#message_5"><template>Something fifth</template></turbo-stream>
       <turbo-stream action="replace" targets="#message_5"><template>#{render(message_5)}</template></turbo-stream>
       <turbo-stream action="append" targets="#messages"><template>#{render(message_1)}</template></turbo-stream>
       <turbo-stream action="append" targets="#messages"><template>#{render(message_5)}</template></turbo-stream>
