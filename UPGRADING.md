@@ -171,7 +171,7 @@ window.Turbolinks = {
 
         // Old mobile adapters use visit.location.absoluteURL, which is not available
         // because Turbo dropped the Location class in favor of the DOM URL API
-        const adapterVisitStarted = adapter.visitStarted
+        const adapterVisitStarted = adapter.visitStarted.bind(adapter)
         adapter.visitStarted = function(visit) {
           Object.defineProperties(visit.location, {
             absoluteURL: {
