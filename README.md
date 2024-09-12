@@ -109,7 +109,6 @@ This gem is automatically configured for applications made with Rails 7+ (unless
 1. Add the `turbo-rails` gem to your Gemfile: `gem 'turbo-rails'`
 2. Run `./bin/bundle install`
 3. Run `./bin/rails turbo:install`
-4. Run `./bin/rails turbo:install:redis` to change the development Action Cable adapter from Async (the default one) to Redis. The Async adapter does not support Turbo Stream broadcasting.
 
 Running `turbo:install` will install through NPM or Bun if a JavaScript runtime is used in the application. Otherwise the asset pipeline version is used. To use the asset pipeline version, you must have `importmap-rails` installed first and listed higher in the Gemfile.
 
@@ -124,6 +123,8 @@ import "@hotwired/turbo-rails"
 ## Usage
 
 You can watch [the video introduction to Hotwire](https://hotwired.dev/#screencast), which focuses extensively on demonstrating Turbo in a Rails demo. Then you should familiarize yourself with [Turbo handbook](https://turbo.hotwired.dev/handbook/introduction) to understand Drive, Frames, and Streams in-depth. Finally, dive into the code documentation by starting with [`Turbo::FramesHelper`](https://github.com/hotwired/turbo-rails/blob/main/app/helpers/turbo/frames_helper.rb), [`Turbo::StreamsHelper`](https://github.com/hotwired/turbo-rails/blob/main/app/helpers/turbo/streams_helper.rb), [`Turbo::Streams::TagBuilder`](https://github.com/hotwired/turbo-rails/blob/main/app/models/turbo/streams/tag_builder.rb), and [`Turbo::Broadcastable`](https://github.com/hotwired/turbo-rails/blob/main/app/models/concerns/turbo/broadcastable.rb).
+
+Note that in development, the default Action Cable adapter is the single-process `async` adapter. This means that turbo updates are only broadcast within that same process. So you can't start `bin/rails console` and trigger Turbo broadcasts and expect them to show up in a browser connected to a server running in a separate `bin/dev` or `bin/rails server` process. Instead, you should use the web-console when needing to manaually trigger Turbo broadcasts inside the same process. Add "console" to any action or "<%= console %>" in any view to make the web console appear.  
 
 ### RubyDoc Documentation
 
