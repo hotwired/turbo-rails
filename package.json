@@ -7,6 +7,12 @@
   "files": [
     "app/javascript/turbo"
   ],
+  "exports": {
+    ".": {
+      "import": "./app/javascript/turbo/index.js",
+      "require": "./app/assets/javascripts/turbo.js"
+    }
+  },
   "scripts": {
     "build": "rollup -c",
     "prerelease": "yarn build && git --no-pager diff && echo && npm pack --dry-run && echo && read -n 1 -p \"Look OK? Press any key to publish and commit v$npm_package_version\" && echo",
