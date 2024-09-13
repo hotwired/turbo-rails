@@ -1,5 +1,5 @@
 /*!
-Turbo 8.0.5
+Turbo 8.0.6
 Copyright © 2024 37signals LLC
  */
 (function(prototype) {
@@ -116,6 +116,9 @@ class FrameElement extends HTMLElement {
       this.removeAttribute("refresh");
     }
   }
+  get shouldReloadWithMorph() {
+    return this.src && this.refresh === "morph";
+  }
   get loading() {
     return frameLoadingStyleFromString(this.getAttribute("loading") || "");
   }
@@ -167,115 +170,11 @@ function frameLoadingStyleFromString(style) {
   }
 }
 
-function expandURL(locatable) {
-  return new URL(locatable.toString(), document.baseURI);
-}
-
-function getAnchor(url) {
-  let anchorMatch;
-  if (url.hash) {
-    return url.hash.slice(1);
-  } else if (anchorMatch = url.href.match(/#(.*)$/)) {
-    return anchorMatch[1];
-  }
-}
-
-function getAction$1(form, submitter) {
-  const action = submitter?.getAttribute("formaction") || form.getAttribute("action") || form.action;
-  return expandURL(action);
-}
-
-function getExtension(url) {
-  return (getLastPathComponent(url).match(/\.[^.]*$/) || [])[0] || "";
-}
-
-function isHTML(url) {
-  return !!getExtension(url).match(/^(?:|\.(?:htm|html|xhtml|php))$/);
-}
-
-function isPrefixedBy(baseURL, url) {
-  const prefix = getPrefix(url);
-  return baseURL.href === expandURL(prefix).href || baseURL.href.startsWith(prefix);
-}
-
-function locationIsVisitable(location, rootLocation) {
-  return isPrefixedBy(location, rootLocation) && isHTML(location);
-}
-
-function getRequestURL(url) {
-  const anchor = getAnchor(url);
-  return anchor != null ? url.href.slice(0, -(anchor.length + 1)) : url.href;
-}
-
-function toCacheKey(url) {
-  return getRequestURL(url);
-}
-
-function urlsAreEqual(left, right) {
-  return expandURL(left).href == expandURL(right).href;
-}
-
-function getPathComponents(url) {
-  return url.pathname.split("/").slice(1);
-}
-
-function getLastPathComponent(url) {
-  return getPathComponents(url).slice(-1)[0];
-}
-
-function getPrefix(url) {
-  return addTrailingSlash(url.origin + url.pathname);
-}
-
-function addTrailingSlash(value) {
-  return value.endsWith("/") ? value : value + "/";
-}
-
-class FetchResponse {
-  constructor(response) {
-    this.response = response;
-  }
-  get succeeded() {
-    return this.response.ok;
-  }
-  get failed() {
-    return !this.succeeded;
-  }
-  get clientError() {
-    return this.statusCode >= 400 && this.statusCode <= 499;
-  }
-  get serverError() {
-    return this.statusCode >= 500 && this.statusCode <= 599;
-  }
-  get redirected() {
-    return this.response.redirected;
-  }
-  get location() {
-    return expandURL(this.response.url);
-  }
-  get isHTML() {
-    return this.contentType && this.contentType.match(/^(?:text\/([^\s;,]+\b)?html|application\/xhtml\+xml)\b/);
-  }
-  get statusCode() {
-    return this.response.status;
-  }
-  get contentType() {
-    return this.header("Content-Type");
-  }
-  get responseText() {
-    return this.response.clone().text();
-  }
-  get responseHTML() {
-    if (this.isHTML) {
-      return this.response.clone().text();
-    } else {
-      return Promise.resolve(undefined);
-    }
-  }
-  header(name) {
-    return this.response.headers.get(name);
-  }
-}
+const drive = {
+  enabled: true,
+  progressBarDelay: 500,
+  unvisitableExtensions: new Set([ ".7z", ".aac", ".apk", ".avi", ".bmp", ".bz2", ".css", ".csv", ".deb", ".dmg", ".doc", ".docx", ".exe", ".gif", ".gz", ".heic", ".heif", ".ico", ".iso", ".jpeg", ".jpg", ".js", ".json", ".m4a", ".mkv", ".mov", ".mp3", ".mp4", ".mpeg", ".mpg", ".msi", ".ogg", ".ogv", ".pdf", ".pkg", ".png", ".ppt", ".pptx", ".rar", ".rtf", ".svg", ".tar", ".tif", ".tiff", ".txt", ".wav", ".webm", ".webp", ".wma", ".wmv", ".xls", ".xlsx", ".xml", ".zip" ])
+};
 
 function activateScriptElement(element) {
   if (element.getAttribute("data-turbo-eval") == "false") {
@@ -318,6 +217,11 @@ function dispatch(eventName, {target: target, cancelable: cancelable, detail: de
     document.documentElement.dispatchEvent(event);
   }
   return event;
+}
+
+function cancelEvent(event) {
+  event.preventDefault();
+  event.stopImmediatePropagation();
 }
 
 function nextRepaint() {
@@ -511,6 +415,152 @@ function debounce(fn, delay) {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(callback, delay);
   };
+}
+
+const submitter = {
+  "aria-disabled": {
+    beforeSubmit: submitter => {
+      submitter.setAttribute("aria-disabled", "true");
+      submitter.addEventListener("click", cancelEvent);
+    },
+    afterSubmit: submitter => {
+      submitter.removeAttribute("aria-disabled");
+      submitter.removeEventListener("click", cancelEvent);
+    }
+  },
+  disabled: {
+    beforeSubmit: submitter => submitter.disabled = true,
+    afterSubmit: submitter => submitter.disabled = false
+  }
+};
+
+class Config {
+  #submitter=null;
+  constructor(config) {
+    Object.assign(this, config);
+  }
+  get submitter() {
+    return this.#submitter;
+  }
+  set submitter(value) {
+    this.#submitter = submitter[value] || value;
+  }
+}
+
+const forms = new Config({
+  mode: "on",
+  submitter: "disabled"
+});
+
+const config = {
+  drive: drive,
+  forms: forms
+};
+
+function expandURL(locatable) {
+  return new URL(locatable.toString(), document.baseURI);
+}
+
+function getAnchor(url) {
+  let anchorMatch;
+  if (url.hash) {
+    return url.hash.slice(1);
+  } else if (anchorMatch = url.href.match(/#(.*)$/)) {
+    return anchorMatch[1];
+  }
+}
+
+function getAction$1(form, submitter) {
+  const action = submitter?.getAttribute("formaction") || form.getAttribute("action") || form.action;
+  return expandURL(action);
+}
+
+function getExtension(url) {
+  return (getLastPathComponent(url).match(/\.[^.]*$/) || [])[0] || "";
+}
+
+function isPrefixedBy(baseURL, url) {
+  const prefix = getPrefix(url);
+  return baseURL.href === expandURL(prefix).href || baseURL.href.startsWith(prefix);
+}
+
+function locationIsVisitable(location, rootLocation) {
+  return isPrefixedBy(location, rootLocation) && !config.drive.unvisitableExtensions.has(getExtension(location));
+}
+
+function getRequestURL(url) {
+  const anchor = getAnchor(url);
+  return anchor != null ? url.href.slice(0, -(anchor.length + 1)) : url.href;
+}
+
+function toCacheKey(url) {
+  return getRequestURL(url);
+}
+
+function urlsAreEqual(left, right) {
+  return expandURL(left).href == expandURL(right).href;
+}
+
+function getPathComponents(url) {
+  return url.pathname.split("/").slice(1);
+}
+
+function getLastPathComponent(url) {
+  return getPathComponents(url).slice(-1)[0];
+}
+
+function getPrefix(url) {
+  return addTrailingSlash(url.origin + url.pathname);
+}
+
+function addTrailingSlash(value) {
+  return value.endsWith("/") ? value : value + "/";
+}
+
+class FetchResponse {
+  constructor(response) {
+    this.response = response;
+  }
+  get succeeded() {
+    return this.response.ok;
+  }
+  get failed() {
+    return !this.succeeded;
+  }
+  get clientError() {
+    return this.statusCode >= 400 && this.statusCode <= 499;
+  }
+  get serverError() {
+    return this.statusCode >= 500 && this.statusCode <= 599;
+  }
+  get redirected() {
+    return this.response.redirected;
+  }
+  get location() {
+    return expandURL(this.response.url);
+  }
+  get isHTML() {
+    return this.contentType && this.contentType.match(/^(?:text\/([^\s;,]+\b)?html|application\/xhtml\+xml)\b/);
+  }
+  get statusCode() {
+    return this.response.status;
+  }
+  get contentType() {
+    return this.header("Content-Type");
+  }
+  get responseText() {
+    return this.response.clone().text();
+  }
+  get responseHTML() {
+    if (this.isHTML) {
+      return this.response.clone().text();
+    } else {
+      return Promise.resolve(undefined);
+    }
+  }
+  header(name) {
+    return this.response.headers.get(name);
+  }
 }
 
 class LimitedSet extends Set {
@@ -861,7 +911,7 @@ const FormSubmissionState = {
 
 class FormSubmission {
   state=FormSubmissionState.initialized;
-  static confirmMethod(message, _element, _submitter) {
+  static confirmMethod(message) {
     return Promise.resolve(confirm(message));
   }
   constructor(delegate, formElement, submitter, mustRedirect = false) {
@@ -903,7 +953,8 @@ class FormSubmission {
     const {initialized: initialized, requesting: requesting} = FormSubmissionState;
     const confirmationMessage = getAttribute("data-turbo-confirm", this.submitter, this.formElement);
     if (typeof confirmationMessage === "string") {
-      const answer = await FormSubmission.confirmMethod(confirmationMessage, this.formElement, this.submitter);
+      const confirmMethod = typeof config.forms.confirm === "function" ? config.forms.confirm : FormSubmission.confirmMethod;
+      const answer = await confirmMethod(confirmationMessage, this.formElement, this.submitter);
       if (!answer) {
         return;
       }
@@ -934,7 +985,7 @@ class FormSubmission {
   }
   requestStarted(_request) {
     this.state = FormSubmissionState.waiting;
-    this.submitter?.setAttribute("disabled", "");
+    if (this.submitter) config.forms.submitter.beforeSubmit(this.submitter);
     this.setSubmitsWith();
     markAsBusy(this.formElement);
     dispatch("turbo:submit-start", {
@@ -986,7 +1037,7 @@ class FormSubmission {
   }
   requestFinished(_request) {
     this.state = FormSubmissionState.stopped;
-    this.submitter?.removeAttribute("disabled");
+    if (this.submitter) config.forms.submitter.afterSubmit(this.submitter);
     this.resetSubmitterText();
     clearBusyState(this.formElement);
     dispatch("turbo:submit-end", {
@@ -1626,6 +1677,620 @@ function readScrollBehavior(value, defaultValue) {
   }
 }
 
+var Idiomorph = function() {
+  let EMPTY_SET = new Set;
+  let defaults = {
+    morphStyle: "outerHTML",
+    callbacks: {
+      beforeNodeAdded: noOp,
+      afterNodeAdded: noOp,
+      beforeNodeMorphed: noOp,
+      afterNodeMorphed: noOp,
+      beforeNodeRemoved: noOp,
+      afterNodeRemoved: noOp,
+      beforeAttributeUpdated: noOp
+    },
+    head: {
+      style: "merge",
+      shouldPreserve: function(elt) {
+        return elt.getAttribute("im-preserve") === "true";
+      },
+      shouldReAppend: function(elt) {
+        return elt.getAttribute("im-re-append") === "true";
+      },
+      shouldRemove: noOp,
+      afterHeadMorphed: noOp
+    }
+  };
+  function morph(oldNode, newContent, config = {}) {
+    if (oldNode instanceof Document) {
+      oldNode = oldNode.documentElement;
+    }
+    if (typeof newContent === "string") {
+      newContent = parseContent(newContent);
+    }
+    let normalizedContent = normalizeContent(newContent);
+    let ctx = createMorphContext(oldNode, normalizedContent, config);
+    return morphNormalizedContent(oldNode, normalizedContent, ctx);
+  }
+  function morphNormalizedContent(oldNode, normalizedNewContent, ctx) {
+    if (ctx.head.block) {
+      let oldHead = oldNode.querySelector("head");
+      let newHead = normalizedNewContent.querySelector("head");
+      if (oldHead && newHead) {
+        let promises = handleHeadElement(newHead, oldHead, ctx);
+        Promise.all(promises).then((function() {
+          morphNormalizedContent(oldNode, normalizedNewContent, Object.assign(ctx, {
+            head: {
+              block: false,
+              ignore: true
+            }
+          }));
+        }));
+        return;
+      }
+    }
+    if (ctx.morphStyle === "innerHTML") {
+      morphChildren(normalizedNewContent, oldNode, ctx);
+      return oldNode.children;
+    } else if (ctx.morphStyle === "outerHTML" || ctx.morphStyle == null) {
+      let bestMatch = findBestNodeMatch(normalizedNewContent, oldNode, ctx);
+      let previousSibling = bestMatch?.previousSibling;
+      let nextSibling = bestMatch?.nextSibling;
+      let morphedNode = morphOldNodeTo(oldNode, bestMatch, ctx);
+      if (bestMatch) {
+        return insertSiblings(previousSibling, morphedNode, nextSibling);
+      } else {
+        return [];
+      }
+    } else {
+      throw "Do not understand how to morph style " + ctx.morphStyle;
+    }
+  }
+  function ignoreValueOfActiveElement(possibleActiveElement, ctx) {
+    return ctx.ignoreActiveValue && possibleActiveElement === document.activeElement && possibleActiveElement !== document.body;
+  }
+  function morphOldNodeTo(oldNode, newContent, ctx) {
+    if (ctx.ignoreActive && oldNode === document.activeElement) ; else if (newContent == null) {
+      if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return oldNode;
+      oldNode.remove();
+      ctx.callbacks.afterNodeRemoved(oldNode);
+      return null;
+    } else if (!isSoftMatch(oldNode, newContent)) {
+      if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return oldNode;
+      if (ctx.callbacks.beforeNodeAdded(newContent) === false) return oldNode;
+      oldNode.parentElement.replaceChild(newContent, oldNode);
+      ctx.callbacks.afterNodeAdded(newContent);
+      ctx.callbacks.afterNodeRemoved(oldNode);
+      return newContent;
+    } else {
+      if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false) return oldNode;
+      if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) ; else if (oldNode instanceof HTMLHeadElement && ctx.head.style !== "morph") {
+        handleHeadElement(newContent, oldNode, ctx);
+      } else {
+        syncNodeFrom(newContent, oldNode, ctx);
+        if (!ignoreValueOfActiveElement(oldNode, ctx)) {
+          morphChildren(newContent, oldNode, ctx);
+        }
+      }
+      ctx.callbacks.afterNodeMorphed(oldNode, newContent);
+      return oldNode;
+    }
+  }
+  function morphChildren(newParent, oldParent, ctx) {
+    let nextNewChild = newParent.firstChild;
+    let insertionPoint = oldParent.firstChild;
+    let newChild;
+    while (nextNewChild) {
+      newChild = nextNewChild;
+      nextNewChild = newChild.nextSibling;
+      if (insertionPoint == null) {
+        if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
+        oldParent.appendChild(newChild);
+        ctx.callbacks.afterNodeAdded(newChild);
+        removeIdsFromConsideration(ctx, newChild);
+        continue;
+      }
+      if (isIdSetMatch(newChild, insertionPoint, ctx)) {
+        morphOldNodeTo(insertionPoint, newChild, ctx);
+        insertionPoint = insertionPoint.nextSibling;
+        removeIdsFromConsideration(ctx, newChild);
+        continue;
+      }
+      let idSetMatch = findIdSetMatch(newParent, oldParent, newChild, insertionPoint, ctx);
+      if (idSetMatch) {
+        insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
+        morphOldNodeTo(idSetMatch, newChild, ctx);
+        removeIdsFromConsideration(ctx, newChild);
+        continue;
+      }
+      let softMatch = findSoftMatch(newParent, oldParent, newChild, insertionPoint, ctx);
+      if (softMatch) {
+        insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
+        morphOldNodeTo(softMatch, newChild, ctx);
+        removeIdsFromConsideration(ctx, newChild);
+        continue;
+      }
+      if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
+      oldParent.insertBefore(newChild, insertionPoint);
+      ctx.callbacks.afterNodeAdded(newChild);
+      removeIdsFromConsideration(ctx, newChild);
+    }
+    while (insertionPoint !== null) {
+      let tempNode = insertionPoint;
+      insertionPoint = insertionPoint.nextSibling;
+      removeNode(tempNode, ctx);
+    }
+  }
+  function ignoreAttribute(attr, to, updateType, ctx) {
+    if (attr === "value" && ctx.ignoreActiveValue && to === document.activeElement) {
+      return true;
+    }
+    return ctx.callbacks.beforeAttributeUpdated(attr, to, updateType) === false;
+  }
+  function syncNodeFrom(from, to, ctx) {
+    let type = from.nodeType;
+    if (type === 1) {
+      const fromAttributes = from.attributes;
+      const toAttributes = to.attributes;
+      for (const fromAttribute of fromAttributes) {
+        if (ignoreAttribute(fromAttribute.name, to, "update", ctx)) {
+          continue;
+        }
+        if (to.getAttribute(fromAttribute.name) !== fromAttribute.value) {
+          to.setAttribute(fromAttribute.name, fromAttribute.value);
+        }
+      }
+      for (let i = toAttributes.length - 1; 0 <= i; i--) {
+        const toAttribute = toAttributes[i];
+        if (ignoreAttribute(toAttribute.name, to, "remove", ctx)) {
+          continue;
+        }
+        if (!from.hasAttribute(toAttribute.name)) {
+          to.removeAttribute(toAttribute.name);
+        }
+      }
+    }
+    if (type === 8 || type === 3) {
+      if (to.nodeValue !== from.nodeValue) {
+        to.nodeValue = from.nodeValue;
+      }
+    }
+    if (!ignoreValueOfActiveElement(to, ctx)) {
+      syncInputValue(from, to, ctx);
+    }
+  }
+  function syncBooleanAttribute(from, to, attributeName, ctx) {
+    if (from[attributeName] !== to[attributeName]) {
+      let ignoreUpdate = ignoreAttribute(attributeName, to, "update", ctx);
+      if (!ignoreUpdate) {
+        to[attributeName] = from[attributeName];
+      }
+      if (from[attributeName]) {
+        if (!ignoreUpdate) {
+          to.setAttribute(attributeName, from[attributeName]);
+        }
+      } else {
+        if (!ignoreAttribute(attributeName, to, "remove", ctx)) {
+          to.removeAttribute(attributeName);
+        }
+      }
+    }
+  }
+  function syncInputValue(from, to, ctx) {
+    if (from instanceof HTMLInputElement && to instanceof HTMLInputElement && from.type !== "file") {
+      let fromValue = from.value;
+      let toValue = to.value;
+      syncBooleanAttribute(from, to, "checked", ctx);
+      syncBooleanAttribute(from, to, "disabled", ctx);
+      if (!from.hasAttribute("value")) {
+        if (!ignoreAttribute("value", to, "remove", ctx)) {
+          to.value = "";
+          to.removeAttribute("value");
+        }
+      } else if (fromValue !== toValue) {
+        if (!ignoreAttribute("value", to, "update", ctx)) {
+          to.setAttribute("value", fromValue);
+          to.value = fromValue;
+        }
+      }
+    } else if (from instanceof HTMLOptionElement) {
+      syncBooleanAttribute(from, to, "selected", ctx);
+    } else if (from instanceof HTMLTextAreaElement && to instanceof HTMLTextAreaElement) {
+      let fromValue = from.value;
+      let toValue = to.value;
+      if (ignoreAttribute("value", to, "update", ctx)) {
+        return;
+      }
+      if (fromValue !== toValue) {
+        to.value = fromValue;
+      }
+      if (to.firstChild && to.firstChild.nodeValue !== fromValue) {
+        to.firstChild.nodeValue = fromValue;
+      }
+    }
+  }
+  function handleHeadElement(newHeadTag, currentHead, ctx) {
+    let added = [];
+    let removed = [];
+    let preserved = [];
+    let nodesToAppend = [];
+    let headMergeStyle = ctx.head.style;
+    let srcToNewHeadNodes = new Map;
+    for (const newHeadChild of newHeadTag.children) {
+      srcToNewHeadNodes.set(newHeadChild.outerHTML, newHeadChild);
+    }
+    for (const currentHeadElt of currentHead.children) {
+      let inNewContent = srcToNewHeadNodes.has(currentHeadElt.outerHTML);
+      let isReAppended = ctx.head.shouldReAppend(currentHeadElt);
+      let isPreserved = ctx.head.shouldPreserve(currentHeadElt);
+      if (inNewContent || isPreserved) {
+        if (isReAppended) {
+          removed.push(currentHeadElt);
+        } else {
+          srcToNewHeadNodes.delete(currentHeadElt.outerHTML);
+          preserved.push(currentHeadElt);
+        }
+      } else {
+        if (headMergeStyle === "append") {
+          if (isReAppended) {
+            removed.push(currentHeadElt);
+            nodesToAppend.push(currentHeadElt);
+          }
+        } else {
+          if (ctx.head.shouldRemove(currentHeadElt) !== false) {
+            removed.push(currentHeadElt);
+          }
+        }
+      }
+    }
+    nodesToAppend.push(...srcToNewHeadNodes.values());
+    let promises = [];
+    for (const newNode of nodesToAppend) {
+      let newElt = document.createRange().createContextualFragment(newNode.outerHTML).firstChild;
+      if (ctx.callbacks.beforeNodeAdded(newElt) !== false) {
+        if (newElt.href || newElt.src) {
+          let resolve = null;
+          let promise = new Promise((function(_resolve) {
+            resolve = _resolve;
+          }));
+          newElt.addEventListener("load", (function() {
+            resolve();
+          }));
+          promises.push(promise);
+        }
+        currentHead.appendChild(newElt);
+        ctx.callbacks.afterNodeAdded(newElt);
+        added.push(newElt);
+      }
+    }
+    for (const removedElement of removed) {
+      if (ctx.callbacks.beforeNodeRemoved(removedElement) !== false) {
+        currentHead.removeChild(removedElement);
+        ctx.callbacks.afterNodeRemoved(removedElement);
+      }
+    }
+    ctx.head.afterHeadMorphed(currentHead, {
+      added: added,
+      kept: preserved,
+      removed: removed
+    });
+    return promises;
+  }
+  function noOp() {}
+  function mergeDefaults(config) {
+    let finalConfig = {};
+    Object.assign(finalConfig, defaults);
+    Object.assign(finalConfig, config);
+    finalConfig.callbacks = {};
+    Object.assign(finalConfig.callbacks, defaults.callbacks);
+    Object.assign(finalConfig.callbacks, config.callbacks);
+    finalConfig.head = {};
+    Object.assign(finalConfig.head, defaults.head);
+    Object.assign(finalConfig.head, config.head);
+    return finalConfig;
+  }
+  function createMorphContext(oldNode, newContent, config) {
+    config = mergeDefaults(config);
+    return {
+      target: oldNode,
+      newContent: newContent,
+      config: config,
+      morphStyle: config.morphStyle,
+      ignoreActive: config.ignoreActive,
+      ignoreActiveValue: config.ignoreActiveValue,
+      idMap: createIdMap(oldNode, newContent),
+      deadIds: new Set,
+      callbacks: config.callbacks,
+      head: config.head
+    };
+  }
+  function isIdSetMatch(node1, node2, ctx) {
+    if (node1 == null || node2 == null) {
+      return false;
+    }
+    if (node1.nodeType === node2.nodeType && node1.tagName === node2.tagName) {
+      if (node1.id !== "" && node1.id === node2.id) {
+        return true;
+      } else {
+        return getIdIntersectionCount(ctx, node1, node2) > 0;
+      }
+    }
+    return false;
+  }
+  function isSoftMatch(node1, node2) {
+    if (node1 == null || node2 == null) {
+      return false;
+    }
+    return node1.nodeType === node2.nodeType && node1.tagName === node2.tagName;
+  }
+  function removeNodesBetween(startInclusive, endExclusive, ctx) {
+    while (startInclusive !== endExclusive) {
+      let tempNode = startInclusive;
+      startInclusive = startInclusive.nextSibling;
+      removeNode(tempNode, ctx);
+    }
+    removeIdsFromConsideration(ctx, endExclusive);
+    return endExclusive.nextSibling;
+  }
+  function findIdSetMatch(newContent, oldParent, newChild, insertionPoint, ctx) {
+    let newChildPotentialIdCount = getIdIntersectionCount(ctx, newChild, oldParent);
+    let potentialMatch = null;
+    if (newChildPotentialIdCount > 0) {
+      let potentialMatch = insertionPoint;
+      let otherMatchCount = 0;
+      while (potentialMatch != null) {
+        if (isIdSetMatch(newChild, potentialMatch, ctx)) {
+          return potentialMatch;
+        }
+        otherMatchCount += getIdIntersectionCount(ctx, potentialMatch, newContent);
+        if (otherMatchCount > newChildPotentialIdCount) {
+          return null;
+        }
+        potentialMatch = potentialMatch.nextSibling;
+      }
+    }
+    return potentialMatch;
+  }
+  function findSoftMatch(newContent, oldParent, newChild, insertionPoint, ctx) {
+    let potentialSoftMatch = insertionPoint;
+    let nextSibling = newChild.nextSibling;
+    let siblingSoftMatchCount = 0;
+    while (potentialSoftMatch != null) {
+      if (getIdIntersectionCount(ctx, potentialSoftMatch, newContent) > 0) {
+        return null;
+      }
+      if (isSoftMatch(newChild, potentialSoftMatch)) {
+        return potentialSoftMatch;
+      }
+      if (isSoftMatch(nextSibling, potentialSoftMatch)) {
+        siblingSoftMatchCount++;
+        nextSibling = nextSibling.nextSibling;
+        if (siblingSoftMatchCount >= 2) {
+          return null;
+        }
+      }
+      potentialSoftMatch = potentialSoftMatch.nextSibling;
+    }
+    return potentialSoftMatch;
+  }
+  function parseContent(newContent) {
+    let parser = new DOMParser;
+    let contentWithSvgsRemoved = newContent.replace(/<svg(\s[^>]*>|>)([\s\S]*?)<\/svg>/gim, "");
+    if (contentWithSvgsRemoved.match(/<\/html>/) || contentWithSvgsRemoved.match(/<\/head>/) || contentWithSvgsRemoved.match(/<\/body>/)) {
+      let content = parser.parseFromString(newContent, "text/html");
+      if (contentWithSvgsRemoved.match(/<\/html>/)) {
+        content.generatedByIdiomorph = true;
+        return content;
+      } else {
+        let htmlElement = content.firstChild;
+        if (htmlElement) {
+          htmlElement.generatedByIdiomorph = true;
+          return htmlElement;
+        } else {
+          return null;
+        }
+      }
+    } else {
+      let responseDoc = parser.parseFromString("<body><template>" + newContent + "</template></body>", "text/html");
+      let content = responseDoc.body.querySelector("template").content;
+      content.generatedByIdiomorph = true;
+      return content;
+    }
+  }
+  function normalizeContent(newContent) {
+    if (newContent == null) {
+      const dummyParent = document.createElement("div");
+      return dummyParent;
+    } else if (newContent.generatedByIdiomorph) {
+      return newContent;
+    } else if (newContent instanceof Node) {
+      const dummyParent = document.createElement("div");
+      dummyParent.append(newContent);
+      return dummyParent;
+    } else {
+      const dummyParent = document.createElement("div");
+      for (const elt of [ ...newContent ]) {
+        dummyParent.append(elt);
+      }
+      return dummyParent;
+    }
+  }
+  function insertSiblings(previousSibling, morphedNode, nextSibling) {
+    let stack = [];
+    let added = [];
+    while (previousSibling != null) {
+      stack.push(previousSibling);
+      previousSibling = previousSibling.previousSibling;
+    }
+    while (stack.length > 0) {
+      let node = stack.pop();
+      added.push(node);
+      morphedNode.parentElement.insertBefore(node, morphedNode);
+    }
+    added.push(morphedNode);
+    while (nextSibling != null) {
+      stack.push(nextSibling);
+      added.push(nextSibling);
+      nextSibling = nextSibling.nextSibling;
+    }
+    while (stack.length > 0) {
+      morphedNode.parentElement.insertBefore(stack.pop(), morphedNode.nextSibling);
+    }
+    return added;
+  }
+  function findBestNodeMatch(newContent, oldNode, ctx) {
+    let currentElement;
+    currentElement = newContent.firstChild;
+    let bestElement = currentElement;
+    let score = 0;
+    while (currentElement) {
+      let newScore = scoreElement(currentElement, oldNode, ctx);
+      if (newScore > score) {
+        bestElement = currentElement;
+        score = newScore;
+      }
+      currentElement = currentElement.nextSibling;
+    }
+    return bestElement;
+  }
+  function scoreElement(node1, node2, ctx) {
+    if (isSoftMatch(node1, node2)) {
+      return .5 + getIdIntersectionCount(ctx, node1, node2);
+    }
+    return 0;
+  }
+  function removeNode(tempNode, ctx) {
+    removeIdsFromConsideration(ctx, tempNode);
+    if (ctx.callbacks.beforeNodeRemoved(tempNode) === false) return;
+    tempNode.remove();
+    ctx.callbacks.afterNodeRemoved(tempNode);
+  }
+  function isIdInConsideration(ctx, id) {
+    return !ctx.deadIds.has(id);
+  }
+  function idIsWithinNode(ctx, id, targetNode) {
+    let idSet = ctx.idMap.get(targetNode) || EMPTY_SET;
+    return idSet.has(id);
+  }
+  function removeIdsFromConsideration(ctx, node) {
+    let idSet = ctx.idMap.get(node) || EMPTY_SET;
+    for (const id of idSet) {
+      ctx.deadIds.add(id);
+    }
+  }
+  function getIdIntersectionCount(ctx, node1, node2) {
+    let sourceSet = ctx.idMap.get(node1) || EMPTY_SET;
+    let matchCount = 0;
+    for (const id of sourceSet) {
+      if (isIdInConsideration(ctx, id) && idIsWithinNode(ctx, id, node2)) {
+        ++matchCount;
+      }
+    }
+    return matchCount;
+  }
+  function populateIdMapForNode(node, idMap) {
+    let nodeParent = node.parentElement;
+    let idElements = node.querySelectorAll("[id]");
+    for (const elt of idElements) {
+      let current = elt;
+      while (current !== nodeParent && current != null) {
+        let idSet = idMap.get(current);
+        if (idSet == null) {
+          idSet = new Set;
+          idMap.set(current, idSet);
+        }
+        idSet.add(elt.id);
+        current = current.parentElement;
+      }
+    }
+  }
+  function createIdMap(oldContent, newContent) {
+    let idMap = new Map;
+    populateIdMapForNode(oldContent, idMap);
+    populateIdMapForNode(newContent, idMap);
+    return idMap;
+  }
+  return {
+    morph: morph,
+    defaults: defaults
+  };
+}();
+
+function morphElements(currentElement, newElement, {callbacks: callbacks, ...options} = {}) {
+  Idiomorph.morph(currentElement, newElement, {
+    ...options,
+    callbacks: new DefaultIdiomorphCallbacks(callbacks)
+  });
+}
+
+function morphChildren(currentElement, newElement) {
+  morphElements(currentElement, newElement.children, {
+    morphStyle: "innerHTML"
+  });
+}
+
+class DefaultIdiomorphCallbacks {
+  #beforeNodeMorphed;
+  constructor({beforeNodeMorphed: beforeNodeMorphed} = {}) {
+    this.#beforeNodeMorphed = beforeNodeMorphed || (() => true);
+  }
+  beforeNodeAdded=node => !(node.id && node.hasAttribute("data-turbo-permanent") && document.getElementById(node.id));
+  beforeNodeMorphed=(currentElement, newElement) => {
+    if (currentElement instanceof Element) {
+      if (!currentElement.hasAttribute("data-turbo-permanent") && this.#beforeNodeMorphed(currentElement, newElement)) {
+        const event = dispatch("turbo:before-morph-element", {
+          cancelable: true,
+          target: currentElement,
+          detail: {
+            currentElement: currentElement,
+            newElement: newElement
+          }
+        });
+        return !event.defaultPrevented;
+      } else {
+        return false;
+      }
+    }
+  };
+  beforeAttributeUpdated=(attributeName, target, mutationType) => {
+    const event = dispatch("turbo:before-morph-attribute", {
+      cancelable: true,
+      target: target,
+      detail: {
+        attributeName: attributeName,
+        mutationType: mutationType
+      }
+    });
+    return !event.defaultPrevented;
+  };
+  beforeNodeRemoved=node => this.beforeNodeMorphed(node);
+  afterNodeMorphed=(currentElement, newElement) => {
+    if (currentElement instanceof Element) {
+      dispatch("turbo:morph-element", {
+        target: currentElement,
+        detail: {
+          currentElement: currentElement,
+          newElement: newElement
+        }
+      });
+    }
+  };
+}
+
+class MorphingFrameRenderer extends FrameRenderer {
+  static renderElement(currentElement, newElement) {
+    dispatch("turbo:before-frame-morph", {
+      target: currentElement,
+      detail: {
+        currentElement: currentElement,
+        newElement: newElement
+      }
+    });
+    morphChildren(currentElement, newElement);
+  }
+}
+
 class ProgressBar {
   static animationDuration=300;
   static get defaultCSS() {
@@ -2260,7 +2925,9 @@ class Visit {
   }
   async render(callback) {
     this.cancelRender();
-    this.frame = await nextRepaint();
+    await new Promise((resolve => {
+      this.frame = document.visibilityState === "hidden" ? setTimeout((() => resolve()), 0) : requestAnimationFrame((() => resolve()));
+    }));
     await callback();
     delete this.frame;
   }
@@ -3092,620 +3759,6 @@ class ErrorRenderer extends Renderer {
   }
 }
 
-var Idiomorph = function() {
-  let EMPTY_SET = new Set;
-  let defaults = {
-    morphStyle: "outerHTML",
-    callbacks: {
-      beforeNodeAdded: noOp,
-      afterNodeAdded: noOp,
-      beforeNodeMorphed: noOp,
-      afterNodeMorphed: noOp,
-      beforeNodeRemoved: noOp,
-      afterNodeRemoved: noOp,
-      beforeAttributeUpdated: noOp
-    },
-    head: {
-      style: "merge",
-      shouldPreserve: function(elt) {
-        return elt.getAttribute("im-preserve") === "true";
-      },
-      shouldReAppend: function(elt) {
-        return elt.getAttribute("im-re-append") === "true";
-      },
-      shouldRemove: noOp,
-      afterHeadMorphed: noOp
-    }
-  };
-  function morph(oldNode, newContent, config = {}) {
-    if (oldNode instanceof Document) {
-      oldNode = oldNode.documentElement;
-    }
-    if (typeof newContent === "string") {
-      newContent = parseContent(newContent);
-    }
-    let normalizedContent = normalizeContent(newContent);
-    let ctx = createMorphContext(oldNode, normalizedContent, config);
-    return morphNormalizedContent(oldNode, normalizedContent, ctx);
-  }
-  function morphNormalizedContent(oldNode, normalizedNewContent, ctx) {
-    if (ctx.head.block) {
-      let oldHead = oldNode.querySelector("head");
-      let newHead = normalizedNewContent.querySelector("head");
-      if (oldHead && newHead) {
-        let promises = handleHeadElement(newHead, oldHead, ctx);
-        Promise.all(promises).then((function() {
-          morphNormalizedContent(oldNode, normalizedNewContent, Object.assign(ctx, {
-            head: {
-              block: false,
-              ignore: true
-            }
-          }));
-        }));
-        return;
-      }
-    }
-    if (ctx.morphStyle === "innerHTML") {
-      morphChildren(normalizedNewContent, oldNode, ctx);
-      return oldNode.children;
-    } else if (ctx.morphStyle === "outerHTML" || ctx.morphStyle == null) {
-      let bestMatch = findBestNodeMatch(normalizedNewContent, oldNode, ctx);
-      let previousSibling = bestMatch?.previousSibling;
-      let nextSibling = bestMatch?.nextSibling;
-      let morphedNode = morphOldNodeTo(oldNode, bestMatch, ctx);
-      if (bestMatch) {
-        return insertSiblings(previousSibling, morphedNode, nextSibling);
-      } else {
-        return [];
-      }
-    } else {
-      throw "Do not understand how to morph style " + ctx.morphStyle;
-    }
-  }
-  function ignoreValueOfActiveElement(possibleActiveElement, ctx) {
-    return ctx.ignoreActiveValue && possibleActiveElement === document.activeElement && possibleActiveElement !== document.body;
-  }
-  function morphOldNodeTo(oldNode, newContent, ctx) {
-    if (ctx.ignoreActive && oldNode === document.activeElement) ; else if (newContent == null) {
-      if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return oldNode;
-      oldNode.remove();
-      ctx.callbacks.afterNodeRemoved(oldNode);
-      return null;
-    } else if (!isSoftMatch(oldNode, newContent)) {
-      if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return oldNode;
-      if (ctx.callbacks.beforeNodeAdded(newContent) === false) return oldNode;
-      oldNode.parentElement.replaceChild(newContent, oldNode);
-      ctx.callbacks.afterNodeAdded(newContent);
-      ctx.callbacks.afterNodeRemoved(oldNode);
-      return newContent;
-    } else {
-      if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false) return oldNode;
-      if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) ; else if (oldNode instanceof HTMLHeadElement && ctx.head.style !== "morph") {
-        handleHeadElement(newContent, oldNode, ctx);
-      } else {
-        syncNodeFrom(newContent, oldNode, ctx);
-        if (!ignoreValueOfActiveElement(oldNode, ctx)) {
-          morphChildren(newContent, oldNode, ctx);
-        }
-      }
-      ctx.callbacks.afterNodeMorphed(oldNode, newContent);
-      return oldNode;
-    }
-  }
-  function morphChildren(newParent, oldParent, ctx) {
-    let nextNewChild = newParent.firstChild;
-    let insertionPoint = oldParent.firstChild;
-    let newChild;
-    while (nextNewChild) {
-      newChild = nextNewChild;
-      nextNewChild = newChild.nextSibling;
-      if (insertionPoint == null) {
-        if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
-        oldParent.appendChild(newChild);
-        ctx.callbacks.afterNodeAdded(newChild);
-        removeIdsFromConsideration(ctx, newChild);
-        continue;
-      }
-      if (isIdSetMatch(newChild, insertionPoint, ctx)) {
-        morphOldNodeTo(insertionPoint, newChild, ctx);
-        insertionPoint = insertionPoint.nextSibling;
-        removeIdsFromConsideration(ctx, newChild);
-        continue;
-      }
-      let idSetMatch = findIdSetMatch(newParent, oldParent, newChild, insertionPoint, ctx);
-      if (idSetMatch) {
-        insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
-        morphOldNodeTo(idSetMatch, newChild, ctx);
-        removeIdsFromConsideration(ctx, newChild);
-        continue;
-      }
-      let softMatch = findSoftMatch(newParent, oldParent, newChild, insertionPoint, ctx);
-      if (softMatch) {
-        insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
-        morphOldNodeTo(softMatch, newChild, ctx);
-        removeIdsFromConsideration(ctx, newChild);
-        continue;
-      }
-      if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
-      oldParent.insertBefore(newChild, insertionPoint);
-      ctx.callbacks.afterNodeAdded(newChild);
-      removeIdsFromConsideration(ctx, newChild);
-    }
-    while (insertionPoint !== null) {
-      let tempNode = insertionPoint;
-      insertionPoint = insertionPoint.nextSibling;
-      removeNode(tempNode, ctx);
-    }
-  }
-  function ignoreAttribute(attr, to, updateType, ctx) {
-    if (attr === "value" && ctx.ignoreActiveValue && to === document.activeElement) {
-      return true;
-    }
-    return ctx.callbacks.beforeAttributeUpdated(attr, to, updateType) === false;
-  }
-  function syncNodeFrom(from, to, ctx) {
-    let type = from.nodeType;
-    if (type === 1) {
-      const fromAttributes = from.attributes;
-      const toAttributes = to.attributes;
-      for (const fromAttribute of fromAttributes) {
-        if (ignoreAttribute(fromAttribute.name, to, "update", ctx)) {
-          continue;
-        }
-        if (to.getAttribute(fromAttribute.name) !== fromAttribute.value) {
-          to.setAttribute(fromAttribute.name, fromAttribute.value);
-        }
-      }
-      for (let i = toAttributes.length - 1; 0 <= i; i--) {
-        const toAttribute = toAttributes[i];
-        if (ignoreAttribute(toAttribute.name, to, "remove", ctx)) {
-          continue;
-        }
-        if (!from.hasAttribute(toAttribute.name)) {
-          to.removeAttribute(toAttribute.name);
-        }
-      }
-    }
-    if (type === 8 || type === 3) {
-      if (to.nodeValue !== from.nodeValue) {
-        to.nodeValue = from.nodeValue;
-      }
-    }
-    if (!ignoreValueOfActiveElement(to, ctx)) {
-      syncInputValue(from, to, ctx);
-    }
-  }
-  function syncBooleanAttribute(from, to, attributeName, ctx) {
-    if (from[attributeName] !== to[attributeName]) {
-      let ignoreUpdate = ignoreAttribute(attributeName, to, "update", ctx);
-      if (!ignoreUpdate) {
-        to[attributeName] = from[attributeName];
-      }
-      if (from[attributeName]) {
-        if (!ignoreUpdate) {
-          to.setAttribute(attributeName, from[attributeName]);
-        }
-      } else {
-        if (!ignoreAttribute(attributeName, to, "remove", ctx)) {
-          to.removeAttribute(attributeName);
-        }
-      }
-    }
-  }
-  function syncInputValue(from, to, ctx) {
-    if (from instanceof HTMLInputElement && to instanceof HTMLInputElement && from.type !== "file") {
-      let fromValue = from.value;
-      let toValue = to.value;
-      syncBooleanAttribute(from, to, "checked", ctx);
-      syncBooleanAttribute(from, to, "disabled", ctx);
-      if (!from.hasAttribute("value")) {
-        if (!ignoreAttribute("value", to, "remove", ctx)) {
-          to.value = "";
-          to.removeAttribute("value");
-        }
-      } else if (fromValue !== toValue) {
-        if (!ignoreAttribute("value", to, "update", ctx)) {
-          to.setAttribute("value", fromValue);
-          to.value = fromValue;
-        }
-      }
-    } else if (from instanceof HTMLOptionElement) {
-      syncBooleanAttribute(from, to, "selected", ctx);
-    } else if (from instanceof HTMLTextAreaElement && to instanceof HTMLTextAreaElement) {
-      let fromValue = from.value;
-      let toValue = to.value;
-      if (ignoreAttribute("value", to, "update", ctx)) {
-        return;
-      }
-      if (fromValue !== toValue) {
-        to.value = fromValue;
-      }
-      if (to.firstChild && to.firstChild.nodeValue !== fromValue) {
-        to.firstChild.nodeValue = fromValue;
-      }
-    }
-  }
-  function handleHeadElement(newHeadTag, currentHead, ctx) {
-    let added = [];
-    let removed = [];
-    let preserved = [];
-    let nodesToAppend = [];
-    let headMergeStyle = ctx.head.style;
-    let srcToNewHeadNodes = new Map;
-    for (const newHeadChild of newHeadTag.children) {
-      srcToNewHeadNodes.set(newHeadChild.outerHTML, newHeadChild);
-    }
-    for (const currentHeadElt of currentHead.children) {
-      let inNewContent = srcToNewHeadNodes.has(currentHeadElt.outerHTML);
-      let isReAppended = ctx.head.shouldReAppend(currentHeadElt);
-      let isPreserved = ctx.head.shouldPreserve(currentHeadElt);
-      if (inNewContent || isPreserved) {
-        if (isReAppended) {
-          removed.push(currentHeadElt);
-        } else {
-          srcToNewHeadNodes.delete(currentHeadElt.outerHTML);
-          preserved.push(currentHeadElt);
-        }
-      } else {
-        if (headMergeStyle === "append") {
-          if (isReAppended) {
-            removed.push(currentHeadElt);
-            nodesToAppend.push(currentHeadElt);
-          }
-        } else {
-          if (ctx.head.shouldRemove(currentHeadElt) !== false) {
-            removed.push(currentHeadElt);
-          }
-        }
-      }
-    }
-    nodesToAppend.push(...srcToNewHeadNodes.values());
-    let promises = [];
-    for (const newNode of nodesToAppend) {
-      let newElt = document.createRange().createContextualFragment(newNode.outerHTML).firstChild;
-      if (ctx.callbacks.beforeNodeAdded(newElt) !== false) {
-        if (newElt.href || newElt.src) {
-          let resolve = null;
-          let promise = new Promise((function(_resolve) {
-            resolve = _resolve;
-          }));
-          newElt.addEventListener("load", (function() {
-            resolve();
-          }));
-          promises.push(promise);
-        }
-        currentHead.appendChild(newElt);
-        ctx.callbacks.afterNodeAdded(newElt);
-        added.push(newElt);
-      }
-    }
-    for (const removedElement of removed) {
-      if (ctx.callbacks.beforeNodeRemoved(removedElement) !== false) {
-        currentHead.removeChild(removedElement);
-        ctx.callbacks.afterNodeRemoved(removedElement);
-      }
-    }
-    ctx.head.afterHeadMorphed(currentHead, {
-      added: added,
-      kept: preserved,
-      removed: removed
-    });
-    return promises;
-  }
-  function noOp() {}
-  function mergeDefaults(config) {
-    let finalConfig = {};
-    Object.assign(finalConfig, defaults);
-    Object.assign(finalConfig, config);
-    finalConfig.callbacks = {};
-    Object.assign(finalConfig.callbacks, defaults.callbacks);
-    Object.assign(finalConfig.callbacks, config.callbacks);
-    finalConfig.head = {};
-    Object.assign(finalConfig.head, defaults.head);
-    Object.assign(finalConfig.head, config.head);
-    return finalConfig;
-  }
-  function createMorphContext(oldNode, newContent, config) {
-    config = mergeDefaults(config);
-    return {
-      target: oldNode,
-      newContent: newContent,
-      config: config,
-      morphStyle: config.morphStyle,
-      ignoreActive: config.ignoreActive,
-      ignoreActiveValue: config.ignoreActiveValue,
-      idMap: createIdMap(oldNode, newContent),
-      deadIds: new Set,
-      callbacks: config.callbacks,
-      head: config.head
-    };
-  }
-  function isIdSetMatch(node1, node2, ctx) {
-    if (node1 == null || node2 == null) {
-      return false;
-    }
-    if (node1.nodeType === node2.nodeType && node1.tagName === node2.tagName) {
-      if (node1.id !== "" && node1.id === node2.id) {
-        return true;
-      } else {
-        return getIdIntersectionCount(ctx, node1, node2) > 0;
-      }
-    }
-    return false;
-  }
-  function isSoftMatch(node1, node2) {
-    if (node1 == null || node2 == null) {
-      return false;
-    }
-    return node1.nodeType === node2.nodeType && node1.tagName === node2.tagName;
-  }
-  function removeNodesBetween(startInclusive, endExclusive, ctx) {
-    while (startInclusive !== endExclusive) {
-      let tempNode = startInclusive;
-      startInclusive = startInclusive.nextSibling;
-      removeNode(tempNode, ctx);
-    }
-    removeIdsFromConsideration(ctx, endExclusive);
-    return endExclusive.nextSibling;
-  }
-  function findIdSetMatch(newContent, oldParent, newChild, insertionPoint, ctx) {
-    let newChildPotentialIdCount = getIdIntersectionCount(ctx, newChild, oldParent);
-    let potentialMatch = null;
-    if (newChildPotentialIdCount > 0) {
-      let potentialMatch = insertionPoint;
-      let otherMatchCount = 0;
-      while (potentialMatch != null) {
-        if (isIdSetMatch(newChild, potentialMatch, ctx)) {
-          return potentialMatch;
-        }
-        otherMatchCount += getIdIntersectionCount(ctx, potentialMatch, newContent);
-        if (otherMatchCount > newChildPotentialIdCount) {
-          return null;
-        }
-        potentialMatch = potentialMatch.nextSibling;
-      }
-    }
-    return potentialMatch;
-  }
-  function findSoftMatch(newContent, oldParent, newChild, insertionPoint, ctx) {
-    let potentialSoftMatch = insertionPoint;
-    let nextSibling = newChild.nextSibling;
-    let siblingSoftMatchCount = 0;
-    while (potentialSoftMatch != null) {
-      if (getIdIntersectionCount(ctx, potentialSoftMatch, newContent) > 0) {
-        return null;
-      }
-      if (isSoftMatch(newChild, potentialSoftMatch)) {
-        return potentialSoftMatch;
-      }
-      if (isSoftMatch(nextSibling, potentialSoftMatch)) {
-        siblingSoftMatchCount++;
-        nextSibling = nextSibling.nextSibling;
-        if (siblingSoftMatchCount >= 2) {
-          return null;
-        }
-      }
-      potentialSoftMatch = potentialSoftMatch.nextSibling;
-    }
-    return potentialSoftMatch;
-  }
-  function parseContent(newContent) {
-    let parser = new DOMParser;
-    let contentWithSvgsRemoved = newContent.replace(/<svg(\s[^>]*>|>)([\s\S]*?)<\/svg>/gim, "");
-    if (contentWithSvgsRemoved.match(/<\/html>/) || contentWithSvgsRemoved.match(/<\/head>/) || contentWithSvgsRemoved.match(/<\/body>/)) {
-      let content = parser.parseFromString(newContent, "text/html");
-      if (contentWithSvgsRemoved.match(/<\/html>/)) {
-        content.generatedByIdiomorph = true;
-        return content;
-      } else {
-        let htmlElement = content.firstChild;
-        if (htmlElement) {
-          htmlElement.generatedByIdiomorph = true;
-          return htmlElement;
-        } else {
-          return null;
-        }
-      }
-    } else {
-      let responseDoc = parser.parseFromString("<body><template>" + newContent + "</template></body>", "text/html");
-      let content = responseDoc.body.querySelector("template").content;
-      content.generatedByIdiomorph = true;
-      return content;
-    }
-  }
-  function normalizeContent(newContent) {
-    if (newContent == null) {
-      const dummyParent = document.createElement("div");
-      return dummyParent;
-    } else if (newContent.generatedByIdiomorph) {
-      return newContent;
-    } else if (newContent instanceof Node) {
-      const dummyParent = document.createElement("div");
-      dummyParent.append(newContent);
-      return dummyParent;
-    } else {
-      const dummyParent = document.createElement("div");
-      for (const elt of [ ...newContent ]) {
-        dummyParent.append(elt);
-      }
-      return dummyParent;
-    }
-  }
-  function insertSiblings(previousSibling, morphedNode, nextSibling) {
-    let stack = [];
-    let added = [];
-    while (previousSibling != null) {
-      stack.push(previousSibling);
-      previousSibling = previousSibling.previousSibling;
-    }
-    while (stack.length > 0) {
-      let node = stack.pop();
-      added.push(node);
-      morphedNode.parentElement.insertBefore(node, morphedNode);
-    }
-    added.push(morphedNode);
-    while (nextSibling != null) {
-      stack.push(nextSibling);
-      added.push(nextSibling);
-      nextSibling = nextSibling.nextSibling;
-    }
-    while (stack.length > 0) {
-      morphedNode.parentElement.insertBefore(stack.pop(), morphedNode.nextSibling);
-    }
-    return added;
-  }
-  function findBestNodeMatch(newContent, oldNode, ctx) {
-    let currentElement;
-    currentElement = newContent.firstChild;
-    let bestElement = currentElement;
-    let score = 0;
-    while (currentElement) {
-      let newScore = scoreElement(currentElement, oldNode, ctx);
-      if (newScore > score) {
-        bestElement = currentElement;
-        score = newScore;
-      }
-      currentElement = currentElement.nextSibling;
-    }
-    return bestElement;
-  }
-  function scoreElement(node1, node2, ctx) {
-    if (isSoftMatch(node1, node2)) {
-      return .5 + getIdIntersectionCount(ctx, node1, node2);
-    }
-    return 0;
-  }
-  function removeNode(tempNode, ctx) {
-    removeIdsFromConsideration(ctx, tempNode);
-    if (ctx.callbacks.beforeNodeRemoved(tempNode) === false) return;
-    tempNode.remove();
-    ctx.callbacks.afterNodeRemoved(tempNode);
-  }
-  function isIdInConsideration(ctx, id) {
-    return !ctx.deadIds.has(id);
-  }
-  function idIsWithinNode(ctx, id, targetNode) {
-    let idSet = ctx.idMap.get(targetNode) || EMPTY_SET;
-    return idSet.has(id);
-  }
-  function removeIdsFromConsideration(ctx, node) {
-    let idSet = ctx.idMap.get(node) || EMPTY_SET;
-    for (const id of idSet) {
-      ctx.deadIds.add(id);
-    }
-  }
-  function getIdIntersectionCount(ctx, node1, node2) {
-    let sourceSet = ctx.idMap.get(node1) || EMPTY_SET;
-    let matchCount = 0;
-    for (const id of sourceSet) {
-      if (isIdInConsideration(ctx, id) && idIsWithinNode(ctx, id, node2)) {
-        ++matchCount;
-      }
-    }
-    return matchCount;
-  }
-  function populateIdMapForNode(node, idMap) {
-    let nodeParent = node.parentElement;
-    let idElements = node.querySelectorAll("[id]");
-    for (const elt of idElements) {
-      let current = elt;
-      while (current !== nodeParent && current != null) {
-        let idSet = idMap.get(current);
-        if (idSet == null) {
-          idSet = new Set;
-          idMap.set(current, idSet);
-        }
-        idSet.add(elt.id);
-        current = current.parentElement;
-      }
-    }
-  }
-  function createIdMap(oldContent, newContent) {
-    let idMap = new Map;
-    populateIdMapForNode(oldContent, idMap);
-    populateIdMapForNode(newContent, idMap);
-    return idMap;
-  }
-  return {
-    morph: morph,
-    defaults: defaults
-  };
-}();
-
-function morphElements(currentElement, newElement, {callbacks: callbacks, ...options} = {}) {
-  Idiomorph.morph(currentElement, newElement, {
-    ...options,
-    callbacks: new DefaultIdiomorphCallbacks(callbacks)
-  });
-}
-
-function morphChildren(currentElement, newElement) {
-  morphElements(currentElement, newElement.children, {
-    morphStyle: "innerHTML"
-  });
-}
-
-class DefaultIdiomorphCallbacks {
-  #beforeNodeMorphed;
-  constructor({beforeNodeMorphed: beforeNodeMorphed} = {}) {
-    this.#beforeNodeMorphed = beforeNodeMorphed || (() => true);
-  }
-  beforeNodeAdded=node => !(node.id && node.hasAttribute("data-turbo-permanent") && document.getElementById(node.id));
-  beforeNodeMorphed=(currentElement, newElement) => {
-    if (currentElement instanceof Element) {
-      if (!currentElement.hasAttribute("data-turbo-permanent") && this.#beforeNodeMorphed(currentElement, newElement)) {
-        const event = dispatch("turbo:before-morph-element", {
-          cancelable: true,
-          target: currentElement,
-          detail: {
-            currentElement: currentElement,
-            newElement: newElement
-          }
-        });
-        return !event.defaultPrevented;
-      } else {
-        return false;
-      }
-    }
-  };
-  beforeAttributeUpdated=(attributeName, target, mutationType) => {
-    const event = dispatch("turbo:before-morph-attribute", {
-      cancelable: true,
-      target: target,
-      detail: {
-        attributeName: attributeName,
-        mutationType: mutationType
-      }
-    });
-    return !event.defaultPrevented;
-  };
-  beforeNodeRemoved=node => this.beforeNodeMorphed(node);
-  afterNodeMorphed=(currentElement, newElement) => {
-    if (currentElement instanceof Element) {
-      dispatch("turbo:morph-element", {
-        target: currentElement,
-        detail: {
-          currentElement: currentElement,
-          newElement: newElement
-        }
-      });
-    }
-  };
-}
-
-class MorphingFrameRenderer extends FrameRenderer {
-  static renderElement(currentElement, newElement) {
-    dispatch("turbo:before-frame-morph", {
-      target: currentElement,
-      detail: {
-        currentElement: currentElement,
-        newElement: newElement
-      }
-    });
-    morphChildren(currentElement, newElement);
-  }
-}
-
 class PageRenderer extends Renderer {
   static renderElement(currentElement, newElement) {
     if (document.body && newElement instanceof HTMLBodyElement) {
@@ -3882,7 +3935,7 @@ class MorphingPageRenderer extends PageRenderer {
       }
     });
     for (const frame of currentElement.querySelectorAll("turbo-frame")) {
-      if (canRefreshFrame(frame)) refreshFrame(frame);
+      if (canRefreshFrame(frame)) frame.reload();
     }
     dispatch("turbo:morph", {
       detail: {
@@ -3904,15 +3957,6 @@ class MorphingPageRenderer extends PageRenderer {
 
 function canRefreshFrame(frame) {
   return frame instanceof FrameElement && frame.src && frame.refresh === "morph" && !frame.closest("[data-turbo-permanent]");
-}
-
-function refreshFrame(frame) {
-  frame.addEventListener("turbo:before-frame-render", (({detail: detail}) => {
-    detail.render = MorphingFrameRenderer.renderElement;
-  }), {
-    once: true
-  });
-  frame.reload();
 }
 
 class SnapshotCache {
@@ -4097,11 +4141,8 @@ class Session {
   frameRedirector=new FrameRedirector(this, document.documentElement);
   streamMessageRenderer=new StreamMessageRenderer;
   cache=new Cache(this);
-  drive=true;
   enabled=true;
-  progressBarDelay=500;
   started=false;
-  formMode="on";
   #pageRefreshDebouncePeriod=150;
   constructor(recentRequests) {
     this.recentRequests = recentRequests;
@@ -4180,10 +4221,26 @@ class Session {
     this.view.clearSnapshotCache();
   }
   setProgressBarDelay(delay) {
+    console.warn("Please replace `session.setProgressBarDelay(delay)` with `session.progressBarDelay = delay`. The function is deprecated and will be removed in a future version of Turbo.`");
     this.progressBarDelay = delay;
   }
-  setFormMode(mode) {
-    this.formMode = mode;
+  set progressBarDelay(delay) {
+    config.drive.progressBarDelay = delay;
+  }
+  get progressBarDelay() {
+    return config.drive.progressBarDelay;
+  }
+  set drive(value) {
+    config.drive.enabled = value;
+  }
+  get drive() {
+    return config.drive.enabled;
+  }
+  set formMode(value) {
+    config.forms.mode = value;
+  }
+  get formMode() {
+    return config.forms.mode;
   }
   get location() {
     return this.history.location;
@@ -4405,11 +4462,11 @@ class Session {
     });
   }
   submissionIsNavigatable(form, submitter) {
-    if (this.formMode == "off") {
+    if (config.forms.mode == "off") {
       return false;
     } else {
       const submitterIsNavigatable = submitter ? this.elementIsNavigatable(submitter) : true;
-      if (this.formMode == "optin") {
+      if (config.forms.mode == "optin") {
         return submitterIsNavigatable && form.closest('[data-turbo="true"]') != null;
       } else {
         return submitterIsNavigatable && this.elementIsNavigatable(form);
@@ -4419,7 +4476,7 @@ class Session {
   elementIsNavigatable(element) {
     const container = findClosestRecursively(element, "[data-turbo]");
     const withinFrame = findClosestRecursively(element, "turbo-frame");
-    if (this.drive || withinFrame) {
+    if (config.drive.enabled || withinFrame) {
       if (container) {
         return container.getAttribute("data-turbo") != "false";
       } else {
@@ -4487,15 +4544,18 @@ function clearCache() {
 }
 
 function setProgressBarDelay(delay) {
-  session.setProgressBarDelay(delay);
+  console.warn("Please replace `Turbo.setProgressBarDelay(delay)` with `Turbo.config.drive.progressBarDelay = delay`. The top-level function is deprecated and will be removed in a future version of Turbo.`");
+  config.drive.progressBarDelay = delay;
 }
 
 function setConfirmMethod(confirmMethod) {
-  FormSubmission.confirmMethod = confirmMethod;
+  console.warn("Please replace `Turbo.setConfirmMethod(confirmMethod)` with `Turbo.config.forms.confirm = confirmMethod`. The top-level function is deprecated and will be removed in a future version of Turbo.`");
+  config.forms.confirm = confirmMethod;
 }
 
 function setFormMode(mode) {
-  session.setFormMode(mode);
+  console.warn("Please replace `Turbo.setFormMode(mode)` with `Turbo.config.forms.mode = mode`. The top-level function is deprecated and will be removed in a future version of Turbo.`");
+  config.forms.mode = mode;
 }
 
 var Turbo = Object.freeze({
@@ -4507,6 +4567,7 @@ var Turbo = Object.freeze({
   PageSnapshot: PageSnapshot,
   FrameRenderer: FrameRenderer,
   fetch: fetchWithTurboHeaders,
+  config: config,
   start: start,
   registerAdapter: registerAdapter,
   visit: visit,
@@ -4575,6 +4636,13 @@ class FrameController {
     }
   }
   sourceURLReloaded() {
+    if (this.element.shouldReloadWithMorph) {
+      this.element.addEventListener("turbo:before-frame-render", (({detail: detail}) => {
+        detail.render = MorphingFrameRenderer.renderElement;
+      }), {
+        once: true
+      });
+    }
     const {src: src} = this.element;
     this.element.removeAttribute("complete");
     this.element.src = null;
@@ -5200,6 +5268,7 @@ var Turbo$1 = Object.freeze({
   StreamSourceElement: StreamSourceElement,
   cache: cache,
   clearCache: clearCache,
+  config: config,
   connectStreamSource: connectStreamSource,
   disconnectStreamSource: disconnectStreamSource,
   fetch: fetchWithTurboHeaders,
