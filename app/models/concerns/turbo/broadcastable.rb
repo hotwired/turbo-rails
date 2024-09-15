@@ -1,4 +1,4 @@
-# Turbo streams can be broadcasted directly from models that include this module (this is automatically done for Active Records).
+# Turbo streams can be broadcasted directly from models that include this module (this is automatically done for Active Records if ActiveJob is loaded).
 # This makes it convenient to execute both synchronous and asynchronous updates, and render directly from callbacks in models
 # or from controllers or jobs that act on those models. Here's an example:
 #
