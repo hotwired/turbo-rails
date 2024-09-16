@@ -241,13 +241,13 @@ module Turbo::Broadcastable
   #
   #   # Sends <turbo-stream action="remove" target="clearance_5"></turbo-stream> to the stream named "identity:2:clearances"
   #   clearance.broadcast_remove_to examiner.identity, :clearances
-  def broadcast_remove_to(*streamables, target: self)
-    Turbo::StreamsChannel.broadcast_remove_to(*streamables, target: target) unless suppressed_turbo_broadcasts?
+  def broadcast_remove_to(*streamables, target: self, **rendering)
+    Turbo::StreamsChannel.broadcast_remove_to(*streamables, **extract_options_and_add_target(rendering, target: target)) unless suppressed_turbo_broadcasts?
   end
 
   # Same as <tt>#broadcast_remove_to</tt>, but the designated stream is automatically set to the current model.
-  def broadcast_remove
-    broadcast_remove_to self
+  def broadcast_remove(**rendering)
+    broadcast_remove_to self, **rendering
   end
 
   # Replace this broadcastable model in the dom for subscribers of the stream name identified by the passed
@@ -265,7 +265,7 @@ module Turbo::Broadcastable
   #   # to the stream named "identity:2:clearances"
   #   clearance.broadcast_replace_to examiner.identity, :clearance, attributes: { method: :morph }, partial: "clearances/other_partial", locals: { a: 1 }
   def broadcast_replace_to(*streamables, **rendering)
-    Turbo::StreamsChannel.broadcast_replace_to(*streamables, target: self, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
+    Turbo::StreamsChannel.broadcast_replace_to(*streamables, **extract_options_and_add_target(rendering, target: self)) unless suppressed_turbo_broadcasts?
   end
 
   # Same as <tt>#broadcast_replace_to</tt>, but the designated stream is automatically set to the current model.
@@ -288,7 +288,7 @@ module Turbo::Broadcastable
   #   # to the stream named "identity:2:clearances"
   #   # clearance.broadcast_update_to examiner.identity, :clearances, attributes: { method: :morph }, partial: "clearances/other_partial", locals: { a: 1 }
   def broadcast_update_to(*streamables, **rendering)
-    Turbo::StreamsChannel.broadcast_update_to(*streamables, target: self, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
+    Turbo::StreamsChannel.broadcast_update_to(*streamables, **extract_options_and_add_target(rendering, target: self)) unless suppressed_turbo_broadcasts?
   end
 
   # Same as <tt>#broadcast_update_to</tt>, but the designated stream is automatically set to the current model.
@@ -308,8 +308,10 @@ module Turbo::Broadcastable
   #   # to the stream named "identity:2:clearances"
   #   clearance.broadcast_before_to examiner.identity, :clearances, target: "clearance_5",
   #     partial: "clearances/other_partial", locals: { a: 1 }
-  def broadcast_before_to(*streamables, target:, **rendering)
-    Turbo::StreamsChannel.broadcast_before_to(*streamables, target: target, **broadcast_rendering_with_defaults(rendering))
+  def broadcast_before_to(*streamables, target: nil, targets: nil, **rendering)
+    raise ArgumentError, "at least one of target or targets is required" unless target || targets
+
+    Turbo::StreamsChannel.broadcast_before_to(*streamables, **extract_options_and_add_target(rendering.merge(target: target, targets: targets)))
   end
 
   # Insert a rendering of this broadcastable model after the target identified by it's dom id passed as <tt>target</tt>
@@ -324,8 +326,10 @@ module Turbo::Broadcastable
   #   # to the stream named "identity:2:clearances"
   #   clearance.broadcast_after_to examiner.identity, :clearances, target: "clearance_5",
   #     partial: "clearances/other_partial", locals: { a: 1 }
-  def broadcast_after_to(*streamables, target:, **rendering)
-    Turbo::StreamsChannel.broadcast_after_to(*streamables, target: target, **broadcast_rendering_with_defaults(rendering))
+  def broadcast_after_to(*streamables, target: nil, targets: nil, **rendering)
+    raise ArgumentError, "at least one of target or targets is required" unless target || targets
+
+    Turbo::StreamsChannel.broadcast_after_to(*streamables, **extract_options_and_add_target(rendering.merge(target: target, targets: targets)))
   end
 
   # Append a rendering of this broadcastable model to the target identified by it's dom id passed as <tt>target</tt>
@@ -341,7 +345,7 @@ module Turbo::Broadcastable
   #   clearance.broadcast_append_to examiner.identity, :clearances, target: "clearances",
   #     partial: "clearances/other_partial", locals: { a: 1 }
   def broadcast_append_to(*streamables, target: broadcast_target_default, **rendering)
-    Turbo::StreamsChannel.broadcast_append_to(*streamables, target: target, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
+    Turbo::StreamsChannel.broadcast_append_to(*streamables, **extract_options_and_add_target(rendering, target: target)) unless suppressed_turbo_broadcasts?
   end
 
   # Same as <tt>#broadcast_append_to</tt>, but the designated stream is automatically set to the current model.
@@ -362,7 +366,7 @@ module Turbo::Broadcastable
   #   clearance.broadcast_prepend_to examiner.identity, :clearances, target: "clearances",
   #     partial: "clearances/other_partial", locals: { a: 1 }
   def broadcast_prepend_to(*streamables, target: broadcast_target_default, **rendering)
-    Turbo::StreamsChannel.broadcast_prepend_to(*streamables, target: target, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
+    Turbo::StreamsChannel.broadcast_prepend_to(*streamables, **extract_options_and_add_target(rendering, target: target)) unless suppressed_turbo_broadcasts?
   end
 
   # Same as <tt>#broadcast_prepend_to</tt>, but the designated stream is automatically set to the current model.
@@ -389,7 +393,7 @@ module Turbo::Broadcastable
   #   # to the stream named "identity:2:clearances"
   #   clearance.broadcast_action_to examiner.identity, :clearances, action: :prepend, target: "clearances"
   def broadcast_action_to(*streamables, action:, target: broadcast_target_default, attributes: {}, **rendering)
-    Turbo::StreamsChannel.broadcast_action_to(*streamables, action: action, target: target, attributes: attributes, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
+    Turbo::StreamsChannel.broadcast_action_to(*streamables, action: action, attributes: attributes, **extract_options_and_add_target(rendering, target: target)) unless suppressed_turbo_broadcasts?
   end
 
   # Same as <tt>#broadcast_action_to</tt>, but the designated stream is automatically set to the current model.
@@ -399,7 +403,7 @@ module Turbo::Broadcastable
 
   # Same as <tt>broadcast_replace_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
   def broadcast_replace_later_to(*streamables, **rendering)
-    Turbo::StreamsChannel.broadcast_replace_later_to(*streamables, target: self, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
+    Turbo::StreamsChannel.broadcast_replace_later_to(*streamables, **extract_options_and_add_target(rendering, target: self)) unless suppressed_turbo_broadcasts?
   end
 
   # Same as <tt>#broadcast_replace_later_to</tt>, but the designated stream is automatically set to the current model.
@@ -409,7 +413,7 @@ module Turbo::Broadcastable
 
   # Same as <tt>broadcast_update_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
   def broadcast_update_later_to(*streamables, **rendering)
-    Turbo::StreamsChannel.broadcast_update_later_to(*streamables, target: self, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
+    Turbo::StreamsChannel.broadcast_update_later_to(*streamables, **extract_options_and_add_target(rendering, target: self)) unless suppressed_turbo_broadcasts?
   end
 
   # Same as <tt>#broadcast_update_later_to</tt>, but the designated stream is automatically set to the current model.
@@ -419,7 +423,7 @@ module Turbo::Broadcastable
 
   # Same as <tt>broadcast_append_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
   def broadcast_append_later_to(*streamables, target: broadcast_target_default, **rendering)
-    Turbo::StreamsChannel.broadcast_append_later_to(*streamables, target: target, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
+    Turbo::StreamsChannel.broadcast_append_later_to(*streamables, **extract_options_and_add_target(rendering, target: target)) unless suppressed_turbo_broadcasts?
   end
 
   # Same as <tt>#broadcast_append_later_to</tt>, but the designated stream is automatically set to the current model.
@@ -429,7 +433,7 @@ module Turbo::Broadcastable
 
   # Same as <tt>broadcast_prepend_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
   def broadcast_prepend_later_to(*streamables, target: broadcast_target_default, **rendering)
-    Turbo::StreamsChannel.broadcast_prepend_later_to(*streamables, target: target, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
+    Turbo::StreamsChannel.broadcast_prepend_later_to(*streamables, **extract_options_and_add_target(rendering, target: target)) unless suppressed_turbo_broadcasts?
   end
 
   # Same as <tt>#broadcast_prepend_later_to</tt>, but the designated stream is automatically set to the current model.
@@ -449,7 +453,7 @@ module Turbo::Broadcastable
 
   # Same as <tt>broadcast_action_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
   def broadcast_action_later_to(*streamables, action:, target: broadcast_target_default, attributes: {}, **rendering)
-    Turbo::StreamsChannel.broadcast_action_later_to(*streamables, action: action, target: target, attributes: attributes, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
+    Turbo::StreamsChannel.broadcast_action_later_to(*streamables, action: action, attributes: attributes, **extract_options_and_add_target(rendering, target: target)) unless suppressed_turbo_broadcasts?
   end
 
   # Same as <tt>#broadcast_action_later_to</tt>, but the designated stream is automatically set to the current model.
@@ -485,7 +489,7 @@ module Turbo::Broadcastable
   # desireable for model callbacks, certainly not if those callbacks are inside of a transaction. Most of the time you should
   # be using +broadcast_render_later_to+, unless you specifically know why synchronous rendering is needed.
   def broadcast_render_to(*streamables, **rendering)
-    Turbo::StreamsChannel.broadcast_render_to(*streamables, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
+    Turbo::StreamsChannel.broadcast_render_to(*streamables, **extract_options_and_add_target(rendering, target: self)) unless suppressed_turbo_broadcasts?
   end
 
   # Same as <tt>broadcast_render_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
@@ -496,12 +500,18 @@ module Turbo::Broadcastable
   # Same as <tt>broadcast_render_later</tt> but run with the added option of naming the stream using the passed
   # <tt>streamables</tt>.
   def broadcast_render_later_to(*streamables, **rendering)
-    Turbo::StreamsChannel.broadcast_render_later_to(*streamables, **broadcast_rendering_with_defaults(rendering)) unless suppressed_turbo_broadcasts?
+    Turbo::StreamsChannel.broadcast_render_later_to(*streamables, **extract_options_and_add_target(rendering)) unless suppressed_turbo_broadcasts?
   end
 
   private
     def broadcast_target_default
       self.class.broadcast_target_default
+    end
+
+    def extract_options_and_add_target(rendering = {}, target: broadcast_target_default)
+      broadcast_rendering_with_defaults(rendering).tap do |options|
+        options[:target] = target if !options.key?(:target) && !options.key?(:targets)
+      end
     end
 
     def broadcast_rendering_with_defaults(options)
