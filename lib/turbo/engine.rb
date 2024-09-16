@@ -15,8 +15,46 @@ module Turbo
       #{root}/app/jobs
     )
 
+    # If the parent application does not use Active Job, app/jobs cannot
+    # be eager loaded, because it references the ActiveJob constant.
+    #
+    # When turbo-rails depends on Rails 7 or above, the entire block can be
+    # reduced to
+    #
+    #   unless defined?(ActiveJob)
+    #     Rails.autoloaders.once.do_not_eager_load("#{root}/app/jobs")
+    #   end
+    #
+    initializer "turbo.no_active_job", before: :set_eager_load_paths do
+      unless defined?(ActiveJob)
+        if Rails.autoloaders.zeitwerk_enabled?
+          Rails.autoloaders.once.do_not_eager_load("#{root}/app/jobs")
+        else
+          # This else branch only runs in Rails 6.x + classic mode.
+          config.eager_load_paths.delete("#{root}/app/jobs")
+        end
+      end
+    end
+
+    # If the parent application does not use Action Cable, app/channels cannot
+    # be eager loaded, because it references the ActionCable constant.
+    #
+    # When turbo-rails depends on Rails 7 or above, the entire block can be
+    # reduced to
+    #
+    #   unless defined?(ActionCable)
+    #     Rails.autoloaders.once.do_not_eager_load("#{root}/app/channels")
+    #   end
+    #
     initializer "turbo.no_action_cable", before: :set_eager_load_paths do
-      config.eager_load_paths.delete("#{root}/app/channels") unless defined?(ActionCable)
+      unless defined?(ActionCable)
+        if Rails.autoloaders.zeitwerk_enabled?
+          Rails.autoloaders.once.do_not_eager_load("#{root}/app/channels")
+        else
+          # This else branch only runs in Rails 6.x + classic mode.
+          config.eager_load_paths.delete("#{root}/app/channels")
+        end
+      end
     end
 
     # If you don't want to precompile Turbo's assets (eg. because you're using webpack),
@@ -46,9 +84,17 @@ module Turbo
       end
     end
 
+    initializer "turbo.request_id_tracking" do
+      ActiveSupport.on_load(:action_controller) do
+        include Turbo::RequestIdTracking
+      end
+    end
+
     initializer "turbo.broadcastable" do
-      ActiveSupport.on_load(:active_record) do
-        include Turbo::Broadcastable
+      ActiveSupport.on_load(:active_job) do
+        ActiveSupport.on_load(:active_record) do
+          include Turbo::Broadcastable
+        end
       end
     end
 
@@ -57,11 +103,9 @@ module Turbo
     end
 
     initializer "turbo.renderer" do
-      ActiveSupport.on_load(:action_controller) do
-        ActionController::Renderers.add :turbo_stream do |turbo_streams_html, options|
-          self.content_type = Mime[:turbo_stream] if media_type.nil?
-          turbo_streams_html
-        end
+      ActionController::Renderers.add :turbo_stream do |turbo_streams_html, options|
+        self.content_type = Mime[:turbo_stream] if media_type.nil?
+        turbo_streams_html
       end
     end
 
@@ -75,9 +119,16 @@ module Turbo
     initializer "turbo.test_assertions" do
       ActiveSupport.on_load(:active_support_test_case) do
         require "turbo/test_assertions"
-        require "turbo/broadcastable/test_helper"
-
         include Turbo::TestAssertions
+      end
+
+      ActiveSupport.on_load(:active_job) do
+        ActiveSupport.on_load(:action_cable) do
+          ActiveSupport.on_load(:active_support_test_case) do
+            require "turbo/broadcastable/test_helper"
+            include Turbo::Broadcastable::TestHelper
+          end
+        end
       end
 
       ActiveSupport.on_load(:action_dispatch_integration_test) do

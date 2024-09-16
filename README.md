@@ -6,12 +6,11 @@ On top of accelerating web applications, Turbo was built from the ground-up to f
 
 Turbo is a language-agnostic framework written in JavaScript, but this gem builds on top of those basics to make the integration with Rails as smooth as possible. You can deliver turbo updates via model callbacks over Action Cable, respond to controller actions with native navigation or standard redirects, and render turbo frames with helpers and layout-free responses.
 
-
 ## Navigate with Turbo Drive
 
 Turbo is a continuation of the ideas from the previous [Turbolinks](https://github.com/turbolinks/turbolinks) framework, and the heart of that past approach lives on as Turbo Drive. When installed, Turbo automatically intercepts all clicks on `<a href>` links to the same domain. When you click an eligible link, Turbo prevents the browser from following it. Instead, Turbo changes the browser’s URL using the History API, requests the new page using `fetch`, and then renders the HTML response.
 
-During rendering, Turbo replaces the current `<body>` element outright and merges the contents of the `<head>` element. The JavaScript window and document objects, and the HTML `<html>` element, persist from one rendering to the next.
+During rendering, Turbo replaces the current `<body>` element outright and merges the contents of the `<head>` element. The JavaScript window and document objects, and the `<html>` element, persist from one rendering to the next.
 
 Whereas Turbolinks previously just dealt with links, Turbo can now also process form submissions and responses. This means the entire flow in the web application is wrapped into Turbo, making all the parts fast. No more need for `data-remote=true`.
 
@@ -51,13 +50,13 @@ For instance:
 <% end %>
 ```
 
-When the user will click on the `Edit this todo` link, as direct response to this direct user interaction, the turbo frame will be replaced with the one in the `edit.html.erb` page automatically.
+When the user clicks on the `Edit this todo` link, as a direct response to this user interaction, the turbo frame will be automatically replaced with the one in the `edit.html.erb` page.
 
 [See documentation](https://turbo.hotwired.dev/handbook/frames).
 
 ### A note on custom layouts
 
-In order to render turbo frame requests without the application layout, Turbo registers a custom [layout method](https://api.rubyonrails.org/classes/ActionView/Layouts/ClassMethods.html#method-i-layout). 
+In order to render turbo frame requests without the application layout, Turbo registers a custom [layout method](https://api.rubyonrails.org/classes/ActionView/Layouts/ClassMethods.html#method-i-layout).
 If your application uses custom layout resolution, you have to make sure to return `"turbo_rails/frame"` (or `false` for TurboRails < 1.4.0) for turbo frame requests:
 
 ```ruby
@@ -65,7 +64,7 @@ layout :custom_layout
 
 def custom_layout
   return "turbo_rails/frame" if turbo_frame_request?
-  
+
   # ... your custom layout logic
 ```
 
@@ -75,14 +74,14 @@ If you are using a custom, but "static" layout,
 layout "some_static_layout"
 ```
 
-you **have** to change it to a layout method in order to conditionally return `false` for turbo frame requests:
+you **have** to change it to a layout method in order to conditionally return `"turbo_rails/frame"` for turbo frame requests:
 
 ```ruby
 layout :custom_layout
 
 def custom_layout
   return "turbo_rails/frame" if turbo_frame_request?
-  
+
   "some_static_layout"
 ```
 
@@ -110,9 +109,8 @@ This gem is automatically configured for applications made with Rails 7+ (unless
 1. Add the `turbo-rails` gem to your Gemfile: `gem 'turbo-rails'`
 2. Run `./bin/bundle install`
 3. Run `./bin/rails turbo:install`
-4. Run `./bin/rails turbo:install:redis` to change the development Action Cable adapter from Async (the default one) to Redis. The Async adapter does not support Turbo Stream broadcasting.
 
-Running `turbo:install` will install through NPM if Node.js is used in the application. Otherwise the asset pipeline version is used. To use the asset pipeline version, you must have `importmap-rails` installed first and listed higher in the Gemfile.
+Running `turbo:install` will install through NPM or Bun if a JavaScript runtime is used in the application. Otherwise the asset pipeline version is used. To use the asset pipeline version, you must have `importmap-rails` installed first and listed higher in the Gemfile.
 
 If you're using node and need to use the cable consumer, you can import [`cable`](https://github.com/hotwired/turbo-rails/blob/main/app/javascript/turbo/cable.js) (`import { cable } from "@hotwired/turbo-rails"`), but ensure that your application actually *uses* the members it `import`s when using this style (see [turbo-rails#48](https://github.com/hotwired/turbo-rails/issues/48)).
 
@@ -122,17 +120,26 @@ The `Turbo` instance is automatically assigned to `window.Turbo` upon import:
 import "@hotwired/turbo-rails"
 ```
 
-
 ## Usage
 
 You can watch [the video introduction to Hotwire](https://hotwired.dev/#screencast), which focuses extensively on demonstrating Turbo in a Rails demo. Then you should familiarize yourself with [Turbo handbook](https://turbo.hotwired.dev/handbook/introduction) to understand Drive, Frames, and Streams in-depth. Finally, dive into the code documentation by starting with [`Turbo::FramesHelper`](https://github.com/hotwired/turbo-rails/blob/main/app/helpers/turbo/frames_helper.rb), [`Turbo::StreamsHelper`](https://github.com/hotwired/turbo-rails/blob/main/app/helpers/turbo/streams_helper.rb), [`Turbo::Streams::TagBuilder`](https://github.com/hotwired/turbo-rails/blob/main/app/models/turbo/streams/tag_builder.rb), and [`Turbo::Broadcastable`](https://github.com/hotwired/turbo-rails/blob/main/app/models/concerns/turbo/broadcastable.rb).
 
+Note that in development, the default Action Cable adapter is the single-process `async` adapter. This means that turbo updates are only broadcast within that same process. So you can't start `bin/rails console` and trigger Turbo broadcasts and expect them to show up in a browser connected to a server running in a separate `bin/dev` or `bin/rails server` process. Instead, you should use the web-console when needing to manaually trigger Turbo broadcasts inside the same process. Add "console" to any action or "<%= console %>" in any view to make the web console appear.  
+
 ### RubyDoc Documentation
 
-For the API documentation covering this gem's classes and packages, [visit the
-RubyDoc page][].
+For the API documentation covering this gem's classes and packages, [visit the RubyDoc page](https://rubydoc.info/github/hotwired/turbo-rails/main).
+Note that this documentation is updated automatically from the main branch, so it may contain features that are not released yet.
 
-[visit the RubyDoc page](https://rubydoc.info/github/hotwired/turbo-rails/main)
+- [Turbo Drive Helpers](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/DriveHelper)
+- [Turbo Frames Helpers](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/FramesHelper)
+- [Turbo Streams View Helpers](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/StreamsHelper)
+- [Turbo Streams Broadcast Methods](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/Broadcastable)
+- [Turbo Streams Channel](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/StreamsChannel)
+- [Turbo Native Navigation](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/Native/Navigation)
+- [Turbo Test Assertions](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/TestAssertions)
+- [Turbo Integration Test Assertions](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/TestAssertions/IntegrationTestAssertions)
+- [Turbo Broadcastable Test Helper](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/Broadcastable/TestHelper)
 
 ## Compatibility with Rails UJS
 
@@ -140,17 +147,61 @@ Turbo can coexist with Rails UJS, but you need to take a series of upgrade steps
 
 ## Testing
 
-
-The [`Turbo::TestAssertions`](./lib/turbo/test_assertions.rb) concern provides Turbo Stream test helpers that assert the presence or absence of `<turbo-stream>` elements in a rendered fragment of HTML. `Turbo::TestAssertions` are automatically included in [`ActiveSupport::TestCase`](https://edgeapi.rubyonrails.org/classes/ActiveSupport/TestCase.html) and depend on the presence of [`rails-dom-testing`](https://github.com/rails/rails-dom-testing/) assertions.
+The [`Turbo::TestAssertions`](./lib/turbo/test_assertions.rb) concern provides Turbo Stream test helpers that assert the presence or absence ofs  s  `<turbo-stream>` elements in a rendered fragment of HTML. `Turbo::TestAssertions` are automatically included in [`ActiveSupport::TestCase`](https://edgeapi.rubyonrails.org/classes/ActiveSupport/TestCase.html) and depend on the presence of [`rails-dom-testing`](https://github.com/rails/rails-dom-testing/) assertions.
 
 The [`Turbo::TestAssertions::IntegrationTestAssertions`](./lib/turbo/test_assertions/integration_test_assertions.rb) are built on top of `Turbo::TestAssertions`, and add support for passing a `status:` keyword. They are automatically included in [`ActionDispatch::IntegrationTest`](https://edgeguides.rubyonrails.org/testing.html#integration-testing).
 
-The [`Turbo::Broadcastable::TestHelper`](./lib/turbo/broadcastable/test_helper.rb) concern provides Action Cable-aware test helpers that assert that `<turbo-stream>` elements were or were not broadcast over Action Cable. They are not automatically included. To use them in your tests, make sure to `include Turbo::Broadcastable::TestHelper`.
+The [`Turbo::Broadcastable::TestHelper`](./lib/turbo/broadcastable/test_helper.rb) concern provides Action Cable-aware test helpers that assert that `<turbo-stream>` elements were or were not broadcast over Action Cable. `Turbo::Broadcastable::TestHelper` is automatically included in [`ActiveSupport::TestCase`](https://edgeapi.rubyonrails.org/classes/ActiveSupport/TestCase.html).
+
+### Rendering Outside of a Request
+
+Turbo utilizes [ActionController::Renderer][] to render templates and partials
+outside the context of the request-response cycle. If you need to render a
+Turbo-aware template, partial, or component, use [ActionController::Renderer][]:
+
+```ruby
+ApplicationController.renderer.render template: "posts/show", assigns: { post: Post.first } # => "<html>…"
+PostsController.renderer.render :show, assigns: { post: Post.first } # => "<html>…"
+```
+
+As a shortcut, you can also call render directly on the controller class itself:
+
+```ruby
+ApplicationController.render template: "posts/show", assigns: { post: Post.first } # => "<html>…"
+PostsController.render :show, assigns: { post: Post.first } # => "<html>…"
+```
+
+[ActionController::Renderer]: https://api.rubyonrails.org/classes/ActionController/Renderer.html
 
 ## Development
 
 Run the tests with `./bin/test`.
 
+### Using local Turbo version
+
+Often you might want to test changes made locally to [Turbo lib](https://github.com/hotwired/turbo) itself. To package your local development version of Turbo you can use [yarn link](https://classic.yarnpkg.com/lang/en/docs/cli/link/) feature:
+
+```sh
+cd <local-turbo-dir>
+yarn link
+
+cd <local-turbo-rails-dir>
+yarn link @hotwired/turbo
+
+# Build the JS distribution files...
+yarn build
+# ...and commit the changes
+```
+
+Now you can reference your version of turbo-rails in your Rails projects packaged with your local version of Turbo.
+
+## Contributing
+
+Having a way to reproduce your issue will help people confirm, investigate, and ultimately fix your issue. You can do this by providing an executable test case. To make this process easier, we have prepared an [executable bug report Rails application](./bug_report_template.rb) for you to use as a starting point.
+
+This template includes the boilerplate code to set up a System Test case. Copy the content of the template into a `.rb` file and make the necessary changes to demonstrate the issue. You can execute it by running `ruby the_file.rb` in your terminal. If all goes well, you should see your test case failing.
+
+You can then share your executable test case as a gist or paste the content into the issue description.
 
 ## License
 

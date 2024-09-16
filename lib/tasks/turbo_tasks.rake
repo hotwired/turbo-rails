@@ -5,20 +5,6 @@ module Turbo
       system "#{RbConfig.ruby} ./bin/rails app:template LOCATION=#{File.expand_path("../install/#{path}.rb", __dir__)}"
     end
 
-    def redis_installed?
-      Gem.win_platform? ?
-        system('where redis-server > NUL 2>&1') :
-        system('which redis-server > /dev/null')
-    end
-
-    def switch_on_redis_if_available
-      if redis_installed?
-        Rake::Task["turbo:install:redis"].invoke
-      else
-        puts "Run turbo:install:redis to switch on Redis and use it in development for turbo streams"
-      end
-    end
-
     def using_bun?
       Rails.root.join("bun.config.js").exist?
     end
@@ -43,24 +29,16 @@ namespace :turbo do
     desc "Install Turbo into the app with asset pipeline"
     task :importmap do
       Turbo::Tasks.run_turbo_install_template "turbo_with_importmap"
-      Turbo::Tasks.switch_on_redis_if_available
     end
 
     desc "Install Turbo into the app with webpacker"
     task :node do
       Turbo::Tasks.run_turbo_install_template "turbo_with_node"
-      Turbo::Tasks.switch_on_redis_if_available
     end
 
     desc "Install Turbo into the app with bun"
     task :bun do
       Turbo::Tasks.run_turbo_install_template "turbo_with_bun"
-      Turbo::Tasks.switch_on_redis_if_available
-    end
-
-    desc "Switch on Redis and use it in development"
-    task :redis do
-      Turbo::Tasks.run_turbo_install_template "turbo_needs_redis"
     end
   end
 end

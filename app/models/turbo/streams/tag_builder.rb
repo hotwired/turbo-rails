@@ -22,6 +22,24 @@
 #   <%= turbo_stream.append dom_id(topic_merge) do %>
 #     <%= link_to topic_merge.topic.name, topic_path(topic_merge.topic) %>
 #   <% end %>
+#
+# To integrate with custom actions, extend this class in response to the :turbo_streams_tag_builder load hook:
+#
+#   ActiveSupport.on_load :turbo_streams_tag_builder do
+#     def highlight(target)
+#       action :highlight, target
+#     end
+#
+#     def highlight_all(targets)
+#       action_all :highlight, targets
+#     end
+#   end
+#
+#   turbo_stream.highlight "my-element"
+#   # => <turbo-stream action="highlight" target="my-element"><template></template></turbo-stream>
+#
+#   turbo_stream.highlight_all ".my-selector"
+#   # => <turbo-stream action="highlight" targets=".my-selector"><template></template></turbo-stream>
 class Turbo::Streams::TagBuilder
   include Turbo::Streams::ActionHelper
 
@@ -59,8 +77,9 @@ class Turbo::Streams::TagBuilder
   #   <%= turbo_stream.replace "clearance_5" do %>
   #     <div id='clearance_5'>Replace the dom target identified by clearance_5</div>
   #   <% end %>
-  def replace(target, content = nil, **rendering, &block)
-    action :replace, target, content, **rendering, &block
+  #   <%= turbo_stream.replace clearance, "<div>Morph the dom target</div>", method: :morph %>
+  def replace(target, content = nil, method: nil, **rendering, &block)
+    action :replace, target, content, method: method, **rendering, &block
   end
 
   # Replace the <tt>targets</tt> in the dom with either the <tt>content</tt> passed in, a rendering result determined
@@ -72,8 +91,9 @@ class Turbo::Streams::TagBuilder
   #   <%= turbo_stream.replace_all ".clearance_item" do %>
   #     <div class='.clearance_item'>Replace the dom target identified by the class clearance_item</div>
   #   <% end %>
-  def replace_all(targets, content = nil, **rendering, &block)
-    action_all :replace, targets, content, **rendering, &block
+  #   <%= turbo_stream.replace_all clearance, "<div>Morph the dom target</div>", method: :morph %>
+  def replace_all(targets, content = nil, method: nil, **rendering, &block)
+    action_all :replace, targets, content, method: method, **rendering, &block
   end
 
   # Insert the <tt>content</tt> passed in, a rendering result determined by the <tt>rendering</tt> keyword arguments,
@@ -137,8 +157,9 @@ class Turbo::Streams::TagBuilder
   #   <%= turbo_stream.update "clearance_5" do %>
   #     Update the content of the dom target identified by clearance_5
   #   <% end %>
-  def update(target, content = nil, **rendering, &block)
-    action :update, target, content, **rendering, &block
+  #   <%= turbo_stream.update clearance, "<div>Morph the dom target</div>", method: :morph %>
+  def update(target, content = nil, method: nil, **rendering, &block)
+    action :update, target, content, method: method, **rendering, &block
   end
 
   # Update the <tt>targets</tt> in the dom with either the <tt>content</tt> passed in or a rendering result determined
@@ -150,8 +171,9 @@ class Turbo::Streams::TagBuilder
   #   <%= turbo_stream.update_all "clearance_item" do %>
   #     Update the content of the dom target identified by the class clearance_item
   #   <% end %>
-  def update_all(targets, content = nil, **rendering, &block)
-    action_all :update, targets, content, **rendering, &block
+  #   <%= turbo_stream.update_all clearance, "<div>Morph the dom target</div>", method: :morph %>
+  def update_all(targets, content = nil, method: nil, **rendering, &block)
+    action_all :update, targets, content, method: method, **rendering, &block
   end
 
   # Append to the target in the dom identified with <tt>target</tt> either the <tt>content</tt> passed in or a
@@ -210,18 +232,30 @@ class Turbo::Streams::TagBuilder
     action_all :prepend, targets, content, **rendering, &block
   end
 
+  # Creates a `turbo-stream` tag with an `[action="refresh"`] attribute and a
+  # `[request-id]` attribute that defaults to `Turbo.current_request_id`:
+  #
+  #   turbo_stream.refresh
+  #   # => <turbo-stream action="refresh" request-id="ef083d55-7516-41b1-ad28-16f553399c6a"></turbo-stream>
+  #
+  #   turbo_stream.refresh request_id: "abc123"
+  #   # => <turbo-stream action="refresh" request-id="abc123"></turbo-stream>
+  def refresh(...)
+    turbo_stream_refresh_tag(...)
+  end
+
   # Send an action of the type <tt>name</tt> to <tt>target</tt>. Options described in the concrete methods.
-  def action(name, target, content = nil, allow_inferred_rendering: true, **rendering, &block)
+  def action(name, target, content = nil, method: nil, allow_inferred_rendering: true, **rendering, &block)
     template = render_template(target, content, allow_inferred_rendering: allow_inferred_rendering, **rendering, &block)
 
-    turbo_stream_action_tag name, target: target, template: template
+    turbo_stream_action_tag name, target: target, template: template, method: method
   end
 
   # Send an action of the type <tt>name</tt> to <tt>targets</tt>. Options described in the concrete methods.
-  def action_all(name, targets, content = nil, allow_inferred_rendering: true, **rendering, &block)
+  def action_all(name, targets, content = nil, method: nil, allow_inferred_rendering: true, **rendering, &block)
     template = render_template(targets, content, allow_inferred_rendering: allow_inferred_rendering, **rendering, &block)
 
-    turbo_stream_action_tag name, targets: targets, template: template
+    turbo_stream_action_tag name, targets: targets, template: template, method: method
   end
 
   private
@@ -246,4 +280,6 @@ class Turbo::Streams::TagBuilder
         @view_context.render(partial: record, formats: :html)
       end
     end
+
+  ActiveSupport.run_load_hooks :turbo_streams_tag_builder, self
 end

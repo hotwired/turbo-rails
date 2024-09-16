@@ -3,10 +3,32 @@ require "test_helper"
 class TestChannel < ApplicationCable::Channel; end
 
 class Turbo::StreamsHelperTest < ActionView::TestCase
+  attr_accessor :formats
+
   test "with streamable" do
     assert_dom_equal \
       %(<turbo-cable-stream-source channel="Turbo::StreamsChannel" signed-stream-name="#{Turbo::StreamsChannel.signed_stream_name("messages")}"></turbo-cable-stream-source>),
       turbo_stream_from("messages")
+  end
+
+  test "with multiple streamables, some blank" do
+    assert_dom_equal \
+      %(<turbo-cable-stream-source channel="Turbo::StreamsChannel" signed-stream-name="#{Turbo::StreamsChannel.signed_stream_name(["channel", nil, "", "messages"])}"></turbo-cable-stream-source>),
+      turbo_stream_from("channel", nil, "", "messages")
+  end
+
+  test "with invalid streamables" do
+    assert_raises ArgumentError, "streamables can't be blank" do
+      turbo_stream_from("")
+    end
+
+    assert_raises ArgumentError, "streamables can't be blank" do
+      turbo_stream_from(nil)
+    end
+
+    assert_raises ArgumentError, "streamables can't be blank" do
+      turbo_stream_from("", nil)
+    end
   end
 
   test "with streamable and html attributes" do
@@ -33,4 +55,24 @@ class Turbo::StreamsHelperTest < ActionView::TestCase
       turbo_stream_from("messages", channel: "NonExistentChannel", data: {payload: 1})
   end
 
+  test "turbo_stream.refresh" do
+    assert_dom_equal <<~HTML, turbo_stream.refresh
+      <turbo-stream action="refresh"></turbo-stream>
+    HTML
+    assert_dom_equal <<~HTML, Turbo.with_request_id("abc123") { turbo_stream.refresh }
+      <turbo-stream request-id="abc123" action="refresh"></turbo-stream>
+    HTML
+    assert_dom_equal <<~HTML, turbo_stream.refresh(request_id: "def456")
+      <turbo-stream request-id="def456" action="refresh"></turbo-stream>
+    HTML
+  end
+
+  test "custom turbo_stream builder actions" do
+    assert_dom_equal <<~HTML.strip, turbo_stream.highlight("an-id")
+      <turbo-stream action="highlight" target="an-id"><template></template></turbo-stream>
+    HTML
+    assert_dom_equal <<~HTML.strip, turbo_stream.highlight_all(".a-selector")
+      <turbo-stream action="highlight" targets=".a-selector"><template></template></turbo-stream>
+    HTML
+  end
 end

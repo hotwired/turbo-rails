@@ -22,9 +22,8 @@ module Turbo::Streams::ActionHelper
   #   message = Message.find(1)
   #   turbo_stream_action_tag "remove", target: [message, :special]
   #   # => <turbo-stream action="remove" target="special_message_1"></turbo-stream>
-  #
   def turbo_stream_action_tag(action, target: nil, targets: nil, template: nil, **attributes)
-    template = action.to_sym == :remove ? "" : tag.template(template.to_s.html_safe)
+    template = action.to_sym.in?(%i[ remove refresh ]) ? "" : tag.template(template.to_s.html_safe)
 
     if target = convert_to_turbo_stream_dom_id(target)
       tag.turbo_stream(template, **attributes, action: action, target: target)
@@ -35,10 +34,19 @@ module Turbo::Streams::ActionHelper
     end
   end
 
+  # Creates a `turbo-stream` tag with an `action="refresh"` attribute. Example:
+  #
+  #   turbo_stream_refresh_tag
+  #   # => <turbo-stream action="refresh"></turbo-stream>
+  def turbo_stream_refresh_tag(request_id: Turbo.current_request_id, **attributes)
+    turbo_stream_action_tag(:refresh, **{ "request-id": request_id }.compact, **attributes)
+  end
+
   private
     def convert_to_turbo_stream_dom_id(target, include_selector: false)
-      if Array(target).any? { |value| value.respond_to?(:to_key) }
-        "#{"#" if include_selector}#{ActionView::RecordIdentifier.dom_id(*target)}"
+      target_array = Array.wrap(target)
+      if target_array.any? { |value| value.respond_to?(:to_key) }
+        "#{"#" if include_selector}#{ActionView::RecordIdentifier.dom_id(*target_array)}"
       else
         target
       end

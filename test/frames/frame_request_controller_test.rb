@@ -54,3 +54,19 @@ class Turbo::FrameRequestControllerTest < ActionDispatch::IntegrationTest
       ApplicationController.view_paths = previous_view_paths
     end
 end
+
+class Turbo::FrameRequestViewTest < ActionView::TestCase
+  test "supports rendering context without request object" do
+    @rendered = ApplicationController.render(template: "trays/show")
+
+    assert_dom "html" do |html|
+      assert_dom html, "head" do |head|
+        assert_dom head, "title", text: "Dummy"
+        assert_dom head, "script"
+      end
+      assert_dom html, "body:not(.turbo-native)" do |body|
+        assert_dom body, "turbo-frame#tray"
+      end
+    end
+  end
+end
