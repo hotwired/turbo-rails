@@ -218,6 +218,12 @@ module Turbo::Broadcastable
       after_destroy_commit -> { broadcast_refresh }
     end
 
+    # All instances will use the return of this method for the key in the locals. Overwrite if you want something else than <tt>model_name.element.to_sym</tt>.
+    # This default parallels how the ActionView::ObjectRenderer would create a local variable.
+    def broadcast_locals_instance_key_default
+      model_name.element.to_sym
+    end
+
     # All default targets will use the return of this method. Overwrite if you want something else than <tt>model_name.plural</tt>.
     def broadcast_target_default
       model_name.plural
@@ -500,15 +506,18 @@ module Turbo::Broadcastable
   end
 
   private
+    def broadcast_locals_instance_key_default
+      self.class.broadcast_locals_instance_key_default
+    end
+
     def broadcast_target_default
       self.class.broadcast_target_default
     end
 
     def broadcast_rendering_with_defaults(options)
       options.tap do |o|
-        # Add the current instance into the locals with the element name (which is the un-namespaced name)
-        # as the key. This parallels how the ActionView::ObjectRenderer would create a local variable.
-        o[:locals] = (o[:locals] || {}).reverse_merge!(model_name.element.to_sym => self, request_id: Turbo.current_request_id).compact
+        # Add the current instance into the locals using the broadcast_locals_instance_key_default as the key.
+        o[:locals] = (o[:locals] || {}).reverse_merge!(broadcast_locals_instance_key_default => self, request_id: Turbo.current_request_id).compact
 
         if o[:html] || o[:partial]
           return o
