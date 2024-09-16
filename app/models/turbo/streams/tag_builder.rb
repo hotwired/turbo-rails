@@ -77,8 +77,8 @@ class Turbo::Streams::TagBuilder
   #   <%= turbo_stream.replace "clearance_5" do %>
   #     <div id='clearance_5'>Replace the dom target identified by clearance_5</div>
   #   <% end %>
-  def replace(target, content = nil, **rendering, &block)
-    action :replace, target, content, **rendering, &block
+  def replace(target, content = nil, attributes: {}, **rendering, &block)
+    action :replace, target, content, attributes: attributes, **rendering, &block
   end
 
   # Replace the <tt>targets</tt> in the dom with either the <tt>content</tt> passed in, a rendering result determined
@@ -90,8 +90,8 @@ class Turbo::Streams::TagBuilder
   #   <%= turbo_stream.replace_all ".clearance_item" do %>
   #     <div class='.clearance_item'>Replace the dom target identified by the class clearance_item</div>
   #   <% end %>
-  def replace_all(targets, content = nil, **rendering, &block)
-    action_all :replace, targets, content, **rendering, &block
+  def replace_all(targets, content = nil, attributes: {}, **rendering, &block)
+    action_all :replace, targets, content, attributes: attributes, **rendering, &block
   end
 
   # Insert the <tt>content</tt> passed in, a rendering result determined by the <tt>rendering</tt> keyword arguments,
@@ -155,8 +155,8 @@ class Turbo::Streams::TagBuilder
   #   <%= turbo_stream.update "clearance_5" do %>
   #     Update the content of the dom target identified by clearance_5
   #   <% end %>
-  def update(target, content = nil, **rendering, &block)
-    action :update, target, content, **rendering, &block
+  def update(target, content = nil, attributes: {}, **rendering, &block)
+    action :update, target, content, attributes: attributes, **rendering, &block
   end
 
   # Update the <tt>targets</tt> in the dom with either the <tt>content</tt> passed in or a rendering result determined
@@ -168,8 +168,8 @@ class Turbo::Streams::TagBuilder
   #   <%= turbo_stream.update_all "clearance_item" do %>
   #     Update the content of the dom target identified by the class clearance_item
   #   <% end %>
-  def update_all(targets, content = nil, **rendering, &block)
-    action_all :update, targets, content, **rendering, &block
+  def update_all(targets, content = nil, attributes: {}, **rendering, &block)
+    action_all :update, targets, content, attributes: attributes, **rendering, &block
   end
 
   # Append to the target in the dom identified with <tt>target</tt> either the <tt>content</tt> passed in or a
@@ -241,17 +241,17 @@ class Turbo::Streams::TagBuilder
   end
 
   # Send an action of the type <tt>name</tt> to <tt>target</tt>. Options described in the concrete methods.
-  def action(name, target, content = nil, allow_inferred_rendering: true, **rendering, &block)
+  def action(name, target, content = nil, attributes: {}, allow_inferred_rendering: true, **rendering, &block)
     template = render_template(target, content, allow_inferred_rendering: allow_inferred_rendering, **rendering, &block)
 
-    turbo_stream_action_tag name, target: target, template: template
+    turbo_stream_action_tag name, target: target, template: template, **attributes
   end
 
   # Send an action of the type <tt>name</tt> to <tt>targets</tt>. Options described in the concrete methods.
-  def action_all(name, targets, content = nil, allow_inferred_rendering: true, **rendering, &block)
+  def action_all(name, targets, content = nil, attributes: {}, allow_inferred_rendering: true, **rendering, &block)
     template = render_template(targets, content, allow_inferred_rendering: allow_inferred_rendering, **rendering, &block)
 
-    turbo_stream_action_tag name, targets: targets, template: template
+    turbo_stream_action_tag name, targets: targets, template: template, **attributes
   end
 
   private
