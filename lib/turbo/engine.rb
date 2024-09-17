@@ -5,6 +5,7 @@ module Turbo
     isolate_namespace Turbo
     config.eager_load_namespaces << Turbo
     config.turbo = ActiveSupport::OrderedOptions.new
+    config.turbo.test_connect_after_actions = %i[visit]
     config.autoload_once_paths = %W(
       #{root}/app/channels
       #{root}/app/controllers
@@ -148,6 +149,25 @@ module Turbo
           end
 
           @encoders[:turbo_stream] = TurboStreamEncoder.new
+        end
+      end
+    end
+
+    initializer "turbo.system_test_helper" do
+      ActiveSupport.on_load(:action_dispatch_system_test_case) do
+        require "turbo/system_test_helper"
+        include Turbo::SystemTestHelper
+      end
+    end
+
+    config.after_initialize do |app|
+      ActiveSupport.on_load(:action_dispatch_system_test_case) do
+        app.config.turbo.test_connect_after_actions.map do |method|
+          class_eval <<~RUBY, __FILE__, __LINE__ + 1
+            def #{method}(...)                                    # def visit(...)
+              super.tap { connect_turbo_cable_stream_sources }    #   super.tap { connect_turbo_cable_stream_sources }
+            end                                                   # end
+          RUBY
         end
       end
     end
