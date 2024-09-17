@@ -1,6 +1,10 @@
 class MessagesController < ApplicationController
   def show
-    @message = Message.new(id: 1, content: "My message")
+    @message = Message.find(params[:id])
+
+    if (other_id = params[:other_message])
+      @other_message = Message.find(other_id)
+    end
   end
 
   def index

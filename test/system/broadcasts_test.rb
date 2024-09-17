@@ -2,6 +2,7 @@ require "application_system_test_case"
 
 class BroadcastsTest < ApplicationSystemTestCase
   include ActiveJob::TestHelper
+  extend Turbo::Streams::StreamName
 
   test "Message broadcasts Turbo Streams" do
     visit messages_path
@@ -106,7 +107,28 @@ class BroadcastsTest < ApplicationSystemTestCase
     end
   end
 
+  test "the turbo-cable-stream-source observes attribute changes" do
+    original, broadcasted = Message.create! [{ content: "original content" }, { content: "broadcasted content" }]
+
+    visit message_path(original)
+    reconnect_cable_stream_source from: original, to: broadcasted
+
+    assert_text original.content
+    assert_broadcasts_text broadcasted.content, to: dom_id(original) do
+      broadcasted.broadcast_update target: dom_id(original)
+    end
+    assert_no_text original.content
+  end
+
   private
+
+  def reconnect_cable_stream_source(from:, to:)
+    cable_stream_source = find("turbo-cable-stream-source[signed-stream-name=#{signed_stream_name(from)}]")
+
+    cable_stream_source.execute_script <<~JS, signed_stream_name(to)
+      this.setAttribute("signed-stream-name", arguments[0])
+    JS
+  end
 
   def assert_broadcasts_text(text, to:, &block)
     within(:element, id: to) { assert_no_text text }
