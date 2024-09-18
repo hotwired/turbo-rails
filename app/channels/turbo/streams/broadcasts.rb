@@ -6,7 +6,7 @@ module Turbo::Streams::Broadcasts
   include Turbo::Streams::ActionHelper
 
   def broadcast_remove_to(*streamables, **opts)
-    broadcast_action_to(*streamables, action: :remove, **opts)
+    broadcast_action_to(*streamables, action: :remove, render: false, **opts)
   end
 
   def broadcast_replace_to(*streamables, **opts)
@@ -38,10 +38,18 @@ module Turbo::Streams::Broadcasts
   end
 
   def broadcast_action_to(*streamables, action:, target: nil, targets: nil, attributes: {}, **rendering)
-    broadcast_stream_to(*streamables, content: turbo_stream_action_tag(action, target: target, targets: targets, template:
-      rendering.delete(:content) || rendering.delete(:html) || (rendering[:render] != false && rendering.any? ? render_format(:html, **rendering) : nil),
-      **attributes
-    ))
+    content = rendering.delete(:content)
+    html = rendering.delete(:html)
+    render = rendering.delete(:render)
+
+    template =
+      if render == false
+        nil
+      else
+        content || html || (render_format(:html, **rendering) if rendering.present?)
+      end
+
+    broadcast_stream_to(*streamables, content: turbo_stream_action_tag(action, target: target, targets: targets, template: template, **attributes))
   end
 
   def broadcast_replace_later_to(*streamables, **opts)
