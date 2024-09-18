@@ -15,10 +15,12 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
 
   test "broadcasting ignores blank streamables" do
     ActionCable.server.stub :broadcast, proc { flunk "expected no broadcasts" } do
-      @message.broadcast_remove_to nil
-      @message.broadcast_remove_to [nil]
-      @message.broadcast_remove_to ""
-      @message.broadcast_remove_to [""]
+      assert_no_broadcasts @message.to_gid_param do
+        @message.broadcast_remove_to nil
+        @message.broadcast_remove_to [nil]
+        @message.broadcast_remove_to ""
+        @message.broadcast_remove_to [""]
+      end
     end
   end
 
