@@ -5,6 +5,12 @@ require "minitest/mock"
 class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
   include ActiveJob::TestHelper, Turbo::Streams::ActionHelper
 
+  class MessageThatRendersError < Message
+    def to_partial_path
+      "messages/raises_error"
+    end
+  end
+
   setup { @message = Message.new(id: 1, content: "Hello!") }
 
   test "broadcasting ignores blank streamables" do
@@ -34,6 +40,14 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
   test "broadcasting remove now" do
     assert_broadcast_on @message.to_gid_param, turbo_stream_action_tag("remove", target: "message_1") do
       @message.broadcast_remove
+    end
+  end
+
+  test "broadcasting remove does not render contents" do
+    message = MessageThatRendersError.new(id: 1)
+
+    assert_broadcast_on message.to_gid_param, turbo_stream_action_tag("remove", target: dom_id(message)) do
+      message.broadcast_remove
     end
   end
 
@@ -124,6 +138,14 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
   test "broadcasting refresh now" do
     assert_broadcast_on @message.to_gid_param, turbo_stream_refresh_tag do
       @message.broadcast_refresh
+    end
+  end
+
+  test "broadcasting refresh does not render contents" do
+    message = MessageThatRendersError.new(id: 1)
+
+    assert_broadcast_on message.to_gid_param, turbo_stream_action_tag("refresh") do
+      message.broadcast_refresh
     end
   end
 
