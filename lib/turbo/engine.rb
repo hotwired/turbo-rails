@@ -92,8 +92,8 @@ module Turbo
     end
 
     initializer "turbo.broadcastable" do
-      ActiveSupport.on_load(:active_job) do
-        ActiveSupport.on_load(:active_record) do
+      ActiveSupport.on_load(:active_record) do
+        if defined?(ActiveJob)
           include Turbo::Broadcastable
         end
       end
@@ -123,9 +123,9 @@ module Turbo
         include Turbo::TestAssertions
       end
 
-      ActiveSupport.on_load(:active_job) do
-        ActiveSupport.on_load(:action_cable) do
-          ActiveSupport.on_load(:active_support_test_case) do
+      ActiveSupport.on_load(:action_cable) do
+        ActiveSupport.on_load(:active_support_test_case) do
+          if defined?(ActiveJob)
             require "turbo/broadcastable/test_helper"
             include Turbo::Broadcastable::TestHelper
           end
