@@ -4,11 +4,17 @@ class TestChannel < ApplicationCable::Channel; end
 
 class Turbo::StreamsHelperTest < ActionView::TestCase
   class Component
-    extend ActiveModel::Naming
+    include ActiveModel::Model
 
-    def initialize(id:, content:) = (@id, @content = id, content)
-    def render_in(...) = @content
-    def to_key = [@id]
+    attr_accessor :id, :content
+
+    def render_in(view_context)
+      content
+    end
+
+    def to_key
+      [id]
+    end
   end
 
   attr_accessor :formats
