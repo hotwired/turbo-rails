@@ -116,11 +116,10 @@ module Turbo::Streams::Broadcasts
       html    = rendering.delete(:html)
       render  = rendering.delete(:render)
 
-      template =
-        if render == false
-          nil
-        else
-          content || html || (render_format(:html, **rendering) if rendering.present?)
-        end
+      if render == false
+        nil
+      else
+        content || html || (render_format(:html, **rendering) if rendering.present?)
+      end
     end
 end
