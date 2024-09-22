@@ -38,18 +38,9 @@ module Turbo::Streams::Broadcasts
   end
 
   def broadcast_action_to(*streamables, action:, target: nil, targets: nil, attributes: {}, **rendering)
-    content = rendering.delete(:content)
-    html = rendering.delete(:html)
-    render = rendering.delete(:render)
-
-    template =
-      if render == false
-        nil
-      else
-        content || html || (render_format(:html, **rendering) if rendering.present?)
-      end
-
-    broadcast_stream_to(*streamables, content: turbo_stream_action_tag(action, target: target, targets: targets, template: template, **attributes))
+    broadcast_stream_to *streamables, content: turbo_stream_action_tag(
+      action, target: target, targets: targets, template: render_broadcast_action(rendering), **attributes
+    )
   end
 
   def broadcast_replace_later_to(*streamables, **opts)
@@ -118,5 +109,18 @@ module Turbo::Streams::Broadcasts
   private
     def render_format(format, **rendering)
       ApplicationController.render(formats: [ format ], **rendering)
+    end
+
+    def render_broadcast_action(rendering)
+      content = rendering.delete(:content)
+      html    = rendering.delete(:html)
+      render  = rendering.delete(:render)
+
+      template =
+        if render == false
+          nil
+        else
+          content || html || (render_format(:html, **rendering) if rendering.present?)
+        end
     end
 end
