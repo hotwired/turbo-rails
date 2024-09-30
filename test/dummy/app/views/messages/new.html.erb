@@ -1,0 +1,9 @@
+<% if params[:method] == "morph" %>
+  <% turbo_refreshes_with method: :morph %>
+<% end %>
+
+<%= form_with model: @message do |form| %>
+  <%= form.rich_text_area :content, data: {turbo_permanent: true} %>
+<% end %>
+
+<%= link_to "Page Refresh", params.permit(:method), data: {turbo_action: "replace"} %>

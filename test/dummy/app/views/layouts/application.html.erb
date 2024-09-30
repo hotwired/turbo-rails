@@ -7,6 +7,7 @@
     <%= stylesheet_link_tag 'application', media: 'all' %>
     <%= yield :head %>
     <%= javascript_importmap_tags %>
+    <%= javascript_tag('import "trix"', type: "module") unless Rails.version < "7.1" %>
   </head>
 
   <body class="<%= "turbo-native" if turbo_native_app? %>">
