@@ -38,8 +38,8 @@ module Turbo::Streams::Broadcasts
   end
 
   def broadcast_action_to(*streamables, action:, target: nil, targets: nil, attributes: {}, **rendering)
-    broadcast_stream_to *streamables, content: turbo_stream_action_tag(
-      action, target: target, targets: targets, template: render_broadcast_action(rendering), **attributes
+    broadcast_stream_to(*streamables, content: turbo_stream_action_tag(
+      action, target: target, targets: targets, template: render_broadcast_action(rendering), **attributes)
     )
   end
 
