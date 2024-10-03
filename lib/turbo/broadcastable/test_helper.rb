@@ -167,6 +167,48 @@ module Turbo
           document.at("body").element_children
         end
       end
+
+      # Captures a single `<turbo-stream>` element broadcast over Action Cable
+      #
+      # ==== Arguments
+      #
+      # * <tt>stream_name_or_object</tt> the objects used to generate the
+      #   channel Action Cable name, or the name itself
+      # * <tt>&block</tt> optional block to capture broadcasts during execution
+      #
+      # Returns a <tt>Nokogiri::XML::Element</tt> instance generated from the first `<turbo-stream>` element broadcast
+      #
+      #     message = Message.find(1)
+      #     message.broadcast_append_to "messages"
+      #
+      #     append = capture_turbo_stream_broadcast "messages"
+      #
+      #     assert_equal "append", append["action"]
+      #
+      # You can pass a block to limit the scope of the broadcasts being captured:
+      #
+      #     message = Message.find(1)
+      #
+      #     append = capture_turbo_stream_broadcasts "messages" do
+      #       message.broadcast_append_to "messages"
+      #     end
+      #
+      #     assert_equal "append", append["action"]
+      #
+      # In addition to a String, the helper also accepts an Object or Array to
+      # determine the name of the channel the elements are broadcast to:
+      #
+      #     message = Message.find(1)
+      #
+      #     replace = capture_turbo_stream_broadcast message do
+      #       message.broadcast_replace
+      #     end
+      #
+      #     assert_equal "replace", replace["action"]
+      #
+      def capture_turbo_stream_broadcast(stream_name_or_object, &block)
+        capture_turbo_stream_broadcasts(stream_name_or_object, &block).first
+      end
     end
   end
 end

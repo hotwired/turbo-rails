@@ -99,6 +99,25 @@ class Turbo::Broadcastable::TestHelper::CaptureTurboStreamBroadcastsTest < Activ
 
     assert_empty streams
   end
+
+  test "#capture_turbo_stream_broadcast returns a <turbo-stream> element broadcast on an Array of stream objects from a block" do
+    message = Message.new(id: 1)
+
+    replace = capture_turbo_stream_broadcast [message, :special] do
+      message.broadcast_replace_to [message, :special]
+    end
+
+    assert_equal "replace", replace["action"]
+    assert_not_empty replace.at("template").element_children
+  end
+
+  test "#capture_turbo_stream_broadcast returns nil when no broadcasts happened on a stream name from a block" do
+    value = capture_turbo_stream_broadcast "messages" do
+      # no-op
+    end
+
+    assert_nil value
+  end
 end
 
 class Turbo::Broadcastable::TestHelper::AssertTurboStreamBroadcastsTest < ActiveSupport::TestCase
