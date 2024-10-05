@@ -127,7 +127,7 @@ If the call to `Message#save!` executes quickly enough, it might beat-out any
 Messages"`.
 
 To wait for any disconnected `<turbo-cable-stream-source>` elements to connect,
-call [`#connect_turbo_cable_stream_sources`](turbo-rails/blob/wait-for-cable-stream-sourceshttps://github.com/hotwired/turbo-rails/blob/main/lib/turbo/system_test_helper.rb):
+call [`#connect_turbo_cable_stream_sources`](https://github.com/hotwired/turbo-rails/blob/main/lib/turbo/system_test_helper.rb):
 
 ```diff
  test "renders broadcasted Messages" do
