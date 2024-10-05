@@ -6,7 +6,7 @@ class Turbo::Native::NavigationControllerTest < ActionDispatch::IntegrationTest
       post trays_path, params: { return_to: "#{action}_or_redirect" }
       assert_redirected_to tray_path(id: 1)
 
-      post trays_path, params: { return_to: "#{action}_or_redirect" }, headers: header_for_turbo_native_app
+      post trays_path, params: { return_to: "#{action}_or_redirect" }, headers: header_for_hotwire_native_app
       assert_redirected_to send("turbo_#{action}_historical_location_url")
     end
   end
@@ -19,7 +19,7 @@ class Turbo::Native::NavigationControllerTest < ActionDispatch::IntegrationTest
       post trays_path, params: { return_to: "#{action}_or_redirect_back" }, headers: header_for_referer
       assert_redirected_to "/past_place"
 
-      post trays_path, params: { return_to: "#{action}_or_redirect_back" }, headers: header_for_turbo_native_app.merge(header_for_referer)
+      post trays_path, params: { return_to: "#{action}_or_redirect_back" }, headers: header_for_hotwire_native_app.merge(header_for_referer)
       assert_redirected_to send("turbo_#{action}_historical_location_url")
     end
   end
@@ -28,7 +28,7 @@ class Turbo::Native::NavigationControllerTest < ActionDispatch::IntegrationTest
     post trays_path, params: { return_to: "refresh_or_redirect_with_options" }
     assert_redirected_to tray_path(id: 5)
 
-    post trays_path, params: { return_to: "refresh_or_redirect_with_options" }, headers: header_for_turbo_native_app
+    post trays_path, params: { return_to: "refresh_or_redirect_with_options" }, headers: header_for_hotwire_native_app
     assert_redirected_to send("turbo_refresh_historical_location_url", notice: "confirmed", custom: 123)
   end
 
@@ -40,8 +40,8 @@ class Turbo::Native::NavigationControllerTest < ActionDispatch::IntegrationTest
   end
 
   private
-    def header_for_turbo_native_app
-      { "HTTP_USER_AGENT" => "MyApp iOS/3.0 Turbo Native (build 13; iPad Air 2); iOS 9.3" }
+    def header_for_hotwire_native_app
+      { "HTTP_USER_AGENT" => "MyApp iOS/3.0 Hotwire Native (build 13; iPad Air 2); iOS 9.3" }
     end
 
     def header_for_referer
