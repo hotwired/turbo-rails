@@ -1,5 +1,5 @@
 /*!
-Turbo 8.0.6
+Turbo 8.0.12
 Copyright © 2024 37signals LLC
  */
 (function(prototype) {
@@ -181,7 +181,7 @@ function activateScriptElement(element) {
     return element;
   } else {
     const createdScriptElement = document.createElement("script");
-    const cspNonce = getMetaContent("csp-nonce");
+    const cspNonce = getCspNonce();
     if (cspNonce) {
       createdScriptElement.nonce = cspNonce;
     }
@@ -351,6 +351,14 @@ function getMetaElement(name) {
 function getMetaContent(name) {
   const element = getMetaElement(name);
   return element && element.content;
+}
+
+function getCspNonce() {
+  const element = getMetaElement("csp-nonce");
+  if (element) {
+    const {nonce: nonce, content: content} = element;
+    return nonce == "" ? content : nonce;
+  }
 }
 
 function setMetaContent(name, content) {
@@ -1531,12 +1539,13 @@ function createPlaceholderForPermanentElement(permanentElement) {
 
 class Renderer {
   #activeElement=null;
-  constructor(currentSnapshot, newSnapshot, renderElement, isPreview, willRender = true) {
+  static renderElement(currentElement, newElement) {}
+  constructor(currentSnapshot, newSnapshot, isPreview, willRender = true) {
     this.currentSnapshot = currentSnapshot;
     this.newSnapshot = newSnapshot;
     this.isPreview = isPreview;
     this.willRender = willRender;
-    this.renderElement = renderElement;
+    this.renderElement = this.constructor.renderElement;
     this.promise = new Promise(((resolve, reject) => this.resolvingFunctions = {
       resolve: resolve,
       reject: reject
@@ -2289,6 +2298,9 @@ class MorphingFrameRenderer extends FrameRenderer {
     });
     morphChildren(currentElement, newElement);
   }
+  async preservingPermanentElements(callback) {
+    return await callback();
+  }
 }
 
 class ProgressBar {
@@ -2380,8 +2392,9 @@ class ProgressBar {
     const element = document.createElement("style");
     element.type = "text/css";
     element.textContent = ProgressBar.defaultCSS;
-    if (this.cspNonce) {
-      element.nonce = this.cspNonce;
+    const cspNonce = getCspNonce();
+    if (cspNonce) {
+      element.nonce = cspNonce;
     }
     return element;
   }
@@ -2389,9 +2402,6 @@ class ProgressBar {
     const element = document.createElement("div");
     element.className = "turbo-progress-bar";
     return element;
-  }
-  get cspNonce() {
-    return getMetaContent("csp-nonce");
   }
 }
 
@@ -4013,7 +4023,7 @@ class PageView extends View {
   renderPage(snapshot, isPreview = false, willRender = true, visit) {
     const shouldMorphPage = this.isPageRefresh(visit) && this.snapshot.shouldMorphPage;
     const rendererClass = shouldMorphPage ? MorphingPageRenderer : PageRenderer;
-    const renderer = new rendererClass(this.snapshot, snapshot, rendererClass.renderElement, isPreview, willRender);
+    const renderer = new rendererClass(this.snapshot, snapshot, isPreview, willRender);
     if (!renderer.shouldRender) {
       this.forceReloaded = true;
     } else {
@@ -4023,7 +4033,7 @@ class PageView extends View {
   }
   renderError(snapshot, visit) {
     visit?.changeHistory();
-    const renderer = new ErrorRenderer(this.snapshot, snapshot, ErrorRenderer.renderElement, false);
+    const renderer = new ErrorRenderer(this.snapshot, snapshot, false);
     return this.render(renderer);
   }
   clearSnapshotCache() {
@@ -4589,6 +4599,7 @@ class FrameController {
   #connected=false;
   #hasBeenLoaded=false;
   #ignoredAttributes=new Set;
+  #shouldMorphFrame=false;
   action=null;
   constructor(element) {
     this.element = element;
@@ -4636,14 +4647,8 @@ class FrameController {
     }
   }
   sourceURLReloaded() {
-    if (this.element.shouldReloadWithMorph) {
-      this.element.addEventListener("turbo:before-frame-render", (({detail: detail}) => {
-        detail.render = MorphingFrameRenderer.renderElement;
-      }), {
-        once: true
-      });
-    }
-    const {src: src} = this.element;
+    const {refresh: refresh, src: src} = this.element;
+    this.#shouldMorphFrame = src && refresh === "morph";
     this.element.removeAttribute("complete");
     this.element.src = null;
     this.element.src = src;
@@ -4681,6 +4686,7 @@ class FrameController {
         }
       }
     } finally {
+      this.#shouldMorphFrame = false;
       this.fetchResponseLoaded = () => Promise.resolve();
     }
   }
@@ -4793,9 +4799,10 @@ class FrameController {
   };
   async #loadFrameResponse(fetchResponse, document) {
     const newFrameElement = await this.extractForeignFrameElement(document.body);
+    const rendererClass = this.#shouldMorphFrame ? MorphingFrameRenderer : FrameRenderer;
     if (newFrameElement) {
       const snapshot = new Snapshot(newFrameElement);
-      const renderer = new FrameRenderer(this, this.view.snapshot, snapshot, FrameRenderer.renderElement, false, false);
+      const renderer = new rendererClass(this, this.view.snapshot, snapshot, false, false);
       if (this.view.renderPromise) await this.view.renderPromise;
       this.changeHistory();
       await this.view.render(renderer);
