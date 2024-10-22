@@ -5,6 +5,7 @@ module Turbo
   extend ActiveSupport::Autoload
 
   mattr_accessor :draw_routes, default: true
+  mattr_accessor :base_stream_channel_class, default: "ActionCable::Channel::Base"
 
   thread_mattr_accessor :current_request_id
 
