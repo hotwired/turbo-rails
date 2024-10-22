@@ -5,41 +5,30 @@
 # using the view helper <tt>Turbo::StreamsHelper#turbo_stream_from(*streamables)</tt>.
 # If the signed stream name cannot be verified, the subscription is rejected.
 #
-# In case if custom behavior is desired, one can create their own channel and re-use some of the primitives from
-# helper modules like <tt>Turbo::Streams::StreamName</tt>:
+# Subscribe to custom channels by passing the <tt>:channel</tt> option to <tt>turbo_stream_from</tt>:
+# <%= turbo_stream_from "room", channel: CustomChannel %>
 #
-#   class CustomChannel < ActionCable::Channel::Base
-#     extend Turbo::Streams::Broadcasts, Turbo::Streams::StreamName
-#     include Turbo::Streams::StreamName::ClassMethods
-#
-#     def subscribed
-#       if (stream_name = verified_stream_name_from_params).present? &&
-#           subscription_allowed?
-#         stream_from stream_name
-#       else
-#         reject
-#       end
-#     end
-#
-#     def subscription_allowed?
-#       # ...
-#     end
-#   end
-#
-# This channel can be connected to a web page using <tt>:channel</tt> option in
-# <tt>turbo_stream_from</tt> helper:
-#
-#   <%= turbo_stream_from 'room', channel: CustomChannel %>
-#
-class Turbo::StreamsChannel < ActionCable::Channel::Base
+# Any channel that listens to a <tt>Turbo::Broadcastable</tt>-compatible stream name (e.g., <tt>verified_stream_name_from_params</tt>)
+# can also be subscribed to via <tt>Turbo::StreamsChannel</tt>. Never use the <tt>turbo_stream_from</tt> <tt>:channel</tt> option
+# to implement authorization. Authorizing subscriptions is often recommended, see the README for details.
+class Turbo::StreamsChannel < Turbo.base_stream_channel_class.constantize
   extend Turbo::Streams::Broadcasts, Turbo::Streams::StreamName
-  include Turbo::Streams::StreamName::ClassMethods
+  include Turbo::Streams::LocatableName, Turbo::Streams::StreamName::ClassMethods
 
   def subscribed
-    if stream_name = verified_stream_name_from_params
+    if (stream_name = verified_stream_name_from_params) && authorized?
       stream_from stream_name
     else
       reject
     end
   end
+
+  private
+    # Override this method to define custom authorization rules in <tt>config.turbo.base_stream_channel_class</tt>.
+    # Refer to <tt>Turbo::Streams::LocatableName</tt> for details on locating streamables.
+    #
+    # By default, no authorization is performed.
+    def authorized?
+      defined?(super) ? super : true
+    end
 end

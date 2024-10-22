@@ -100,6 +100,70 @@ This gem provides a `turbo_stream_from` helper to create a turbo stream.
 <%# Rest of show here %>
 ```
 
+### Security
+
+#### Signed Stream Names
+
+Turbo stream names are cryptographically signed, which ensures that they cannot be guessed or altered.
+
+Stream names do not expire and are rendered into the HTML. If you're broadcasting private data, additional security measures are recommended.
+
+#### Authentication
+
+It is recommended to authenticate connections in `ApplicationCable::Connection`. Without authentication, a leaked stream name could be used to subscribe without a valid application session.
+
+```rb
+# app/channels/application_cable/connection.rb
+
+module ApplicationCable
+  class Connection < ActionCable::Connection::Base
+    identified_by :current_user
+
+    def connect
+      self.current_user = find_verified_user
+    end
+
+    private
+      def find_verified_user
+        if verified_session = Session.find_by(id: cookies.signed[:session_id])
+          verified_session.user
+        else
+          reject_unauthorized_connection
+        end
+      end
+  end
+end
+```
+
+#### Authorization
+
+In multi-tenant applications, it’s often crucial to authorize subscriptions. Without authorization, someone with prior access could continue to subscribe as another tenant.
+
+```rb
+# config/application.rb
+
+config.turbo.base_stream_channel_class = "ApplicationCable::Channel"
+```
+
+This allows you to define domain-specific authorization logic that `Turbo::StreamsChannel` and any other channels inheriting from `ApplicationCable::Channel` will use." By default `Turbo::StreamsChannel` inherits from `ActionCable::Channel::Base`.
+
+```rb
+# app/channels/application_cable/channel.rb
+
+module ApplicationCable
+  class Channel < ActionCable::Channel::Base
+    private
+
+    def authorized?
+      # `current_user`      - from `ApplicationCable::Connection.identified_by`
+      # `locate_streamable` - from `Turbo::StreamsChannel` or by including `Turbo::Streams::LocatableName`
+      # `can_access?`       - is yours to implement according to your domain specific needs.
+      current_user.can_access? locate_streamable
+    end
+  end
+end
+```
+
 ### Testing Turbo Stream Broadcasts
 
 Receiving server-generated Turbo Broadcasts requires a connected Web Socket.
@@ -182,7 +246,7 @@ import "@hotwired/turbo-rails"
 
 You can watch [the video introduction to Hotwire](https://hotwired.dev/#screencast), which focuses extensively on demonstrating Turbo in a Rails demo. Then you should familiarize yourself with [Turbo handbook](https://turbo.hotwired.dev/handbook/introduction) to understand Drive, Frames, and Streams in-depth. Finally, dive into the code documentation by starting with [`Turbo::FramesHelper`](https://github.com/hotwired/turbo-rails/blob/main/app/helpers/turbo/frames_helper.rb), [`Turbo::StreamsHelper`](https://github.com/hotwired/turbo-rails/blob/main/app/helpers/turbo/streams_helper.rb), [`Turbo::Streams::TagBuilder`](https://github.com/hotwired/turbo-rails/blob/main/app/models/turbo/streams/tag_builder.rb), and [`Turbo::Broadcastable`](https://github.com/hotwired/turbo-rails/blob/main/app/models/concerns/turbo/broadcastable.rb).
 
-Note that in development, the default Action Cable adapter is the single-process `async` adapter. This means that turbo updates are only broadcast within that same process. So you can't start `bin/rails console` and trigger Turbo broadcasts and expect them to show up in a browser connected to a server running in a separate `bin/dev` or `bin/rails server` process. Instead, you should use the web-console when needing to manaually trigger Turbo broadcasts inside the same process. Add "console" to any action or "<%= console %>" in any view to make the web console appear.  
+Note that in development, the default Action Cable adapter is the single-process `async` adapter. This means that turbo updates are only broadcast within that same process. So you can't start `bin/rails console` and trigger Turbo broadcasts and expect them to show up in a browser connected to a server running in a separate `bin/dev` or `bin/rails server` process. Instead, you should use the web-console when needing to manaually trigger Turbo broadcasts inside the same process. Add "console" to any action or "<%= console %>" in any view to make the web console appear.
 
 ### RubyDoc Documentation
 

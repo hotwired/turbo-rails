@@ -337,4 +337,72 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
       end
     end
   end
+
+  test "locates single streamable" do
+    record = Message.create!
+    subscribe signed_stream_name: signed_stream_name(record)
+
+    assert_equal record, subscription.locate_streamable
+  end
+
+  test "raises if streamable can't be found" do
+    record = Message.create!
+    subscribe signed_stream_name: signed_stream_name(record)
+    record.destroy
+
+    assert_raises(ActiveRecord::RecordNotFound) { subscription.locate_streamable }
+  end
+
+  test "locates multiple streamables" do
+    record1, record2 = Message.create!, Message.create!
+    subscribe signed_stream_name: signed_stream_name([ record1, record2 ])
+
+    assert_equal [ record1, record2 ], subscription.locate_streamables
+  end
+
+  test "raises unless all streamables can be found" do
+    record1, record2 = Message.create!, Message.create!
+    subscribe signed_stream_name: signed_stream_name([ record1, record2 ])
+    record1.destroy
+
+    assert_raises(ActiveRecord::RecordNotFound) { subscription.locate_streamables }
+  end
+
+  test "confirms subscription when unauthenticated by default" do
+    subscribe signed_stream_name: Turbo.signed_stream_verifier.generate("stream")
+
+    assert subscription.confirmed?
+    assert_has_stream "stream"
+  end
+
+  test "confirms subscription when succeeding authorization" do
+    authorizing do |record|
+      Turbo::StreamsChannel.define_method(:authorized?) { locate_streamable == record }
+      subscribe signed_stream_name: signed_stream_name(record)
+
+      assert subscription.confirmed?
+      assert_has_stream record.to_gid_param
+    end
+  end
+
+  test "rejects subscription when failing authorization" do
+    authorizing do |record|
+      Turbo::StreamsChannel.define_method(:authorized?) { locate_streamable != record }
+      subscribe signed_stream_name: signed_stream_name(record)
+
+      assert subscription.rejected?
+      assert_no_streams
+    end
+  end
+
+  private
+    def authorizing
+      original_authorized = Turbo::StreamsChannel.instance_method(:authorized?)
+      Turbo::StreamsChannel.remove_method :authorized?
+
+      yield Message.create!
+    ensure
+      Turbo::StreamsChannel.remove_method :authorized?
+      Turbo::StreamsChannel.define_method :authorized?, original_authorized
+    end
 end
