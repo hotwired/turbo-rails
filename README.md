@@ -198,7 +198,7 @@ Note that this documentation is updated automatically from the main branch, so i
 - [Turbo Test Assertions](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/TestAssertions)
 - [Turbo Integration Test Assertions](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/TestAssertions/IntegrationTestAssertions)
 - [Turbo Broadcastable Test Helper](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/Broadcastable/TestHelper)
-- [Turbo System Test Helper](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/SystemTestHelper)
+- [Turbo System Test Helper](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/SystemTestHelper) TODO: This link is broken. Sorry didn't find where it should lead.
 
 ## Compatibility with Rails UJS
 
