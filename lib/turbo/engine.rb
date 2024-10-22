@@ -80,7 +80,9 @@ module Turbo
 
     initializer "turbo.helpers", before: :load_config_initializers do
       ActiveSupport.on_load(:action_controller_base) do
-        include Turbo::Streams::TurboStreamsTagBuilder, Turbo::Frames::FrameRequest, Turbo::Native::Navigation
+        include Turbo::Streams::TurboStreamsTagBuilder, Turbo::Frames::FrameRequest, Turbo::Native::Navigation,
+                Turbo::Streams::Redirect
+
         helper Turbo::Engine.helpers
       end
     end
