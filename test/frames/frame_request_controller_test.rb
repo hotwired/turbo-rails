@@ -14,6 +14,8 @@ class Turbo::FrameRequestControllerTest < ActionDispatch::IntegrationTest
 
     assert_select "head", count: 1
     assert_select "meta[name=test][content=present]"
+    assert_select "meta[name=csrf-param]"
+    assert_select "meta[name=csrf-token]"
   end
 
   test "frame request layout can be overridden" do
