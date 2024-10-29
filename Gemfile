@@ -16,10 +16,7 @@ gem "sprockets-rails"
 gem 'rake'
 gem 'byebug'
 gem 'puma'
-
-# For edge Rails, don't use Rack 3 yet.
-# Remove this when https://github.com/rails/rails/pull/46594 has merged.
-gem 'rack', '< 3'
+gem 'rack'
 
 group :development, :test do
   gem 'importmap-rails'
