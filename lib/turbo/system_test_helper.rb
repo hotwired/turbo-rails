@@ -51,8 +51,8 @@ module Turbo::SystemTestHelper
   #
   # In addition to the filters listed above, accepts any valid Capybara global
   # filter option.
-  def assert_turbo_cable_stream_source(*args, &block)
-    assert_selector(:turbo_cable_stream_source, *args, &block)
+  def assert_turbo_cable_stream_source(...)
+    assert_selector(:turbo_cable_stream_source, ...)
   end
 
   # Asserts that a `<turbo-cable-stream-source>` element is absent from the
@@ -75,8 +75,8 @@ module Turbo::SystemTestHelper
   #
   # In addition to the filters listed above, accepts any valid Capybara global
   # filter option.
-  def assert_no_turbo_cable_stream_source(*args, &block)
-    assert_no_selector(:turbo_cable_stream_source, *args, &block)
+  def assert_no_turbo_cable_stream_source(...)
+    assert_no_selector(:turbo_cable_stream_source, ...)
   end
 
   Capybara.add_selector :turbo_cable_stream_source do

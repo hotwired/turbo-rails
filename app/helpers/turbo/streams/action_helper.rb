@@ -22,12 +22,7 @@ module Turbo::Streams::ActionHelper
   #   message = Message.find(1)
   #   turbo_stream_action_tag "remove", target: [message, :special]
   #   # => <turbo-stream action="remove" target="special_message_1"></turbo-stream>
-  def turbo_stream_action_tag(action, attributes = {})
-    attributes.deep_symbolize_keys! if RUBY_VERSION < "3"
-
-    target = attributes.delete(:target)
-    targets = attributes.delete(:targets)
-    template = attributes.delete(:template)
+  def turbo_stream_action_tag(action, target: nil, targets: nil, template: nil, **attributes)
     template = action.to_sym.in?(%i[ remove refresh ]) ? "" : tag.template(template.to_s.html_safe)
 
     if target = convert_to_turbo_stream_dom_id(target)
@@ -44,7 +39,7 @@ module Turbo::Streams::ActionHelper
   #   turbo_stream_refresh_tag
   #   # => <turbo-stream action="refresh"></turbo-stream>
   def turbo_stream_refresh_tag(request_id: Turbo.current_request_id, **attributes)
-    turbo_stream_action_tag(:refresh, attributes.with_defaults({ "request-id": request_id }.compact))
+    turbo_stream_action_tag(:refresh, "request-id": request_id.presence, **attributes)
   end
 
   private
