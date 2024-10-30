@@ -240,8 +240,8 @@ class Turbo::Streams::TagBuilder
   #
   #   turbo_stream.refresh request_id: "abc123"
   #   # => <turbo-stream action="refresh" request-id="abc123"></turbo-stream>
-  def refresh(**options)
-    turbo_stream_refresh_tag(**options)
+  def refresh(...)
+    turbo_stream_refresh_tag(...)
   end
 
   # Send an action of the type <tt>name</tt> to <tt>target</tt>. Options described in the concrete methods.

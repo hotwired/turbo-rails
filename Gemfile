@@ -15,21 +15,11 @@ gem "sprockets-rails"
 
 gem 'rake'
 gem 'byebug'
-
-if RUBY_VERSION < "3"
-  gem "rack", "< 3"
-  gem "puma", "< 6"
-else
-  gem "rack"
-  gem "puma"
-end
+gem 'puma'
+gem 'rack'
 
 group :development, :test do
-  if rails_version == "6.1"
-    gem "importmap-rails", "0.6.1"
-  else
-    gem "importmap-rails"
-  end
+  gem 'importmap-rails'
 end
 
 group :test do
