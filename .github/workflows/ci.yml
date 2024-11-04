@@ -34,6 +34,7 @@ jobs:
       - name: Run Bug Template Tests
         run: ruby bug_report_template.rb || ruby bug_report_template.rb
 
+      - uses: oven-sh/setup-bun@v1
       - name: Run tests
         id: test
         run: bundle exec rake TESTOPT=-vdc
