@@ -508,7 +508,7 @@ module Turbo::Broadcastable
       self.class.broadcast_target_default
     end
 
-    def extract_options_and_add_target(rendering = {}, target: broadcast_target_default)
+    def extract_options_and_add_target(rendering, target: broadcast_target_default)
       broadcast_rendering_with_defaults(rendering).tap do |options|
         options[:target] = target if !options.key?(:target) && !options.key?(:targets)
       end

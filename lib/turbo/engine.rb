@@ -164,7 +164,7 @@ module Turbo
       ActiveSupport.on_load(:action_dispatch_system_test_case) do
         app.config.turbo.test_connect_after_actions.map do |method|
           class_eval <<~RUBY, __FILE__, __LINE__ + 1
-            def #{method}(...)                                    # def visit(...)
+            def #{method}(*args, &block)                          # def visit(*args, &block)
               super.tap { connect_turbo_cable_stream_sources }    #   super.tap { connect_turbo_cable_stream_sources }
             end                                                   # end
           RUBY
