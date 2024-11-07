@@ -35,6 +35,22 @@ class Turbo::FrameRequestControllerTest < ActionDispatch::IntegrationTest
     assert_not_equal etag_with_frame, etag_without_frame
   end
 
+  test "frame requests keep the flash" do
+    message = Message.create!
+
+    post messages_path
+    assert_equal @request.flash[:notice], 'Message was successfully created.'
+
+    get messages_path, headers: { "Turbo-Frame" => "true" }
+    assert_equal @request.flash[:notice], 'Message was successfully created.'
+
+    get messages_path
+    assert_equal @request.flash[:notice], 'Message was successfully created.'
+
+    get messages_path
+    assert_nil @request.flash[:notice]
+  end
+
   test "turbo_frame_request_id returns the Turbo-Frame header value" do
     turbo_frame_request_id = "test_frame_id"
 
