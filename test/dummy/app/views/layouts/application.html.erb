@@ -10,6 +10,7 @@
   </head>
 
   <body class="<%= "turbo-native" if turbo_native_app? %>">
+    <%= flash[:notice] %>
     <%= yield %>
   </body>
 </html>
