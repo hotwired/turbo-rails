@@ -1,0 +1,11 @@
+<h1>Tabs</h1>
+
+<nav>
+  <ul>
+    <% %w[one two three].each do |name| %>
+      <li><%= link_to "Tab #{name}", tab_path(name), data: { turbo_frame: "tabs" } %>
+    <% end %>
+  </ul>
+</nav>
+
+<%= turbo_frame_tag "tabs", src: tab_path("one"), data: {turbo_action: "advance"} %>
