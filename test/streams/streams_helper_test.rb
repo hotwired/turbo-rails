@@ -113,4 +113,10 @@ class Turbo::StreamsHelperTest < ActionView::TestCase
       <turbo-stream action="update" target="message_1"><template><p>Hello, world</p></template></turbo-stream>
     HTML
   end
+
+  test "renders turbo-stream[action=visit]" do
+    assert_dom_equal <<~HTML.strip, turbo_stream.visit("/")
+      <turbo-stream action="visit" location="/"></turbo-stream>
+    HTML
+  end
 end

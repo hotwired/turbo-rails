@@ -17,12 +17,20 @@ class ArticlesController < ApplicationController
     redirect_to articles_url
   end
 
-  def create
+  def new
     @article = Article.new
+  end
 
-    @article.update! article_params
+  def create
+    @article = Article.new article_params
 
-    redirect_to articles_url
+    if @article.save
+      flash.notice = "Created!"
+
+      break_out_of_turbo_frame_and_redirect_to articles_url, redirect_to_options_params.to_h.to_options
+    else
+      render :new, status: :unprocessable_entity
+    end
   end
 
   def destroy
@@ -42,6 +50,10 @@ class ArticlesController < ApplicationController
 
   def article_params
     params.require(:article).permit(:body)
+  end
+
+  def redirect_to_options_params
+    params.fetch(:redirect_to_options, {}).permit!
   end
 
   def assert_param_method!

@@ -10,7 +10,9 @@
   </head>
 
   <body class="<%= "turbo-native" if turbo_native_app? %>">
-    <%= flash[:notice] %>
+    <% flash.each do |message| %>
+      <p role="alert"><%= message %></p>
+    <% end %>
     <%= yield %>
   </body>
 </html>
