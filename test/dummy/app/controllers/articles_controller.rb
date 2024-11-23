@@ -27,7 +27,7 @@ class ArticlesController < ApplicationController
     if @article.save
       flash.notice = "Created!"
 
-      redirect_to articles_url, redirect_params.to_h.to_options
+      break_out_of_turbo_frame_and_redirect_to articles_url, redirect_to_options_params.to_h.to_options
     else
       render :new, status: :unprocessable_entity
     end
@@ -52,8 +52,8 @@ class ArticlesController < ApplicationController
     params.require(:article).permit(:body)
   end
 
-  def redirect_params
-    params.permit(:alert, :notice, :status, :turbo_action, :turbo_frame, flash: {}).with_defaults(status: :found)
+  def redirect_to_options_params
+    params.fetch(:redirect_to_options, {}).permit!
   end
 
   def assert_param_method!

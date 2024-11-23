@@ -28,7 +28,7 @@ module Turbo::Streams::ActionHelper
     target = attributes.delete(:target)
     targets = attributes.delete(:targets)
     template = attributes.delete(:template)
-    template = action.to_sym.in?(%i[ remove refresh ]) ? "" : tag.template(template.to_s.html_safe)
+    template = action.to_sym.in?(%i[ remove refresh visit ]) ? "" : tag.template(template.to_s.html_safe)
 
     if target = convert_to_turbo_stream_dom_id(target)
       tag.turbo_stream(template, **attributes, action: action, target: target)
@@ -45,6 +45,14 @@ module Turbo::Streams::ActionHelper
   #   # => <turbo-stream action="refresh"></turbo-stream>
   def turbo_stream_refresh_tag(request_id: Turbo.current_request_id, **attributes)
     turbo_stream_action_tag(:refresh, attributes.with_defaults({ "request-id": request_id }.compact))
+  end
+
+  # Creates a `turbo-stream` tag with an `action="visit"` attribute. Example:
+  #
+  #   turbo_stream_visit_tag "/"
+  #   # => <turbo-stream action="visit" location="/"></turbo-stream>
+  def turbo_stream_visit_tag(location)
+    turbo_stream_action_tag(:visit, location: location)
   end
 
   private

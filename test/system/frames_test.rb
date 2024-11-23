@@ -8,7 +8,8 @@ class FramesTest < ApplicationSystemTestCase
     end
 
     within_disclosure "New Article" do
-      assert_field "Body", described_by: "can't be blank"
+      assert_field "Body", with: ""
+      assert_text "can't be blank"
     end
   end
 
@@ -19,8 +20,18 @@ class FramesTest < ApplicationSystemTestCase
       click_on "Create Article"
     end
 
-    assert_no_selector :disclosure, "New Article"
+    assert_no_selector "details", text: "New Article"
     assert_no_field "Body"
     assert_text "An article's body"
+    assert_selector "[role=alert]", text: "Created!"
+  end
+
+  def toggle_disclosure(locator, &block)
+    find("details", text: locator).click
+    within_disclosure(locator, &block)
+  end
+
+  def within_disclosure(locator, &block)
+    within("details", text: locator, &block)
   end
 end

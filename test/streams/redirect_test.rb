@@ -1,143 +1,105 @@
 require "test_helper"
 
-class Turbo::Streams::RedirectTest < ActionDispatch::IntegrationTest
-  test "html requests respond with a redirect HTTP status" do
-    post articles_path, params: {
-      turbo_frame: "_top", status: 303,
-      article: {body: "A valid value"}
-    }
+class Turbo::Streams::RedirectHtmlRequestTest < ActionDispatch::IntegrationTest
+  test "#break_out_of_turbo_frame_and_redirect_to forwards option to redirect_to" do
+    post articles_path,
+      params: {
+        article: {body: "A valid value"},
+        redirect_to_options: {
+          status: 303,
+          notice: "Notice!",
+          flash: {alert: "Alert!"}
+        }
+      }
 
-    assert_response :see_other
-    assert_redirected_to articles_url
-    assert_equal "Created!", flash[:notice]
+    assert_redirected_to articles_url, status: :see_other
+    assert_equal "Notice!", flash.notice
+    assert_equal "Alert!", flash.alert
+  end
+end
+
+class Turbo::Streams::RedirectTurboStreamRequetTest < ActionDispatch::IntegrationTest
+  test "#break_out_of_turbo_frame_and_redirect_to without Turbo-Frame header redirects to as if Mime[:html]" do
+    post articles_path,
+      as: :turbo_stream,
+      params: {
+        article: {body: "A valid value"},
+        redirect_to_options: {
+          status: 303,
+          notice: "Notice!",
+          flash: {alert: "Alert!"}
+        }
+      }
+
+    assert_redirected_to articles_url, status: :see_other
+    assert_equal "Notice!", flash.notice
+    assert_equal "Alert!", flash.alert
   end
 
-  test "html redirects write to the flash" do
-    post articles_path, params: {
-      turbo_frame: "_top", flash: {alert: "Wrote to alert:"},
-      article: {body: "A valid value"}
-    }
+  test "#break_out_of_turbo_frame_and_redirect_to with Turbo-Frame header responds with turbo-stream[action=visit]" do
+    post articles_path,
+      as: :turbo_stream,
+      headers: {"Turbo-Frame" => "frame-id"},
+      params: {
+        article: {body: "A valid value"},
+        redirect_to_options: {
+          notice: "Notice!",
+          flash: {alert: "Alert!"}
+        }
+      }
 
-    assert_equal "Wrote to alert:", flash[:alert]
-  end
-
-  test "html redirects write to alert" do
-    post articles_path, params: {
-      turbo_frame: "_top", alert: "Wrote to alert:",
-      article: {body: "A valid value"}
-    }
-
-    assert_equal "Wrote to alert:", flash[:alert]
-  end
-
-  test "html redirects write to notice" do
-    post articles_path, params: {
-      turbo_frame: "_top", notice: "Wrote to notice:",
-      article: {body: "A valid value"}
-    }
-
-    assert_equal "Wrote to notice:", flash[:notice]
-  end
-
-  test "turbo_stream requests with the turbo_frame: option responds with a redirect Turbo Stream" do
-    post articles_path, as: :turbo_stream, params: {
-      turbo_frame: "_top",
-      article: {body: "A valid value"}
-    }
-
-    assert_turbo_stream action: :append, targets: "head", status: :created do
-      assert_select "script[data-turbo-cache=false]", count: 1 do |script|
-        assert_includes script.text, %(frame: "_top",)
-        assert_not_includes script.text, %(action:)
-      end
-    end
+    assert_turbo_stream action: :visit, location: articles_url, status: :created, count: 1
     assert_equal articles_url, response.location
+    assert_equal "Notice!", flash.notice
+    assert_equal "Alert!", flash.alert
   end
 
-  test "turbo_stream requests with the turbo_frame: and turbo_action: options responds with a redirect Turbo Stream" do
-    post articles_path, as: :turbo_stream, params: {
-      turbo_frame: "_top",
-      turbo_action: "replace",
-      article: {body: "A valid value"}
-    }
+  test "#break_out_of_turbo_frame_and_redirect_to with the Turbo-Frame header preserves status: values in the 2xx range" do
+    post articles_path,
+      as: :turbo_stream,
+      headers: {"Turbo-Frame" => "frame-id"},
+      params: {
+        article: {body: "A valid value"},
+        redirect_to_options: {status: 200}
+      }
 
-    assert_turbo_stream action: :append, targets: "head", status: :created do
-      assert_select "script[data-turbo-cache=false]", count: 1 do |script|
-        assert_includes script.text, %(frame: "_top",)
-        assert_includes script.text, %(action: "replace",)
-      end
-    end
-    assert_equal articles_url, response.location
-  end
-
-  test "turbo_stream requests with the turbo_frame: option preserves status: values in the 2xx range" do
-    post articles_path, as: :turbo_stream, params: {
-      turbo_frame: "_top", status: 200,
-      article: { body: "A valid value" }
-    }
-
-    assert_response 200
+    assert_turbo_stream action: :visit, location: articles_url, status: :ok, count: 1
   end
 
   test "turbo_stream requests with the turbo_frame: option replaces status: values in the 3xx range with 201 Created" do
-    post articles_path, as: :turbo_stream, params: {
-      turbo_frame: "_top", status: 303,
-      article: { body: "A valid value" }
-    }
+    post articles_path,
+      as: :turbo_stream,
+      headers: {"Turbo-Frame" => "frame-id"},
+      params: {
+        article: {body: "A valid value"},
+        redirect_to_options: {status: 303}
+      }
 
-    assert_response 201
+    assert_turbo_stream action: :visit, location: articles_url, status: :created, count: 1
+    assert_equal articles_url, response.location
   end
 
   test "turbo_stream requests with the turbo_frame: option preserves status: values in the 4xx range" do
-    post articles_path, as: :turbo_stream, params: {
-      turbo_frame: "_top", status: 403,
-      article: { body: "A valid value" }
-    }
+    post articles_path,
+      as: :turbo_stream,
+      headers: {"Turbo-Frame" => "frame-id"},
+      params: {
+        article: {body: "A valid value"},
+        redirect_to_options: {status: 403}
+      }
 
-    assert_response 403
+    assert_turbo_stream action: :visit, location: articles_url, status: :forbidden, count: 1
   end
 
   test "turbo_stream requests with the turbo_frame: option preserves status: values in the 5xx range" do
-    post articles_path, as: :turbo_stream, params: {
-      turbo_frame: "_top", status: 500,
-      article: { body: "A valid value" }
-    }
+    post articles_path,
+      as: :turbo_stream,
+      headers: {"Turbo-Frame" => "frame-id"},
+      params: {
+        article: {body: "A valid value"},
+        redirect_to_options: {status: 500}
+      }
 
-    assert_response 500
-  end
-
-  test "turbo_stream requests without the turbo_frame: option respond with a redirect HTTP status" do
-    post articles_path, as: :turbo_stream, params: {
-      article: { body: "A valid value" }
-    }
-
-    assert_redirected_to articles_url
-  end
-
-  test "turbo_stream redirects write to the flash" do
-    post articles_path, as: :turbo_stream, params: {
-      turbo_frame: "_top", flash: {alert: "Wrote to alert:"},
-      article: {body: "A valid value"}
-    }
-
-    assert_equal "Wrote to alert:", flash[:alert]
-  end
-
-  test "turbo_stream redirects write to alert" do
-    post articles_path, as: :turbo_stream, params: {
-      turbo_frame: "_top", alert: "Wrote to alert:",
-      article: {body: "A valid value"}
-    }
-
-    assert_equal "Wrote to alert:", flash[:alert]
-  end
-
-  test "turbo_stream redirects write to notice" do
-    post articles_path, as: :turbo_stream, params: {
-      turbo_frame: "_top", notice: "Wrote to notice:",
-      article: {body: "A valid value"}
-    }
-
-    assert_equal "Wrote to notice:", flash[:notice]
+    assert_turbo_stream action: :visit, location: articles_url, status: 500, count: 1
   end
 end
