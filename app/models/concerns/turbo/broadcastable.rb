@@ -286,7 +286,7 @@ module Turbo::Broadcastable
   #
   #   # sends <turbo-stream action="update" method="morph" target="clearance_5"><template><div id="clearance_5">Other partial</div></template></turbo-stream>
   #   # to the stream named "identity:2:clearances"
-  #   # clearance.broadcast_update_to examiner.identity, :clearances, attributes: { method: :morph }, partial: "clearances/other_partial", locals: { a: 1 }
+  #   clearance.broadcast_update_to examiner.identity, :clearances, attributes: { method: :morph }, partial: "clearances/other_partial", locals: { a: 1 }
   def broadcast_update_to(*streamables, **rendering)
     Turbo::StreamsChannel.broadcast_update_to(*streamables, **extract_options_and_add_target(rendering, target: self)) unless suppressed_turbo_broadcasts?
   end
