@@ -6,7 +6,7 @@ gemfile(true) do
   gem "rails"
   gem "propshaft"
   gem "puma"
-  gem "sqlite3", "~> 1.4"
+  gem "sqlite3"
   gem "turbo-rails"
 
   gem "capybara"
