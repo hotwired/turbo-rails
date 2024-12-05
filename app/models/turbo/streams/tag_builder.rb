@@ -267,6 +267,8 @@ class Turbo::Streams::TagBuilder
         content.render_in(@view_context, &block)
       when content
         allow_inferred_rendering ? (render_record(content) || content) : content
+      when block_given? && (rendering.key?(:partial) || rendering.key?(:layout))
+        @view_context.render(formats: [ :html ], layout: rendering[:partial], **rendering, &block)
       when block_given?
         @view_context.capture(&block)
       when rendering.any?
