@@ -19,6 +19,48 @@ class Turbo::StreamsHelperTest < ActionView::TestCase
 
   attr_accessor :formats
 
+  test "turbo_stream builder captures block when called without :partial keyword" do
+    rendered = turbo_stream.update "target_id" do
+      tag.span "Hello, world"
+    end
+
+    assert_dom_equal <<~HTML.strip, rendered
+      <turbo-stream action="update" target="target_id">
+        <template>
+          <span>Hello, world</span>
+        </template>
+      </turbo-stream>
+    HTML
+  end
+
+  test "turbo_stream builder forwards block to partial when called with :partial keyword" do
+    rendered = turbo_stream.update "target_id", partial: "application/partial_with_block" do
+      "Hello, from application/partial_with_block partial"
+    end
+
+    assert_dom_equal <<~HTML.strip, rendered
+      <turbo-stream action="update" target="target_id">
+        <template>
+          <p>Hello, from application/partial_with_block partial</p>
+        </template>
+      </turbo-stream>
+    HTML
+  end
+
+  test "turbo_stream builder forwards block to partial when called with :layout keyword" do
+    rendered = turbo_stream.update "target_id", layout: "application/partial_with_block" do
+      "Hello, from application/partial_with_block partial"
+    end
+
+    assert_dom_equal <<~HTML.strip, rendered
+      <turbo-stream action="update" target="target_id">
+        <template>
+          <p>Hello, from application/partial_with_block partial</p>
+        </template>
+      </turbo-stream>
+    HTML
+  end
+
   test "supports valid :renderable option object with nil content" do
     component = Component.new(id: 1, content: "Hello, world")
 
