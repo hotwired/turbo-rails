@@ -36,5 +36,5 @@ group :test do
   gem 'capybara'
   gem 'rexml'
   gem 'cuprite', '~> 0.9', require: 'capybara/cuprite'
-  gem 'sqlite3', '1.5'
+  gem 'sqlite3'
 end
