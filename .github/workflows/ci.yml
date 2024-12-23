@@ -11,6 +11,8 @@ jobs:
         include:
           - { ruby: "3.3",  rails: "main", allow-fail: true }
           - { ruby: "head", rails: "main", allow-fail: true }
+        exclude:
+          - { ruby: "3.2", rails: "8.0" }
 
     env:
       FERRUM_PROCESS_TIMEOUT: 25
