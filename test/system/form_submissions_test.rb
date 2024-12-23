@@ -5,8 +5,10 @@ class FormSubmissionsTest < ApplicationSystemTestCase
     article = Article.create! body: "My article"
 
     visit edit_article_path(article.id)
-
     click_on "articles#index"
+
+    assert_text "Articles"
+    assert_text "My article"
   end
 
   test "form submission method is encoded as _method" do
