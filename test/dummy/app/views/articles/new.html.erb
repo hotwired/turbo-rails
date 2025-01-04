@@ -1,0 +1,17 @@
+<details>
+  <summary>New Article</summary>
+
+  <%= turbo_frame_tag @article do %>
+    <%= form_with model: @article do |form| %>
+      <%= form.label :body %>
+      <%= form.text_area :body, aria: { describedby: (dom_id(@article, :errors) if @article.errors[:body].any?) } %>
+      <% if @article.errors[:body].any? %>
+        <p id="<%= dom_id(@article, :errors) %>">
+          <%= @article.errors[:body].to_sentence %>
+        </p>
+      <% end %>
+
+      <%= form.button name: :turbo_frame, value: "_top"%>
+    <% end %>
+  <% end %>
+</details>

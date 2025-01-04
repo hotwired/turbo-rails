@@ -45,10 +45,11 @@ module Turbo
     #       assert_select "template p", text: "Hello!"
     #     end
     #
-    def assert_turbo_stream(action:, target: nil, targets: nil, count: 1, &block)
+    def assert_turbo_stream(action:, target: nil, targets: nil, count: 1, **attributes, &block)
       selector =  %(turbo-stream[action="#{action}"])
       selector << %([target="#{target.respond_to?(:to_key) ? dom_id(target) : target}"]) if target
       selector << %([targets="#{targets}"]) if targets
+      attributes.each { |name, value| selector << %([#{name}="#{value}"]) }
       assert_select selector, count: count, &block
     end
 

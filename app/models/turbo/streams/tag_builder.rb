@@ -244,6 +244,15 @@ class Turbo::Streams::TagBuilder
     turbo_stream_refresh_tag(**options)
   end
 
+  # Creates a `turbo-stream` tag with an `[action="visit"]` attribute and an
+  # `[location]` attribute
+  #
+  #   turbo_stream.visit("/")
+  #   # => <turbo-stream action="visit" location="/"></turbo-stream>
+  def visit(location)
+    turbo_stream_visit_tag(location)
+  end
+
   # Send an action of the type <tt>name</tt> to <tt>target</tt>. Options described in the concrete methods.
   def action(name, target, content = nil, method: nil, allow_inferred_rendering: true, **rendering, &block)
     template = render_template(target, content, allow_inferred_rendering: allow_inferred_rendering, **rendering, &block)

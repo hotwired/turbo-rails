@@ -5437,6 +5437,10 @@ function isBodyInit(body) {
   return body instanceof FormData || body instanceof URLSearchParams;
 }
 
+StreamActions.visit = function() {
+  visit(this.getAttribute("location"));
+};
+
 window.Turbo = Turbo$1;
 
 addEventListener("turbo:before-fetch-request", encodeMethodIntoRequestBody);
