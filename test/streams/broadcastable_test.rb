@@ -441,6 +441,23 @@ class Turbo::BroadcastableCommentTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "creating a second comment while using locals broadcasts the second comment" do
+    stream = "#{@article.to_gid_param}:comments"
+    target = "article_#{@article.id}_comments"
+
+    assert_broadcast_on stream, turbo_stream_action_tag("append", target: target, template: %(<p class="different">comment</p>\n)) do
+      perform_enqueued_jobs do
+        @article.comments.create!(body: "comment")
+      end
+    end
+
+    assert_broadcast_on stream, turbo_stream_action_tag("append", target: target, template: %(<p class="different">another comment</p>\n)) do
+      perform_enqueued_jobs do
+        @article.comments.create!(body: "another comment")
+      end
+    end
+  end
+
   test "updating a comment broadcasts" do
     comment = @article.comments.create!(body: "random")
     stream = "#{@article.to_gid_param}:comments"
