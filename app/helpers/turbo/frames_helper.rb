@@ -7,7 +7,7 @@ module Turbo::FramesHelper
   #   <%= turbo_frame_tag "tray", src: tray_path(tray) %>
   #   # => <turbo-frame id="tray" src="http://example.com/trays/1"></turbo-frame>
   #
-  #   <%= turbo_frame_tag tray, src: tray_path(tray) %>
+  #   <%= turbo_frame_tag "tray_1", src: tray_path(tray) %>
   #   # => <turbo-frame id="tray_1" src="http://example.com/trays/1"></turbo-frame>
   #
   #   <%= turbo_frame_tag "tray", src: tray_path(tray), target: "_top" %>
