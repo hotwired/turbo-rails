@@ -1,6 +1,6 @@
 /*!
-Turbo 8.0.12
-Copyright © 2024 37signals LLC
+Turbo 8.0.13
+Copyright © 2025 37signals LLC
  */
 (function(prototype) {
   if (typeof prototype.requestSubmit == "function") return;
@@ -1687,8 +1687,8 @@ function readScrollBehavior(value, defaultValue) {
 }
 
 var Idiomorph = function() {
-  let EMPTY_SET = new Set;
-  let defaults = {
+  const noOp = () => {};
+  const defaults = {
     morphStyle: "outerHTML",
     callbacks: {
       beforeNodeAdded: noOp,
@@ -1701,235 +1701,346 @@ var Idiomorph = function() {
     },
     head: {
       style: "merge",
-      shouldPreserve: function(elt) {
-        return elt.getAttribute("im-preserve") === "true";
-      },
-      shouldReAppend: function(elt) {
-        return elt.getAttribute("im-re-append") === "true";
-      },
+      shouldPreserve: elt => elt.getAttribute("im-preserve") === "true",
+      shouldReAppend: elt => elt.getAttribute("im-re-append") === "true",
       shouldRemove: noOp,
       afterHeadMorphed: noOp
-    }
+    },
+    restoreFocus: true
   };
   function morph(oldNode, newContent, config = {}) {
-    if (oldNode instanceof Document) {
-      oldNode = oldNode.documentElement;
-    }
-    if (typeof newContent === "string") {
-      newContent = parseContent(newContent);
-    }
-    let normalizedContent = normalizeContent(newContent);
-    let ctx = createMorphContext(oldNode, normalizedContent, config);
-    return morphNormalizedContent(oldNode, normalizedContent, ctx);
+    oldNode = normalizeElement(oldNode);
+    const newNode = normalizeParent(newContent);
+    const ctx = createMorphContext(oldNode, newNode, config);
+    const morphedNodes = saveAndRestoreFocus(ctx, (() => withHeadBlocking(ctx, oldNode, newNode, (ctx => {
+      if (ctx.morphStyle === "innerHTML") {
+        morphChildren(ctx, oldNode, newNode);
+        return Array.from(oldNode.childNodes);
+      } else {
+        return morphOuterHTML(ctx, oldNode, newNode);
+      }
+    }))));
+    ctx.pantry.remove();
+    return morphedNodes;
   }
-  function morphNormalizedContent(oldNode, normalizedNewContent, ctx) {
-    if (ctx.head.block) {
-      let oldHead = oldNode.querySelector("head");
-      let newHead = normalizedNewContent.querySelector("head");
-      if (oldHead && newHead) {
-        let promises = handleHeadElement(newHead, oldHead, ctx);
-        Promise.all(promises).then((function() {
-          morphNormalizedContent(oldNode, normalizedNewContent, Object.assign(ctx, {
-            head: {
-              block: false,
-              ignore: true
+  function morphOuterHTML(ctx, oldNode, newNode) {
+    const oldParent = normalizeParent(oldNode);
+    let childNodes = Array.from(oldParent.childNodes);
+    const index = childNodes.indexOf(oldNode);
+    const rightMargin = childNodes.length - (index + 1);
+    morphChildren(ctx, oldParent, newNode, oldNode, oldNode.nextSibling);
+    childNodes = Array.from(oldParent.childNodes);
+    return childNodes.slice(index, childNodes.length - rightMargin);
+  }
+  function saveAndRestoreFocus(ctx, fn) {
+    if (!ctx.config.restoreFocus) return fn();
+    let activeElement = document.activeElement;
+    if (!(activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement)) {
+      return fn();
+    }
+    const {id: activeElementId, selectionStart: selectionStart, selectionEnd: selectionEnd} = activeElement;
+    const results = fn();
+    if (activeElementId && activeElementId !== document.activeElement?.id) {
+      activeElement = ctx.target.querySelector(`#${activeElementId}`);
+      activeElement?.focus();
+    }
+    if (activeElement && !activeElement.selectionEnd && selectionEnd) {
+      activeElement.setSelectionRange(selectionStart, selectionEnd);
+    }
+    return results;
+  }
+  const morphChildren = function() {
+    function morphChildren(ctx, oldParent, newParent, insertionPoint = null, endPoint = null) {
+      if (oldParent instanceof HTMLTemplateElement && newParent instanceof HTMLTemplateElement) {
+        oldParent = oldParent.content;
+        newParent = newParent.content;
+      }
+      insertionPoint ||= oldParent.firstChild;
+      for (const newChild of newParent.childNodes) {
+        if (insertionPoint && insertionPoint != endPoint) {
+          const bestMatch = findBestMatch(ctx, newChild, insertionPoint, endPoint);
+          if (bestMatch) {
+            if (bestMatch !== insertionPoint) {
+              removeNodesBetween(ctx, insertionPoint, bestMatch);
             }
-          }));
-        }));
-        return;
+            morphNode(bestMatch, newChild, ctx);
+            insertionPoint = bestMatch.nextSibling;
+            continue;
+          }
+        }
+        if (newChild instanceof Element && ctx.persistentIds.has(newChild.id)) {
+          const movedChild = moveBeforeById(oldParent, newChild.id, insertionPoint, ctx);
+          morphNode(movedChild, newChild, ctx);
+          insertionPoint = movedChild.nextSibling;
+          continue;
+        }
+        const insertedNode = createNode(oldParent, newChild, insertionPoint, ctx);
+        if (insertedNode) {
+          insertionPoint = insertedNode.nextSibling;
+        }
+      }
+      while (insertionPoint && insertionPoint != endPoint) {
+        const tempNode = insertionPoint;
+        insertionPoint = insertionPoint.nextSibling;
+        removeNode(ctx, tempNode);
       }
     }
-    if (ctx.morphStyle === "innerHTML") {
-      morphChildren(normalizedNewContent, oldNode, ctx);
-      return oldNode.children;
-    } else if (ctx.morphStyle === "outerHTML" || ctx.morphStyle == null) {
-      let bestMatch = findBestNodeMatch(normalizedNewContent, oldNode, ctx);
-      let previousSibling = bestMatch?.previousSibling;
-      let nextSibling = bestMatch?.nextSibling;
-      let morphedNode = morphOldNodeTo(oldNode, bestMatch, ctx);
-      if (bestMatch) {
-        return insertSiblings(previousSibling, morphedNode, nextSibling);
+    function createNode(oldParent, newChild, insertionPoint, ctx) {
+      if (ctx.callbacks.beforeNodeAdded(newChild) === false) return null;
+      if (ctx.idMap.has(newChild)) {
+        const newEmptyChild = document.createElement(newChild.tagName);
+        oldParent.insertBefore(newEmptyChild, insertionPoint);
+        morphNode(newEmptyChild, newChild, ctx);
+        ctx.callbacks.afterNodeAdded(newEmptyChild);
+        return newEmptyChild;
       } else {
-        return [];
+        const newClonedChild = document.importNode(newChild, true);
+        oldParent.insertBefore(newClonedChild, insertionPoint);
+        ctx.callbacks.afterNodeAdded(newClonedChild);
+        return newClonedChild;
       }
-    } else {
-      throw "Do not understand how to morph style " + ctx.morphStyle;
     }
-  }
-  function ignoreValueOfActiveElement(possibleActiveElement, ctx) {
-    return ctx.ignoreActiveValue && possibleActiveElement === document.activeElement && possibleActiveElement !== document.body;
-  }
-  function morphOldNodeTo(oldNode, newContent, ctx) {
-    if (ctx.ignoreActive && oldNode === document.activeElement) ; else if (newContent == null) {
-      if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return oldNode;
-      oldNode.remove();
-      ctx.callbacks.afterNodeRemoved(oldNode);
-      return null;
-    } else if (!isSoftMatch(oldNode, newContent)) {
-      if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return oldNode;
-      if (ctx.callbacks.beforeNodeAdded(newContent) === false) return oldNode;
-      oldNode.parentElement.replaceChild(newContent, oldNode);
-      ctx.callbacks.afterNodeAdded(newContent);
-      ctx.callbacks.afterNodeRemoved(oldNode);
-      return newContent;
-    } else {
-      if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false) return oldNode;
+    const findBestMatch = function() {
+      function findBestMatch(ctx, node, startPoint, endPoint) {
+        let softMatch = null;
+        let nextSibling = node.nextSibling;
+        let siblingSoftMatchCount = 0;
+        let cursor = startPoint;
+        while (cursor && cursor != endPoint) {
+          if (isSoftMatch(cursor, node)) {
+            if (isIdSetMatch(ctx, cursor, node)) {
+              return cursor;
+            }
+            if (softMatch === null) {
+              if (!ctx.idMap.has(cursor)) {
+                softMatch = cursor;
+              }
+            }
+          }
+          if (softMatch === null && nextSibling && isSoftMatch(cursor, nextSibling)) {
+            siblingSoftMatchCount++;
+            nextSibling = nextSibling.nextSibling;
+            if (siblingSoftMatchCount >= 2) {
+              softMatch = undefined;
+            }
+          }
+          if (cursor.contains(document.activeElement)) break;
+          cursor = cursor.nextSibling;
+        }
+        return softMatch || null;
+      }
+      function isIdSetMatch(ctx, oldNode, newNode) {
+        let oldSet = ctx.idMap.get(oldNode);
+        let newSet = ctx.idMap.get(newNode);
+        if (!newSet || !oldSet) return false;
+        for (const id of oldSet) {
+          if (newSet.has(id)) {
+            return true;
+          }
+        }
+        return false;
+      }
+      function isSoftMatch(oldNode, newNode) {
+        const oldElt = oldNode;
+        const newElt = newNode;
+        return oldElt.nodeType === newElt.nodeType && oldElt.tagName === newElt.tagName && (!oldElt.id || oldElt.id === newElt.id);
+      }
+      return findBestMatch;
+    }();
+    function removeNode(ctx, node) {
+      if (ctx.idMap.has(node)) {
+        moveBefore(ctx.pantry, node, null);
+      } else {
+        if (ctx.callbacks.beforeNodeRemoved(node) === false) return;
+        node.parentNode?.removeChild(node);
+        ctx.callbacks.afterNodeRemoved(node);
+      }
+    }
+    function removeNodesBetween(ctx, startInclusive, endExclusive) {
+      let cursor = startInclusive;
+      while (cursor && cursor !== endExclusive) {
+        let tempNode = cursor;
+        cursor = cursor.nextSibling;
+        removeNode(ctx, tempNode);
+      }
+      return cursor;
+    }
+    function moveBeforeById(parentNode, id, after, ctx) {
+      const target = ctx.target.querySelector(`#${id}`) || ctx.pantry.querySelector(`#${id}`);
+      removeElementFromAncestorsIdMaps(target, ctx);
+      moveBefore(parentNode, target, after);
+      return target;
+    }
+    function removeElementFromAncestorsIdMaps(element, ctx) {
+      const id = element.id;
+      while (element = element.parentNode) {
+        let idSet = ctx.idMap.get(element);
+        if (idSet) {
+          idSet.delete(id);
+          if (!idSet.size) {
+            ctx.idMap.delete(element);
+          }
+        }
+      }
+    }
+    function moveBefore(parentNode, element, after) {
+      if (parentNode.moveBefore) {
+        try {
+          parentNode.moveBefore(element, after);
+        } catch (e) {
+          parentNode.insertBefore(element, after);
+        }
+      } else {
+        parentNode.insertBefore(element, after);
+      }
+    }
+    return morphChildren;
+  }();
+  const morphNode = function() {
+    function morphNode(oldNode, newContent, ctx) {
+      if (ctx.ignoreActive && oldNode === document.activeElement) {
+        return null;
+      }
+      if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false) {
+        return oldNode;
+      }
       if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) ; else if (oldNode instanceof HTMLHeadElement && ctx.head.style !== "morph") {
-        handleHeadElement(newContent, oldNode, ctx);
+        handleHeadElement(oldNode, newContent, ctx);
       } else {
-        syncNodeFrom(newContent, oldNode, ctx);
+        morphAttributes(oldNode, newContent, ctx);
         if (!ignoreValueOfActiveElement(oldNode, ctx)) {
-          morphChildren(newContent, oldNode, ctx);
+          morphChildren(ctx, oldNode, newContent);
         }
       }
       ctx.callbacks.afterNodeMorphed(oldNode, newContent);
       return oldNode;
     }
-  }
-  function morphChildren(newParent, oldParent, ctx) {
-    let nextNewChild = newParent.firstChild;
-    let insertionPoint = oldParent.firstChild;
-    let newChild;
-    while (nextNewChild) {
-      newChild = nextNewChild;
-      nextNewChild = newChild.nextSibling;
-      if (insertionPoint == null) {
-        if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
-        oldParent.appendChild(newChild);
-        ctx.callbacks.afterNodeAdded(newChild);
-        removeIdsFromConsideration(ctx, newChild);
-        continue;
-      }
-      if (isIdSetMatch(newChild, insertionPoint, ctx)) {
-        morphOldNodeTo(insertionPoint, newChild, ctx);
-        insertionPoint = insertionPoint.nextSibling;
-        removeIdsFromConsideration(ctx, newChild);
-        continue;
-      }
-      let idSetMatch = findIdSetMatch(newParent, oldParent, newChild, insertionPoint, ctx);
-      if (idSetMatch) {
-        insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
-        morphOldNodeTo(idSetMatch, newChild, ctx);
-        removeIdsFromConsideration(ctx, newChild);
-        continue;
-      }
-      let softMatch = findSoftMatch(newParent, oldParent, newChild, insertionPoint, ctx);
-      if (softMatch) {
-        insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
-        morphOldNodeTo(softMatch, newChild, ctx);
-        removeIdsFromConsideration(ctx, newChild);
-        continue;
-      }
-      if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
-      oldParent.insertBefore(newChild, insertionPoint);
-      ctx.callbacks.afterNodeAdded(newChild);
-      removeIdsFromConsideration(ctx, newChild);
-    }
-    while (insertionPoint !== null) {
-      let tempNode = insertionPoint;
-      insertionPoint = insertionPoint.nextSibling;
-      removeNode(tempNode, ctx);
-    }
-  }
-  function ignoreAttribute(attr, to, updateType, ctx) {
-    if (attr === "value" && ctx.ignoreActiveValue && to === document.activeElement) {
-      return true;
-    }
-    return ctx.callbacks.beforeAttributeUpdated(attr, to, updateType) === false;
-  }
-  function syncNodeFrom(from, to, ctx) {
-    let type = from.nodeType;
-    if (type === 1) {
-      const fromAttributes = from.attributes;
-      const toAttributes = to.attributes;
-      for (const fromAttribute of fromAttributes) {
-        if (ignoreAttribute(fromAttribute.name, to, "update", ctx)) {
-          continue;
+    function morphAttributes(oldNode, newNode, ctx) {
+      let type = newNode.nodeType;
+      if (type === 1) {
+        const oldElt = oldNode;
+        const newElt = newNode;
+        const oldAttributes = oldElt.attributes;
+        const newAttributes = newElt.attributes;
+        for (const newAttribute of newAttributes) {
+          if (ignoreAttribute(newAttribute.name, oldElt, "update", ctx)) {
+            continue;
+          }
+          if (oldElt.getAttribute(newAttribute.name) !== newAttribute.value) {
+            oldElt.setAttribute(newAttribute.name, newAttribute.value);
+          }
         }
-        if (to.getAttribute(fromAttribute.name) !== fromAttribute.value) {
-          to.setAttribute(fromAttribute.name, fromAttribute.value);
+        for (let i = oldAttributes.length - 1; 0 <= i; i--) {
+          const oldAttribute = oldAttributes[i];
+          if (!oldAttribute) continue;
+          if (!newElt.hasAttribute(oldAttribute.name)) {
+            if (ignoreAttribute(oldAttribute.name, oldElt, "remove", ctx)) {
+              continue;
+            }
+            oldElt.removeAttribute(oldAttribute.name);
+          }
+        }
+        if (!ignoreValueOfActiveElement(oldElt, ctx)) {
+          syncInputValue(oldElt, newElt, ctx);
         }
       }
-      for (let i = toAttributes.length - 1; 0 <= i; i--) {
-        const toAttribute = toAttributes[i];
-        if (ignoreAttribute(toAttribute.name, to, "remove", ctx)) {
-          continue;
-        }
-        if (!from.hasAttribute(toAttribute.name)) {
-          to.removeAttribute(toAttribute.name);
+      if (type === 8 || type === 3) {
+        if (oldNode.nodeValue !== newNode.nodeValue) {
+          oldNode.nodeValue = newNode.nodeValue;
         }
       }
     }
-    if (type === 8 || type === 3) {
-      if (to.nodeValue !== from.nodeValue) {
-        to.nodeValue = from.nodeValue;
+    function syncInputValue(oldElement, newElement, ctx) {
+      if (oldElement instanceof HTMLInputElement && newElement instanceof HTMLInputElement && newElement.type !== "file") {
+        let newValue = newElement.value;
+        let oldValue = oldElement.value;
+        syncBooleanAttribute(oldElement, newElement, "checked", ctx);
+        syncBooleanAttribute(oldElement, newElement, "disabled", ctx);
+        if (!newElement.hasAttribute("value")) {
+          if (!ignoreAttribute("value", oldElement, "remove", ctx)) {
+            oldElement.value = "";
+            oldElement.removeAttribute("value");
+          }
+        } else if (oldValue !== newValue) {
+          if (!ignoreAttribute("value", oldElement, "update", ctx)) {
+            oldElement.setAttribute("value", newValue);
+            oldElement.value = newValue;
+          }
+        }
+      } else if (oldElement instanceof HTMLOptionElement && newElement instanceof HTMLOptionElement) {
+        syncBooleanAttribute(oldElement, newElement, "selected", ctx);
+      } else if (oldElement instanceof HTMLTextAreaElement && newElement instanceof HTMLTextAreaElement) {
+        let newValue = newElement.value;
+        let oldValue = oldElement.value;
+        if (ignoreAttribute("value", oldElement, "update", ctx)) {
+          return;
+        }
+        if (newValue !== oldValue) {
+          oldElement.value = newValue;
+        }
+        if (oldElement.firstChild && oldElement.firstChild.nodeValue !== newValue) {
+          oldElement.firstChild.nodeValue = newValue;
+        }
       }
     }
-    if (!ignoreValueOfActiveElement(to, ctx)) {
-      syncInputValue(from, to, ctx);
-    }
-  }
-  function syncBooleanAttribute(from, to, attributeName, ctx) {
-    if (from[attributeName] !== to[attributeName]) {
-      let ignoreUpdate = ignoreAttribute(attributeName, to, "update", ctx);
-      if (!ignoreUpdate) {
-        to[attributeName] = from[attributeName];
-      }
-      if (from[attributeName]) {
+    function syncBooleanAttribute(oldElement, newElement, attributeName, ctx) {
+      const newLiveValue = newElement[attributeName], oldLiveValue = oldElement[attributeName];
+      if (newLiveValue !== oldLiveValue) {
+        const ignoreUpdate = ignoreAttribute(attributeName, oldElement, "update", ctx);
         if (!ignoreUpdate) {
-          to.setAttribute(attributeName, from[attributeName]);
+          oldElement[attributeName] = newElement[attributeName];
         }
-      } else {
-        if (!ignoreAttribute(attributeName, to, "remove", ctx)) {
-          to.removeAttribute(attributeName);
+        if (newLiveValue) {
+          if (!ignoreUpdate) {
+            oldElement.setAttribute(attributeName, "");
+          }
+        } else {
+          if (!ignoreAttribute(attributeName, oldElement, "remove", ctx)) {
+            oldElement.removeAttribute(attributeName);
+          }
         }
       }
     }
-  }
-  function syncInputValue(from, to, ctx) {
-    if (from instanceof HTMLInputElement && to instanceof HTMLInputElement && from.type !== "file") {
-      let fromValue = from.value;
-      let toValue = to.value;
-      syncBooleanAttribute(from, to, "checked", ctx);
-      syncBooleanAttribute(from, to, "disabled", ctx);
-      if (!from.hasAttribute("value")) {
-        if (!ignoreAttribute("value", to, "remove", ctx)) {
-          to.value = "";
-          to.removeAttribute("value");
-        }
-      } else if (fromValue !== toValue) {
-        if (!ignoreAttribute("value", to, "update", ctx)) {
-          to.setAttribute("value", fromValue);
-          to.value = fromValue;
-        }
+    function ignoreAttribute(attr, element, updateType, ctx) {
+      if (attr === "value" && ctx.ignoreActiveValue && element === document.activeElement) {
+        return true;
       }
-    } else if (from instanceof HTMLOptionElement) {
-      syncBooleanAttribute(from, to, "selected", ctx);
-    } else if (from instanceof HTMLTextAreaElement && to instanceof HTMLTextAreaElement) {
-      let fromValue = from.value;
-      let toValue = to.value;
-      if (ignoreAttribute("value", to, "update", ctx)) {
-        return;
-      }
-      if (fromValue !== toValue) {
-        to.value = fromValue;
-      }
-      if (to.firstChild && to.firstChild.nodeValue !== fromValue) {
-        to.firstChild.nodeValue = fromValue;
+      return ctx.callbacks.beforeAttributeUpdated(attr, element, updateType) === false;
+    }
+    function ignoreValueOfActiveElement(possibleActiveElement, ctx) {
+      return !!ctx.ignoreActiveValue && possibleActiveElement === document.activeElement && possibleActiveElement !== document.body;
+    }
+    return morphNode;
+  }();
+  function withHeadBlocking(ctx, oldNode, newNode, callback) {
+    if (ctx.head.block) {
+      const oldHead = oldNode.querySelector("head");
+      const newHead = newNode.querySelector("head");
+      if (oldHead && newHead) {
+        const promises = handleHeadElement(oldHead, newHead, ctx);
+        return Promise.all(promises).then((() => {
+          const newCtx = Object.assign(ctx, {
+            head: {
+              block: false,
+              ignore: true
+            }
+          });
+          return callback(newCtx);
+        }));
       }
     }
+    return callback(ctx);
   }
-  function handleHeadElement(newHeadTag, currentHead, ctx) {
+  function handleHeadElement(oldHead, newHead, ctx) {
     let added = [];
     let removed = [];
     let preserved = [];
     let nodesToAppend = [];
-    let headMergeStyle = ctx.head.style;
     let srcToNewHeadNodes = new Map;
-    for (const newHeadChild of newHeadTag.children) {
+    for (const newHeadChild of newHead.children) {
       srcToNewHeadNodes.set(newHeadChild.outerHTML, newHeadChild);
     }
-    for (const currentHeadElt of currentHead.children) {
+    for (const currentHeadElt of oldHead.children) {
       let inNewContent = srcToNewHeadNodes.has(currentHeadElt.outerHTML);
       let isReAppended = ctx.head.shouldReAppend(currentHeadElt);
       let isPreserved = ctx.head.shouldPreserve(currentHeadElt);
@@ -1941,7 +2052,7 @@ var Idiomorph = function() {
           preserved.push(currentHeadElt);
         }
       } else {
-        if (headMergeStyle === "append") {
+        if (ctx.head.style === "append") {
           if (isReAppended) {
             removed.push(currentHeadElt);
             nodesToAppend.push(currentHeadElt);
@@ -1958,8 +2069,8 @@ var Idiomorph = function() {
     for (const newNode of nodesToAppend) {
       let newElt = document.createRange().createContextualFragment(newNode.outerHTML).firstChild;
       if (ctx.callbacks.beforeNodeAdded(newElt) !== false) {
-        if (newElt.href || newElt.src) {
-          let resolve = null;
+        if ("href" in newElt && newElt.href || "src" in newElt && newElt.src) {
+          let resolve;
           let promise = new Promise((function(_resolve) {
             resolve = _resolve;
           }));
@@ -1968,258 +2079,195 @@ var Idiomorph = function() {
           }));
           promises.push(promise);
         }
-        currentHead.appendChild(newElt);
+        oldHead.appendChild(newElt);
         ctx.callbacks.afterNodeAdded(newElt);
         added.push(newElt);
       }
     }
     for (const removedElement of removed) {
       if (ctx.callbacks.beforeNodeRemoved(removedElement) !== false) {
-        currentHead.removeChild(removedElement);
+        oldHead.removeChild(removedElement);
         ctx.callbacks.afterNodeRemoved(removedElement);
       }
     }
-    ctx.head.afterHeadMorphed(currentHead, {
+    ctx.head.afterHeadMorphed(oldHead, {
       added: added,
       kept: preserved,
       removed: removed
     });
     return promises;
   }
-  function noOp() {}
-  function mergeDefaults(config) {
-    let finalConfig = {};
-    Object.assign(finalConfig, defaults);
-    Object.assign(finalConfig, config);
-    finalConfig.callbacks = {};
-    Object.assign(finalConfig.callbacks, defaults.callbacks);
-    Object.assign(finalConfig.callbacks, config.callbacks);
-    finalConfig.head = {};
-    Object.assign(finalConfig.head, defaults.head);
-    Object.assign(finalConfig.head, config.head);
-    return finalConfig;
-  }
-  function createMorphContext(oldNode, newContent, config) {
-    config = mergeDefaults(config);
-    return {
-      target: oldNode,
-      newContent: newContent,
-      config: config,
-      morphStyle: config.morphStyle,
-      ignoreActive: config.ignoreActive,
-      ignoreActiveValue: config.ignoreActiveValue,
-      idMap: createIdMap(oldNode, newContent),
-      deadIds: new Set,
-      callbacks: config.callbacks,
-      head: config.head
-    };
-  }
-  function isIdSetMatch(node1, node2, ctx) {
-    if (node1 == null || node2 == null) {
-      return false;
-    }
-    if (node1.nodeType === node2.nodeType && node1.tagName === node2.tagName) {
-      if (node1.id !== "" && node1.id === node2.id) {
-        return true;
-      } else {
-        return getIdIntersectionCount(ctx, node1, node2) > 0;
+  const createMorphContext = function() {
+    function createMorphContext(oldNode, newContent, config) {
+      const {persistentIds: persistentIds, idMap: idMap} = createIdMaps(oldNode, newContent);
+      const mergedConfig = mergeDefaults(config);
+      const morphStyle = mergedConfig.morphStyle || "outerHTML";
+      if (![ "innerHTML", "outerHTML" ].includes(morphStyle)) {
+        throw `Do not understand how to morph style ${morphStyle}`;
       }
+      return {
+        target: oldNode,
+        newContent: newContent,
+        config: mergedConfig,
+        morphStyle: morphStyle,
+        ignoreActive: mergedConfig.ignoreActive,
+        ignoreActiveValue: mergedConfig.ignoreActiveValue,
+        restoreFocus: mergedConfig.restoreFocus,
+        idMap: idMap,
+        persistentIds: persistentIds,
+        pantry: createPantry(),
+        callbacks: mergedConfig.callbacks,
+        head: mergedConfig.head
+      };
     }
-    return false;
-  }
-  function isSoftMatch(node1, node2) {
-    if (node1 == null || node2 == null) {
-      return false;
+    function mergeDefaults(config) {
+      let finalConfig = Object.assign({}, defaults);
+      Object.assign(finalConfig, config);
+      finalConfig.callbacks = Object.assign({}, defaults.callbacks, config.callbacks);
+      finalConfig.head = Object.assign({}, defaults.head, config.head);
+      return finalConfig;
     }
-    return node1.nodeType === node2.nodeType && node1.tagName === node2.tagName;
-  }
-  function removeNodesBetween(startInclusive, endExclusive, ctx) {
-    while (startInclusive !== endExclusive) {
-      let tempNode = startInclusive;
-      startInclusive = startInclusive.nextSibling;
-      removeNode(tempNode, ctx);
+    function createPantry() {
+      const pantry = document.createElement("div");
+      pantry.hidden = true;
+      document.body.insertAdjacentElement("afterend", pantry);
+      return pantry;
     }
-    removeIdsFromConsideration(ctx, endExclusive);
-    return endExclusive.nextSibling;
-  }
-  function findIdSetMatch(newContent, oldParent, newChild, insertionPoint, ctx) {
-    let newChildPotentialIdCount = getIdIntersectionCount(ctx, newChild, oldParent);
-    let potentialMatch = null;
-    if (newChildPotentialIdCount > 0) {
-      let potentialMatch = insertionPoint;
-      let otherMatchCount = 0;
-      while (potentialMatch != null) {
-        if (isIdSetMatch(newChild, potentialMatch, ctx)) {
-          return potentialMatch;
-        }
-        otherMatchCount += getIdIntersectionCount(ctx, potentialMatch, newContent);
-        if (otherMatchCount > newChildPotentialIdCount) {
-          return null;
-        }
-        potentialMatch = potentialMatch.nextSibling;
+    function findIdElements(root) {
+      let elements = Array.from(root.querySelectorAll("[id]"));
+      if (root.id) {
+        elements.push(root);
       }
+      return elements;
     }
-    return potentialMatch;
-  }
-  function findSoftMatch(newContent, oldParent, newChild, insertionPoint, ctx) {
-    let potentialSoftMatch = insertionPoint;
-    let nextSibling = newChild.nextSibling;
-    let siblingSoftMatchCount = 0;
-    while (potentialSoftMatch != null) {
-      if (getIdIntersectionCount(ctx, potentialSoftMatch, newContent) > 0) {
-        return null;
-      }
-      if (isSoftMatch(newChild, potentialSoftMatch)) {
-        return potentialSoftMatch;
-      }
-      if (isSoftMatch(nextSibling, potentialSoftMatch)) {
-        siblingSoftMatchCount++;
-        nextSibling = nextSibling.nextSibling;
-        if (siblingSoftMatchCount >= 2) {
-          return null;
+    function populateIdMapWithTree(idMap, persistentIds, root, elements) {
+      for (const elt of elements) {
+        if (persistentIds.has(elt.id)) {
+          let current = elt;
+          while (current) {
+            let idSet = idMap.get(current);
+            if (idSet == null) {
+              idSet = new Set;
+              idMap.set(current, idSet);
+            }
+            idSet.add(elt.id);
+            if (current === root) break;
+            current = current.parentElement;
+          }
         }
       }
-      potentialSoftMatch = potentialSoftMatch.nextSibling;
     }
-    return potentialSoftMatch;
-  }
-  function parseContent(newContent) {
-    let parser = new DOMParser;
-    let contentWithSvgsRemoved = newContent.replace(/<svg(\s[^>]*>|>)([\s\S]*?)<\/svg>/gim, "");
-    if (contentWithSvgsRemoved.match(/<\/html>/) || contentWithSvgsRemoved.match(/<\/head>/) || contentWithSvgsRemoved.match(/<\/body>/)) {
-      let content = parser.parseFromString(newContent, "text/html");
-      if (contentWithSvgsRemoved.match(/<\/html>/)) {
-        content.generatedByIdiomorph = true;
-        return content;
-      } else {
-        let htmlElement = content.firstChild;
-        if (htmlElement) {
-          htmlElement.generatedByIdiomorph = true;
-          return htmlElement;
+    function createIdMaps(oldContent, newContent) {
+      const oldIdElements = findIdElements(oldContent);
+      const newIdElements = findIdElements(newContent);
+      const persistentIds = createPersistentIds(oldIdElements, newIdElements);
+      let idMap = new Map;
+      populateIdMapWithTree(idMap, persistentIds, oldContent, oldIdElements);
+      const newRoot = newContent.__idiomorphRoot || newContent;
+      populateIdMapWithTree(idMap, persistentIds, newRoot, newIdElements);
+      return {
+        persistentIds: persistentIds,
+        idMap: idMap
+      };
+    }
+    function createPersistentIds(oldIdElements, newIdElements) {
+      let duplicateIds = new Set;
+      let oldIdTagNameMap = new Map;
+      for (const {id: id, tagName: tagName} of oldIdElements) {
+        if (oldIdTagNameMap.has(id)) {
+          duplicateIds.add(id);
         } else {
-          return null;
+          oldIdTagNameMap.set(id, tagName);
         }
       }
-    } else {
-      let responseDoc = parser.parseFromString("<body><template>" + newContent + "</template></body>", "text/html");
-      let content = responseDoc.body.querySelector("template").content;
-      content.generatedByIdiomorph = true;
-      return content;
-    }
-  }
-  function normalizeContent(newContent) {
-    if (newContent == null) {
-      const dummyParent = document.createElement("div");
-      return dummyParent;
-    } else if (newContent.generatedByIdiomorph) {
-      return newContent;
-    } else if (newContent instanceof Node) {
-      const dummyParent = document.createElement("div");
-      dummyParent.append(newContent);
-      return dummyParent;
-    } else {
-      const dummyParent = document.createElement("div");
-      for (const elt of [ ...newContent ]) {
-        dummyParent.append(elt);
-      }
-      return dummyParent;
-    }
-  }
-  function insertSiblings(previousSibling, morphedNode, nextSibling) {
-    let stack = [];
-    let added = [];
-    while (previousSibling != null) {
-      stack.push(previousSibling);
-      previousSibling = previousSibling.previousSibling;
-    }
-    while (stack.length > 0) {
-      let node = stack.pop();
-      added.push(node);
-      morphedNode.parentElement.insertBefore(node, morphedNode);
-    }
-    added.push(morphedNode);
-    while (nextSibling != null) {
-      stack.push(nextSibling);
-      added.push(nextSibling);
-      nextSibling = nextSibling.nextSibling;
-    }
-    while (stack.length > 0) {
-      morphedNode.parentElement.insertBefore(stack.pop(), morphedNode.nextSibling);
-    }
-    return added;
-  }
-  function findBestNodeMatch(newContent, oldNode, ctx) {
-    let currentElement;
-    currentElement = newContent.firstChild;
-    let bestElement = currentElement;
-    let score = 0;
-    while (currentElement) {
-      let newScore = scoreElement(currentElement, oldNode, ctx);
-      if (newScore > score) {
-        bestElement = currentElement;
-        score = newScore;
-      }
-      currentElement = currentElement.nextSibling;
-    }
-    return bestElement;
-  }
-  function scoreElement(node1, node2, ctx) {
-    if (isSoftMatch(node1, node2)) {
-      return .5 + getIdIntersectionCount(ctx, node1, node2);
-    }
-    return 0;
-  }
-  function removeNode(tempNode, ctx) {
-    removeIdsFromConsideration(ctx, tempNode);
-    if (ctx.callbacks.beforeNodeRemoved(tempNode) === false) return;
-    tempNode.remove();
-    ctx.callbacks.afterNodeRemoved(tempNode);
-  }
-  function isIdInConsideration(ctx, id) {
-    return !ctx.deadIds.has(id);
-  }
-  function idIsWithinNode(ctx, id, targetNode) {
-    let idSet = ctx.idMap.get(targetNode) || EMPTY_SET;
-    return idSet.has(id);
-  }
-  function removeIdsFromConsideration(ctx, node) {
-    let idSet = ctx.idMap.get(node) || EMPTY_SET;
-    for (const id of idSet) {
-      ctx.deadIds.add(id);
-    }
-  }
-  function getIdIntersectionCount(ctx, node1, node2) {
-    let sourceSet = ctx.idMap.get(node1) || EMPTY_SET;
-    let matchCount = 0;
-    for (const id of sourceSet) {
-      if (isIdInConsideration(ctx, id) && idIsWithinNode(ctx, id, node2)) {
-        ++matchCount;
-      }
-    }
-    return matchCount;
-  }
-  function populateIdMapForNode(node, idMap) {
-    let nodeParent = node.parentElement;
-    let idElements = node.querySelectorAll("[id]");
-    for (const elt of idElements) {
-      let current = elt;
-      while (current !== nodeParent && current != null) {
-        let idSet = idMap.get(current);
-        if (idSet == null) {
-          idSet = new Set;
-          idMap.set(current, idSet);
+      let persistentIds = new Set;
+      for (const {id: id, tagName: tagName} of newIdElements) {
+        if (persistentIds.has(id)) {
+          duplicateIds.add(id);
+        } else if (oldIdTagNameMap.get(id) === tagName) {
+          persistentIds.add(id);
         }
-        idSet.add(elt.id);
-        current = current.parentElement;
+      }
+      for (const id of duplicateIds) {
+        persistentIds.delete(id);
+      }
+      return persistentIds;
+    }
+    return createMorphContext;
+  }();
+  const {normalizeElement: normalizeElement, normalizeParent: normalizeParent} = function() {
+    const generatedByIdiomorph = new WeakSet;
+    function normalizeElement(content) {
+      if (content instanceof Document) {
+        return content.documentElement;
+      } else {
+        return content;
       }
     }
-  }
-  function createIdMap(oldContent, newContent) {
-    let idMap = new Map;
-    populateIdMapForNode(oldContent, idMap);
-    populateIdMapForNode(newContent, idMap);
-    return idMap;
-  }
+    function normalizeParent(newContent) {
+      if (newContent == null) {
+        return document.createElement("div");
+      } else if (typeof newContent === "string") {
+        return normalizeParent(parseContent(newContent));
+      } else if (generatedByIdiomorph.has(newContent)) {
+        return newContent;
+      } else if (newContent instanceof Node) {
+        if (newContent.parentNode) {
+          return createDuckTypedParent(newContent);
+        } else {
+          const dummyParent = document.createElement("div");
+          dummyParent.append(newContent);
+          return dummyParent;
+        }
+      } else {
+        const dummyParent = document.createElement("div");
+        for (const elt of [ ...newContent ]) {
+          dummyParent.append(elt);
+        }
+        return dummyParent;
+      }
+    }
+    function createDuckTypedParent(newContent) {
+      return {
+        childNodes: [ newContent ],
+        querySelectorAll: s => {
+          const elements = newContent.querySelectorAll(s);
+          return newContent.matches(s) ? [ newContent, ...elements ] : elements;
+        },
+        insertBefore: (n, r) => newContent.parentNode.insertBefore(n, r),
+        moveBefore: (n, r) => newContent.parentNode.moveBefore(n, r),
+        get __idiomorphRoot() {
+          return newContent;
+        }
+      };
+    }
+    function parseContent(newContent) {
+      let parser = new DOMParser;
+      let contentWithSvgsRemoved = newContent.replace(/<svg(\s[^>]*>|>)([\s\S]*?)<\/svg>/gim, "");
+      if (contentWithSvgsRemoved.match(/<\/html>/) || contentWithSvgsRemoved.match(/<\/head>/) || contentWithSvgsRemoved.match(/<\/body>/)) {
+        let content = parser.parseFromString(newContent, "text/html");
+        if (contentWithSvgsRemoved.match(/<\/html>/)) {
+          generatedByIdiomorph.add(content);
+          return content;
+        } else {
+          let htmlElement = content.firstChild;
+          if (htmlElement) {
+            generatedByIdiomorph.add(htmlElement);
+          }
+          return htmlElement;
+        }
+      } else {
+        let responseDoc = parser.parseFromString("<body><template>" + newContent + "</template></body>", "text/html");
+        let content = responseDoc.body.querySelector("template").content;
+        generatedByIdiomorph.add(content);
+        return content;
+      }
+    }
+    return {
+      normalizeElement: normalizeElement,
+      normalizeParent: normalizeParent
+    };
+  }();
   return {
     morph: morph,
     defaults: defaults
@@ -2234,7 +2282,7 @@ function morphElements(currentElement, newElement, {callbacks: callbacks, ...opt
 }
 
 function morphChildren(currentElement, newElement) {
-  morphElements(currentElement, newElement.children, {
+  morphElements(currentElement, newElement.childNodes, {
     morphStyle: "innerHTML"
   });
 }
@@ -2905,16 +2953,6 @@ class Visit {
       ...this.timingMetrics
     };
   }
-  getHistoryMethodForAction(action) {
-    switch (action) {
-     case "replace":
-      return history.replaceState;
-
-     case "advance":
-     case "restore":
-      return history.pushState;
-    }
-  }
   hasPreloadedResponse() {
     return typeof this.response == "object";
   }
@@ -3017,6 +3055,9 @@ class BrowserAdapter {
     this.hideVisitProgressBar();
   }
   visitRendered(_visit) {}
+  linkPrefetchingIsEnabledForLocation(location) {
+    return true;
+  }
   formSubmissionStarted(_formSubmission) {
     this.progressBar.setValue(0);
     this.showFormProgressBarAfterDelay();
@@ -3472,6 +3513,12 @@ class Navigator {
     if (typeof this.adapter.formSubmissionFinished === "function") {
       this.adapter.formSubmissionFinished(formSubmission);
     }
+  }
+  linkPrefetchingIsEnabledForLocation(location) {
+    if (typeof this.adapter.linkPrefetchingIsEnabledForLocation === "function") {
+      return this.adapter.linkPrefetchingIsEnabledForLocation(location);
+    }
+    return true;
   }
   visitStarted(visit) {
     this.delegate.visitStarted(visit);
@@ -4211,7 +4258,8 @@ class Session {
   }
   refresh(url, requestId) {
     const isRecentRequest = requestId && this.recentRequests.has(requestId);
-    if (!isRecentRequest && !this.navigator.currentVisit) {
+    const isCurrentUrl = url === document.baseURI;
+    if (!isRecentRequest && !this.navigator.currentVisit && isCurrentUrl) {
       this.visit(url, {
         action: "replace",
         shouldCacheSnapshot: false
@@ -4300,7 +4348,7 @@ class Session {
   }
   submittedFormLinkToLocation() {}
   canPrefetchRequestToLocation(link, location) {
-    return this.elementIsNavigatable(link) && locationIsVisitable(location, this.snapshot.rootLocation);
+    return this.elementIsNavigatable(link) && locationIsVisitable(location, this.snapshot.rootLocation) && this.navigator.linkPrefetchingIsEnabledForLocation(location);
   }
   willFollowLinkToLocation(link, location, event) {
     return this.elementIsNavigatable(link) && locationIsVisitable(location, this.snapshot.rootLocation) && this.applicationAllowsFollowingLinkToLocation(link, location, event);
@@ -5117,9 +5165,9 @@ class StreamElement extends HTMLElement {
     this.duplicateChildren.forEach((c => c.remove()));
   }
   get duplicateChildren() {
-    const existingChildren = this.targetElements.flatMap((e => [ ...e.children ])).filter((c => !!c.id));
-    const newChildrenIds = [ ...this.templateContent?.children || [] ].filter((c => !!c.id)).map((c => c.id));
-    return existingChildren.filter((c => newChildrenIds.includes(c.id)));
+    const existingChildren = this.targetElements.flatMap((e => [ ...e.children ])).filter((c => !!c.getAttribute("id")));
+    const newChildrenIds = [ ...this.templateContent?.children || [] ].filter((c => !!c.getAttribute("id"))).map((c => c.getAttribute("id")));
+    return existingChildren.filter((c => newChildrenIds.includes(c.getAttribute("id"))));
   }
   get performAction() {
     if (this.action) {

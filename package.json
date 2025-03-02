@@ -1,6 +1,6 @@
 {
   "name": "@hotwired/turbo-rails",
-  "version": "8.0.12",
+  "version": "8.0.13",
   "description": "The speed of a single-page web application without having to write any JavaScript",
   "module": "app/javascript/turbo/index.js",
   "main": "app/assets/javascripts/turbo.js",
@@ -19,7 +19,7 @@
     "release": "npm publish && git commit -am \"$npm_package_name v$npm_package_version\" && git push"
   },
   "dependencies": {
-    "@hotwired/turbo": "^8.0.12",
+    "@hotwired/turbo": "^8.0.13",
     "@rails/actioncable": "^7.0"
   },
   "devDependencies": {
