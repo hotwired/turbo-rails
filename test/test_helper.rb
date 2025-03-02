@@ -8,9 +8,7 @@ require "rails/test_help"
 ActionCable.server.config.logger = Logger.new(STDOUT) if ENV["VERBOSE"]
 
 module ActionViewTestCaseExtensions
-  def render(*args, &block)
-    ApplicationController.renderer.render(*args, &block)
-  end
+  delegate :render, to: ApplicationController
 end
 
 class ActiveSupport::TestCase
