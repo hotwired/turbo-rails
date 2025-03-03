@@ -9,9 +9,7 @@ jobs:
         ruby: [ "3.1", "3.4" ]
         allow-fail: [ false ]
         include:
-          - { ruby: "3.3",  rails: "main", allow-fail: true }
-          - { ruby: "3.2",  rails: "main", allow-fail: true }
-          - { ruby: "head", rails: "main", allow-fail: true }
+          - { ruby: "3.4",  rails: "main", allow-fail: true }
         exclude:
           - { ruby: "3.1", rails: "8.0" }
 
