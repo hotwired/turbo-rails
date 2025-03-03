@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  resources :pages, only: :show
   resources :articles do
     delete :destroy_all, on: :collection
   end
