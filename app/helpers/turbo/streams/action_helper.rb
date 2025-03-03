@@ -39,7 +39,7 @@ module Turbo::Streams::ActionHelper
   #   turbo_stream_refresh_tag
   #   # => <turbo-stream action="refresh"></turbo-stream>
   def turbo_stream_refresh_tag(request_id: Turbo.current_request_id, **attributes)
-    turbo_stream_action_tag(:refresh, **{ "request-id": request_id }.compact, **attributes)
+    turbo_stream_action_tag(:refresh, "request-id": request_id.presence, **attributes)
   end
 
   private

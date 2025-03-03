@@ -15,10 +15,12 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
 
   test "broadcasting ignores blank streamables" do
     ActionCable.server.stub :broadcast, proc { flunk "expected no broadcasts" } do
-      @message.broadcast_remove_to nil
-      @message.broadcast_remove_to [nil]
-      @message.broadcast_remove_to ""
-      @message.broadcast_remove_to [""]
+      assert_no_broadcasts @message.to_gid_param do
+        @message.broadcast_remove_to nil
+        @message.broadcast_remove_to [nil]
+        @message.broadcast_remove_to ""
+        @message.broadcast_remove_to [""]
+      end
     end
   end
 
@@ -435,6 +437,23 @@ class Turbo::BroadcastableCommentTest < ActionCable::Channel::TestCase
     assert_broadcast_on stream, turbo_stream_action_tag("append", target: target, template: %(<p class="different">comment</p>\n)) do
       perform_enqueued_jobs do
         @article.comments.create!(body: "comment")
+      end
+    end
+  end
+
+  test "creating a second comment while using locals broadcasts the second comment" do
+    stream = "#{@article.to_gid_param}:comments"
+    target = "article_#{@article.id}_comments"
+
+    assert_broadcast_on stream, turbo_stream_action_tag("append", target: target, template: %(<p class="different">comment</p>\n)) do
+      perform_enqueued_jobs do
+        @article.comments.create!(body: "comment")
+      end
+    end
+
+    assert_broadcast_on stream, turbo_stream_action_tag("append", target: target, template: %(<p class="different">another comment</p>\n)) do
+      perform_enqueued_jobs do
+        @article.comments.create!(body: "another comment")
       end
     end
   end

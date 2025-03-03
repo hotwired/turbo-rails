@@ -2,7 +2,7 @@ source 'https://rubygems.org'
 
 gemspec
 
-rails_version = ENV.fetch("RAILS_VERSION", "7.1")
+rails_version = ENV.fetch("RAILS_VERSION", "7.2")
 
 if rails_version == "main"
   rails_constraint = { github: "rails/rails" }
@@ -26,5 +26,5 @@ group :test do
   gem 'capybara'
   gem 'rexml'
   gem 'cuprite', '~> 0.9', require: 'capybara/cuprite'
-  gem 'sqlite3', '< 2.0'
+  gem 'sqlite3'
 end
