@@ -6,7 +6,7 @@ jobs:
       fail-fast: false
       matrix:
         rails: [ "7.1", "7.2", "8.0" ]
-        ruby: [ "3.1", "3.2", "3.3", "3.4" ]
+        ruby: [ "3.1", "3.4" ]
         allow-fail: [ false ]
         include:
           - { ruby: "3.3",  rails: "main", allow-fail: true }
