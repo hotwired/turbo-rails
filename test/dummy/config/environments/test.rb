@@ -28,7 +28,7 @@ Rails.application.configure do
   config.action_dispatch.show_exceptions = :none
 
   # Disable request forgery protection in test environment.
-  config.action_controller.allow_forgery_protection = false
+  config.action_controller.allow_forgery_protection = true
 
   # Print deprecation notices to the stderr.
   config.active_support.deprecation = :stderr
