@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@hotwired/turbo": "^8.0.13",
-    "@rails/actioncable": "^7.0"
+    "@rails/actioncable": ">=7.0"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^11.0.1",
