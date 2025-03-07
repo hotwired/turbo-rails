@@ -108,4 +108,16 @@ class Turbo::ActionHelperTest < ActionCable::Channel::TestCase
 
     assert_equal "<turbo-stream request-id=\"123\" action=\"refresh\"></turbo-stream>", action
   end
+
+  test "properly builds is for non-record array target" do
+    stream = "<turbo-stream action=\"append\" target=\"foo_1_2\"><template></template></turbo-stream>"
+
+    assert_equal stream, turbo_stream_action_tag("append", target: ['foo', 1, 2])
+  end
+
+  test "properly builds is for non-record array targets" do
+    stream = "<turbo-stream action=\"append\" targets=\"foo_1_2\"><template></template></turbo-stream>"
+
+    assert_equal stream, turbo_stream_action_tag("append", targets: ['foo', 1, 2])
+  end
 end
