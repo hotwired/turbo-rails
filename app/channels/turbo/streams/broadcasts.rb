@@ -108,7 +108,7 @@ module Turbo::Streams::Broadcasts
 
   private
     def render_format(format, **rendering)
-      ApplicationController.render(formats: [ format ], **rendering)
+      (rendering.delete(:controller_klass) || ApplicationController).render(formats: [ format ], **rendering)
     end
 
     def render_broadcast_action(rendering)
