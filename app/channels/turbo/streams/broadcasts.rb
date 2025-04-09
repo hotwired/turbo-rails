@@ -68,8 +68,10 @@ module Turbo::Streams::Broadcasts
   end
 
   def broadcast_refresh_later_to(*streamables, request_id: Turbo.current_request_id, **opts)
+    stream_name = stream_name_from(streamables)
+
     refresh_debouncer_for(*streamables, request_id: request_id).debounce do
-      Turbo::Streams::BroadcastStreamJob.perform_later stream_name_from(streamables), content: turbo_stream_refresh_tag(request_id: request_id, **opts).to_str # Sidekiq requires job arguments to be valid JSON types, such as String
+      Turbo::Streams::BroadcastStreamJob.perform_later stream_name, content: turbo_stream_refresh_tag(request_id: request_id, **opts).to_str # Sidekiq requires job arguments to be valid JSON types, such as String
     end
   end
 
