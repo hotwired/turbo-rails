@@ -287,9 +287,9 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
   end
 
   test "broadcasting direct update later" do
-    assert_broadcast_on "stream", turbo_stream_action_tag("replace", target: "message_1", template: "Goodbye!") do
+    assert_broadcast_on "stream", %(direct) do
       perform_enqueued_jobs do
-        Turbo::StreamsChannel.broadcast_stream_later_to "stream", partial: "messages/message"
+        Turbo::StreamsChannel.broadcast_stream_later_to "stream", content: "direct"
       end
     end
   end
