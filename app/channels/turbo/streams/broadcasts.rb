@@ -104,6 +104,10 @@ module Turbo::Streams::Broadcasts
     end
   end
 
+  def broadcast_stream_later_to(*streamables, content:)
+    Turbo::Streams::BroadcastStreamJob.perform_later stream_name_from(streamables), content: content
+  end
+
   def refresh_debouncer_for(*streamables, request_id: nil) # :nodoc:
     Turbo::ThreadDebouncer.for("turbo-refresh-debouncer-#{stream_name_from(streamables.including(request_id))}")
   end
