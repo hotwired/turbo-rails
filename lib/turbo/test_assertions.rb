@@ -79,5 +79,79 @@ module Turbo
       selector << %([targets="#{targets}"]) if targets
       assert_select selector, count: 0
     end
+
+    # Assert that the rendered fragment of HTML contains a `<turbo-frame>`
+    # element.
+    #
+    # ==== Arguments
+    #
+    # * <tt>ids</tt> [String, Array<String, ActiveRecord::Base>] matches the element's <tt>[id]</tt> attribute
+    #
+    # ==== Options
+    #
+    # * <tt>:loading</tt> [String] matches the element's <tt>[loading]</tt>
+    #   attribute
+    # * <tt>:src</tt> [String] matches the element's <tt>[src]</tt> attribute
+    # * <tt>:target</tt> [String] matches the element's <tt>[target]</tt>
+    #   attribute
+    # * <tt>:count</tt> [Integer] indicates how many turbo frames are expected.
+    #   Defaults to <tt>1</tt>.
+    #
+    #   Given the following HTML fragment:
+    #
+    #     <turbo-frame id="example" target="_top"></turbo-frame>
+    #
+    #   The following assertion would pass:
+    #
+    #     assert_turbo_frame id: "example", target: "_top"
+    #
+    # You can also pass a block make assertions about the contents of the
+    # element. Given the following HTML fragment:
+    #
+    #     <turbo-frame id="example">
+    #       <p>Hello!</p>
+    #     </turbo-frame>
+    #
+    #   The following assertion would pass:
+    #
+    #     assert_turbo_frame id: "example" do
+    #       assert_select "p", text: "Hello!"
+    #     end
+    #
+    def assert_turbo_frame(*ids, loading: nil, src: nil, target: nil, count: 1, &block)
+      id = ids.first.respond_to?(:to_key) ? ActionView::RecordIdentifier.dom_id(*ids) : ids.join('_')
+      selector = %(turbo-frame[id="#{id}"])
+      selector << %([loading="#{loading}"]) if loading
+      selector << %([src="#{src}"]) if src
+      selector << %([target="#{target}"]) if target
+      assert_select selector, count: count, &block
+    end
+
+    # Assert that the rendered fragment of HTML does not contain a `<turbo-frame>`
+    # element.
+    #
+    # ==== Arguments
+    #
+    # * <tt>ids</tt> [String, Array<String, ActiveRecord::Base>] matches the <tt>[id]</tt> attribute
+    #
+    # ==== Options
+    #
+    # * <tt>:loading</tt> [String] matches the element's <tt>[loading]</tt>
+    #   attribute
+    # * <tt>:src</tt> [String] matches the element's <tt>[src]</tt> attribute
+    # * <tt>:target</tt> [String] matches the element's <tt>[target]</tt>
+    #   attribute
+    #
+    #   Given the following HTML fragment:
+    #
+    #     <turbo-frame id="example" target="_top"></turbo-frame>
+    #
+    #   The following assertion would fail:
+    #
+    #     assert_no_turbo_frame id: "example", target: "_top"
+    #
+    def assert_no_turbo_frame(*ids, **options, &block)
+      assert_turbo_frame(*ids, **options, count: 0, &block)
+    end
   end
 end
