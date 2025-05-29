@@ -80,6 +80,8 @@ module Turbo::SystemTestHelper
   end
 
   Capybara.add_selector :turbo_cable_stream_source do
+    visible :all
+
     xpath do |locator|
       xpath = XPath.descendant.where(XPath.local_name == "turbo-cable-stream-source")
       xpath.where(SignedStreamNameConditions.new(locator).reduce(:|))
