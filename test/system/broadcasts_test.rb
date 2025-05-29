@@ -123,7 +123,7 @@ class BroadcastsTest < ApplicationSystemTestCase
   private
 
   def reconnect_cable_stream_source(from:, to:)
-    cable_stream_source = find("turbo-cable-stream-source[signed-stream-name=#{signed_stream_name(from)}]")
+    cable_stream_source = find(:turbo_cable_stream_source, signed_stream_name: from)
 
     cable_stream_source.execute_script <<~JS, signed_stream_name(to)
       this.setAttribute("signed-stream-name", arguments[0])
