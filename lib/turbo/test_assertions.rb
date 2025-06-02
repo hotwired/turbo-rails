@@ -83,9 +83,12 @@ module Turbo
     # Assert that the rendered fragment of HTML contains a `<turbo-frame>`
     # element.
     #
+    # ==== Arguments
+    #
+    # * <tt>ids</tt> [String, Array<String, ActiveRecord::Base>] matches the element's <tt>[id]</tt> attribute
+    #
     # ==== Options
     #
-    # * <tt>:id</tt> [String] matches the element's <tt>[id]</tt> attribute
     # * <tt>:loading</tt> [String] matches the element's <tt>[loading]</tt>
     #   attribute
     # * <tt>:src</tt> [String] matches the element's <tt>[src]</tt> attribute
@@ -116,7 +119,6 @@ module Turbo
     #     end
     #
     def assert_turbo_frame(*ids, loading: nil, src: nil, target: nil, count: 1, &block)
-    
       id = ids.first.respond_to?(:to_key) ? ActionView::RecordIdentifier.dom_id(*ids) : ids.join('_')
       selector = %(turbo-frame[id="#{id}"])
       selector << %([loading="#{loading}"]) if loading
@@ -128,9 +130,12 @@ module Turbo
     # Assert that the rendered fragment of HTML does not contain a `<turbo-frame>`
     # element.
     #
+    # ==== Arguments
+    #
+    # * <tt>ids</tt> [String, Array<String, ActiveRecord::Base>] matches the <tt>[id]</tt> attribute
+    #
     # ==== Options
     #
-    # * <tt>:id</tt> [String] matches the element's <tt>[id]</tt> attribute
     # * <tt>:loading</tt> [String] matches the element's <tt>[loading]</tt>
     #   attribute
     # * <tt>:src</tt> [String] matches the element's <tt>[src]</tt> attribute
@@ -145,8 +150,8 @@ module Turbo
     #
     #     assert_no_turbo_frame id: "example", target: "_top"
     #
-    def assert_no_turbo_frame(**options, &block)
-      assert_turbo_frame(**options, count: 0, &block)
+    def assert_no_turbo_frame(*ids, **options, &block)
+      assert_turbo_frame(*ids, **options, count: 0, &block)
     end
   end
 end

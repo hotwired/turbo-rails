@@ -75,26 +75,26 @@ class Turbo::FrameRequestViewTest < ActionView::TestCase
   class Turbo::TestAssertions::FrameTest < ActionDispatch::IntegrationTest
     test "assert_turbo_frame passes with matching frame" do
       get tray_path(id: 1)
-      assert_turbo_frame id: "tray"
+      assert_turbo_frame "tray"
     end
 
     test "assert_turbo_frame fails without matching frame" do
       get tray_path(id: 1)
       assert_raises Minitest::Assertion do
-        assert_turbo_frame id: "missing"
+        assert_turbo_frame "missing"
       end
     end
 
     test "assert_no_turbo_frame fails with matching frame" do
       get tray_path(id: 1)
       assert_raises Minitest::Assertion do
-        assert_no_turbo_frame id: "tray"
+        assert_no_turbo_frame "tray"
       end
     end
 
     test "assert_no_turbo_frame fails without matching frame" do
       get tray_path(id: 1)
-      assert_no_turbo_frame id: "missing"
+      assert_no_turbo_frame "missing"
     end
   end
 end
