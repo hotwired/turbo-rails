@@ -145,12 +145,8 @@ module Turbo
     #
     #     assert_no_turbo_frame id: "example", target: "_top"
     #
-    def assert_no_turbo_frame(id:, loading: nil, src: nil, target: nil)
-      selector = %(turbo-frame[id="#{id}"])
-      selector << %([loading="#{loading}"]) if loading
-      selector << %([src="#{src}"]) if src
-      selector << %([target="#{target}"]) if target
-      assert_select selector, count: 0
+    def assert_no_turbo_frame(**options, &block)
+      assert_turbo_frame(**options, count: 0, &block)
     end
   end
 end
