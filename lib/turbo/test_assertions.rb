@@ -115,7 +115,9 @@ module Turbo
     #       assert_select "p", text: "Hello!"
     #     end
     #
-    def assert_turbo_frame(id:, loading: nil, src: nil, target: nil, count: 1, &block)
+    def assert_turbo_frame(*ids, loading: nil, src: nil, target: nil, count: 1, &block)
+    
+      id = ids.first.respond_to?(:to_key) ? ActionView::RecordIdentifier.dom_id(*ids) : ids.join('_')
       selector = %(turbo-frame[id="#{id}"])
       selector << %([loading="#{loading}"]) if loading
       selector << %([src="#{src}"]) if src
