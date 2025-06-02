@@ -5485,9 +5485,34 @@ function isBodyInit(body) {
   return body instanceof FormData || body instanceof URLSearchParams;
 }
 
+function observeAttributes(element, attributeFilter, callback) {
+  const observer = new MutationObserver((mutations => {
+    mutations.forEach((({attributeName: attributeName, target: target}) => {
+      callback(target.getAttribute(attributeName), attributeName);
+    }));
+  }));
+  observer.observe(element, {
+    attributeFilter: attributeFilter
+  });
+  attributeFilter.forEach((attributeName => {
+    callback(element.getAttribute(attributeName), attributeName);
+  }));
+  return observer;
+}
+
+function observeTurboAttributes({target: target}) {
+  observeAttributes(target, [ "data-turbo-permanent" ], (value => {
+    if (target.inputElement) {
+      target.inputElement.toggleAttribute("data-turbo-permanent", value ?? false);
+    }
+  }));
+}
+
 window.Turbo = Turbo$1;
 
 addEventListener("turbo:before-fetch-request", encodeMethodIntoRequestBody);
+
+addEventListener("trix-initialize", observeTurboAttributes);
 
 var adapters = {
   logger: self.console,
