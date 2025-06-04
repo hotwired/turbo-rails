@@ -7,6 +7,7 @@ Rails.application.routes.draw do
       get :section
     end
   end
+  resources :tabs
   resources :trays
   resources :posts
   resources :notifications
