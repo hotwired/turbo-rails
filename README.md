@@ -91,13 +91,29 @@ Partial page updates that are **delivered asynchronously over a web socket conne
 
 With this Rails integration, you can create these asynchronous updates directly in response to your model changes. Turbo uses Active Jobs to provide asynchronous partial rendering and Action Cable to deliver those updates to subscribers.
 
-This gem provides a `turbo_stream_from` helper to create a turbo stream.
+This gem provides a [`turbo_stream_from` helper](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/StreamsHelper#turbo_stream_from-instance_method) to create a subscription to a turbo stream.
 
 ```erb
 <%# app/views/todos/show.html.erb %>
 <%= turbo_stream_from dom_id(@todo) %>
 
 <%# Rest of show here %>
+```
+
+Updates from the relevant model(s) can be broadcast via the [Broadcastable](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/Broadcastable) concern. The types of updates broadcast can be fully configured, or all standard CRUD events can be sent quite simply:
+
+```ruby
+# app/models/todo.erb
+class Todo < ApplicationRecord
+  broadcasts
+end
+```
+
+Turbo Streams can also be broadcast to from non-model code using the [StreamsChannel broadcast methods](https://github.com/hotwired/turbo-rails/blob/main/app/channels/turbo/streams/broadcasts.rb):
+
+```ruby
+  Turbo::StreamsChannel.broadcast_remove_to :todos, target: 1
+
 ```
 
 ## Installation
