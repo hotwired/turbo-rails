@@ -43,6 +43,12 @@ module Turbo::DriveHelper
     provide :head, turbo_page_requires_reload_tag
   end
 
+  # Configure whether to use the View Transitions API when navigating to a new page.
+  # See +turbo_use_view_transition_tag+.
+  def turbo_use_view_transition
+    provide :head, turbo_use_view_transition_tag
+  end
+
   # See +turbo_page_requires_reload+.
   def turbo_page_requires_reload_tag
     tag.meta(name: "turbo-visit-control", content: "reload")
@@ -82,6 +88,11 @@ module Turbo::DriveHelper
   def turbo_refresh_scroll_tag(scroll = :reset)
     raise ArgumentError, "Invalid scroll option '#{scroll}'" unless scroll.in?(%i[ reset preserve ])
     tag.meta(name: "turbo-refresh-scroll", content: scroll)
+  end
+
+  # See +turbo_use_view_transition+.
+  def turbo_use_view_transition_tag
+    tag.meta(name: "view-transition", content: "same-origin")
   end
 end
 
