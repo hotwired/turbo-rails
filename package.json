@@ -11,6 +11,9 @@
     ".": {
       "import": "./app/javascript/turbo/index.js",
       "require": "./app/assets/javascripts/turbo.js"
+    },
+    "./offline": {
+      "import": "./app/javascript/turbo/offline.js"
     }
   },
   "scripts": {
