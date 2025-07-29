@@ -425,6 +425,24 @@ function debounce(fn, delay) {
   };
 }
 
+function setCookie(name, value, expiry) {
+  const body = [ name, value ].map(encodeURIComponent).join("=");
+  const expires = new Date(Date.now() + expiry).toUTCString();
+  const cookie = `${body}; path=/; expires=${expires}`;
+  document.cookie = cookie;
+}
+
+function getCookie(cookieName) {
+  if (cookieName != null) {
+    const cookies = document.cookie ? document.cookie.split("; ") : [];
+    const cookie = cookies.find((cookie => cookie.startsWith(cookieName)));
+    if (cookie) {
+      const value = cookie.split("=").slice(1).join("=");
+      return value ? decodeURIComponent(value) : undefined;
+    }
+  }
+}
+
 const submitter = {
   "aria-disabled": {
     beforeSubmit: submitter => {
@@ -588,14 +606,12 @@ class LimitedSet extends Set {
 
 const recentRequests = new LimitedSet(20);
 
-const nativeFetch = window.fetch;
-
 function fetchWithTurboHeaders(url, options = {}) {
   const modifiedHeaders = new Headers(options.headers || {});
   const requestUID = uuid();
   recentRequests.add(requestUID);
   modifiedHeaders.append("X-Turbo-Request-Id", requestUID);
-  return nativeFetch(url, {
+  return window.fetch(url, {
     ...options,
     headers: modifiedHeaders
   });
@@ -982,7 +998,7 @@ class FormSubmission {
   }
   prepareRequest(request) {
     if (!request.isSafe) {
-      const token = getCookieValue(getMetaContent("csrf-param")) || getMetaContent("csrf-token");
+      const token = getCookie(getMetaContent("csrf-param")) || getMetaContent("csrf-token");
       if (token) {
         request.headers["X-CSRF-Token"] = token;
       }
@@ -1096,17 +1112,6 @@ function buildFormData(formElement, submitter) {
     formData.append(name, value || "");
   }
   return formData;
-}
-
-function getCookieValue(cookieName) {
-  if (cookieName != null) {
-    const cookies = document.cookie ? document.cookie.split("; ") : [];
-    const cookie = cookies.find((cookie => cookie.startsWith(cookieName)));
-    if (cookie) {
-      const value = cookie.split("=").slice(1).join("=");
-      return value ? decodeURIComponent(value) : undefined;
-    }
-  }
 }
 
 function responseSucceededWithoutRedirect(response) {
@@ -1243,8 +1248,8 @@ class View {
   scrollToAnchor(anchor) {
     const element = this.snapshot.getElementForAnchor(anchor);
     if (element) {
-      this.scrollToElement(element);
       this.focusElement(element);
+      this.scrollToElement(element);
     } else {
       this.scrollToPosition({
         x: 0,
@@ -2281,10 +2286,19 @@ function morphElements(currentElement, newElement, {callbacks: callbacks, ...opt
   });
 }
 
-function morphChildren(currentElement, newElement) {
+function morphChildren(currentElement, newElement, options = {}) {
   morphElements(currentElement, newElement.childNodes, {
+    ...options,
     morphStyle: "innerHTML"
   });
+}
+
+function shouldRefreshFrameWithMorphing(currentFrame, newFrame) {
+  return currentFrame instanceof FrameElement && newFrame instanceof Element && newFrame.nodeName === "TURBO-FRAME" && currentFrame.shouldReloadWithMorph && currentFrame.id === newFrame.id && (!newFrame.getAttribute("src") || urlsAreEqual(currentFrame.src, newFrame.getAttribute("src"))) && !currentFrame.closest("[data-turbo-permanent]");
+}
+
+function closestFrameReloadableWithMorphing(node) {
+  return node.parentElement.closest("turbo-frame[src][refresh=morph]");
 }
 
 class DefaultIdiomorphCallbacks {
@@ -2344,7 +2358,17 @@ class MorphingFrameRenderer extends FrameRenderer {
         newElement: newElement
       }
     });
-    morphChildren(currentElement, newElement);
+    morphChildren(currentElement, newElement, {
+      callbacks: {
+        beforeNodeMorphed: (node, newNode) => {
+          if (shouldRefreshFrameWithMorphing(node, newNode) && closestFrameReloadableWithMorphing(node) === currentElement) {
+            node.reload();
+            return false;
+          }
+          return true;
+        }
+      }
+    });
   }
   async preservingPermanentElements(callback) {
     return await callback();
@@ -2596,7 +2620,7 @@ class PageSnapshot extends Snapshot {
     return this.getSetting("visit-control") != "reload";
   }
   get prefersViewTransitions() {
-    return this.headSnapshot.getMetaValue("view-transition") === "same-origin";
+    return this.headSnapshot.getMetaValue("view-transition") === "same-origin" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }
   get shouldMorphPage() {
     return this.getSetting("refresh-method") === "morph";
@@ -3988,12 +4012,15 @@ class MorphingPageRenderer extends PageRenderer {
   static renderElement(currentElement, newElement) {
     morphElements(currentElement, newElement, {
       callbacks: {
-        beforeNodeMorphed: element => !canRefreshFrame(element)
+        beforeNodeMorphed: (node, newNode) => {
+          if (shouldRefreshFrameWithMorphing(node, newNode) && !closestFrameReloadableWithMorphing(node)) {
+            node.reload();
+            return false;
+          }
+          return true;
+        }
       }
     });
-    for (const frame of currentElement.querySelectorAll("turbo-frame")) {
-      if (canRefreshFrame(frame)) frame.reload();
-    }
     dispatch("turbo:morph", {
       detail: {
         currentElement: currentElement,
@@ -4010,10 +4037,6 @@ class MorphingPageRenderer extends PageRenderer {
   get shouldAutofocus() {
     return false;
   }
-}
-
-function canRefreshFrame(frame) {
-  return frame instanceof FrameElement && frame.src && frame.refresh === "morph" && !frame.closest("[data-turbo-permanent]");
 }
 
 class SnapshotCache {
@@ -4568,6 +4591,51 @@ const deprecatedLocationPropertyDescriptors = {
   }
 };
 
+class Offline {
+  serviceWorker;
+  async start(url = "/service-worker.js", {scope: scope = "/", type: type = "module", native: native = true} = {}) {
+    if (!("serviceWorker" in navigator)) {
+      console.warn("Service Worker not available.");
+      return;
+    }
+    if (native) this.#setUserAgentCookie();
+    await this.#domReady();
+    this.#checkExistingController(navigator.serviceWorker.controller, url);
+    try {
+      const registration = await navigator.serviceWorker.register(url, {
+        scope: scope,
+        type: type
+      });
+      const registered = registration.active || registration.waiting || registration.installing;
+      this.#checkExistingController(registered, url);
+      this.serviceWorker = registered;
+      return registration;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  #setUserAgentCookie() {
+    const oneYear = 365 * 24 * 60 * 60 * 1e3;
+    setCookie("x_user_agent", window.navigator.userAgent, oneYear);
+  }
+  #checkExistingController(controller, url) {
+    if (controller && !urlsAreEqual(controller.scriptURL, url)) {
+      console.warn(`Expected service worker script ${url} but found ${controller.scriptURL}. ` + `This may indicate multiple service workers or a cached version.`);
+    }
+  }
+  #domReady() {
+    return new Promise((resolve => {
+      if (document.readyState !== "complete") {
+        document.addEventListener("DOMContentLoaded", (() => resolve()));
+      } else {
+        resolve();
+      }
+    }));
+  }
+}
+
+const offline = new Offline;
+
 const session = new Session(recentRequests);
 
 const {cache: cache, navigator: navigator$1} = session;
@@ -4626,6 +4694,7 @@ var Turbo = Object.freeze({
   FrameRenderer: FrameRenderer,
   fetch: fetchWithTurboHeaders,
   config: config,
+  offline: offline,
   start: start,
   registerAdapter: registerAdapter,
   visit: visit,
@@ -5331,6 +5400,7 @@ var Turbo$1 = Object.freeze({
   fetchMethodFromString: fetchMethodFromString,
   isSafe: isSafe,
   navigator: navigator$1,
+  offline: offline,
   registerAdapter: registerAdapter,
   renderStreamMessage: renderStreamMessage,
   session: session,
