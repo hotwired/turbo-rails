@@ -1,68 +1,7 @@
 /*!
-Turbo 8.0.19
+Turbo 8.0.20
 Copyright © 2025 37signals LLC
  */
-(function(prototype) {
-  if (typeof prototype.requestSubmit == "function") return;
-  prototype.requestSubmit = function(submitter) {
-    if (submitter) {
-      validateSubmitter(submitter, this);
-      submitter.click();
-    } else {
-      submitter = document.createElement("input");
-      submitter.type = "submit";
-      submitter.hidden = true;
-      this.appendChild(submitter);
-      submitter.click();
-      this.removeChild(submitter);
-    }
-  };
-  function validateSubmitter(submitter, form) {
-    submitter instanceof HTMLElement || raise(TypeError, "parameter 1 is not of type 'HTMLElement'");
-    submitter.type == "submit" || raise(TypeError, "The specified element is not a submit button");
-    submitter.form == form || raise(DOMException, "The specified element is not owned by this form element", "NotFoundError");
-  }
-  function raise(errorConstructor, message, name) {
-    throw new errorConstructor("Failed to execute 'requestSubmit' on 'HTMLFormElement': " + message + ".", name);
-  }
-})(HTMLFormElement.prototype);
-
-const submittersByForm = new WeakMap;
-
-function findSubmitterFromClickTarget(target) {
-  const element = target instanceof Element ? target : target instanceof Node ? target.parentElement : null;
-  const candidate = element ? element.closest("input, button") : null;
-  return candidate?.type == "submit" ? candidate : null;
-}
-
-function clickCaptured(event) {
-  const submitter = findSubmitterFromClickTarget(event.target);
-  if (submitter && submitter.form) {
-    submittersByForm.set(submitter.form, submitter);
-  }
-}
-
-(function() {
-  if ("submitter" in Event.prototype) return;
-  let prototype = window.Event.prototype;
-  if ("SubmitEvent" in window) {
-    const prototypeOfSubmitEvent = window.SubmitEvent.prototype;
-    if (/Apple Computer/.test(navigator.vendor) && !("submitter" in prototypeOfSubmitEvent)) {
-      prototype = prototypeOfSubmitEvent;
-    } else {
-      return;
-    }
-  }
-  addEventListener("click", clickCaptured, true);
-  Object.defineProperty(prototype, "submitter", {
-    get() {
-      if (this.type == "submit" && this.target instanceof HTMLFormElement) {
-        return submittersByForm.get(this.target);
-      }
-    }
-  });
-})();
-
 const FrameLoadingStyle = {
   eager: "eager",
   lazy: "lazy"
@@ -427,6 +366,24 @@ function debounce(fn, delay) {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(callback, delay);
   };
+}
+
+function setCookie(name, value, expiry) {
+  const body = [ name, value ].map(encodeURIComponent).join("=");
+  const expires = new Date(Date.now() + expiry).toUTCString();
+  const cookie = `${body}; path=/; expires=${expires}`;
+  document.cookie = cookie;
+}
+
+function getCookie(cookieName) {
+  if (cookieName != null) {
+    const cookies = document.cookie ? document.cookie.split("; ") : [];
+    const cookie = cookies.find((cookie => cookie.startsWith(cookieName)));
+    if (cookie) {
+      const value = cookie.split("=").slice(1).join("=");
+      return value ? decodeURIComponent(value) : undefined;
+    }
+  }
 }
 
 const submitter = {
@@ -980,7 +937,7 @@ class FormSubmission {
   }
   prepareRequest(request) {
     if (!request.isSafe) {
-      const token = getCookieValue(getMetaContent("csrf-param")) || getMetaContent("csrf-token");
+      const token = getCookie(getMetaContent("csrf-param")) || getMetaContent("csrf-token");
       if (token) {
         request.headers["X-CSRF-Token"] = token;
       }
@@ -1094,17 +1051,6 @@ function buildFormData(formElement, submitter) {
     formData.append(name, value || "");
   }
   return formData;
-}
-
-function getCookieValue(cookieName) {
-  if (cookieName != null) {
-    const cookies = document.cookie ? document.cookie.split("; ") : [];
-    const cookie = cookies.find((cookie => cookie.startsWith(cookieName)));
-    if (cookie) {
-      const value = cookie.split("=").slice(1).join("=");
-      return value ? decodeURIComponent(value) : undefined;
-    }
-  }
 }
 
 function responseSucceededWithoutRedirect(response) {
@@ -2657,11 +2603,11 @@ class PageSnapshot extends Snapshot {
     const viewTransitionEnabled = this.getSetting("view-transition") === "true" || this.headSnapshot.getMetaValue("view-transition") === "same-origin";
     return viewTransitionEnabled && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }
-  get shouldMorphPage() {
-    return this.getSetting("refresh-method") === "morph";
+  get refreshMethod() {
+    return this.getSetting("refresh-method");
   }
-  get shouldPreserveScrollPosition() {
-    return this.getSetting("refresh-scroll") === "preserve";
+  get refreshScroll() {
+    return this.getSetting("refresh-scroll");
   }
   getSetting(name) {
     return this.headSnapshot.getMetaValue(`turbo-${name}`);
@@ -2694,7 +2640,8 @@ const defaultOptions = {
   willRender: true,
   updateHistory: true,
   shouldCacheSnapshot: true,
-  acceptsStreamResponse: false
+  acceptsStreamResponse: false,
+  refresh: {}
 };
 
 const TimingMetric = {
@@ -2739,7 +2686,7 @@ class Visit {
     this.delegate = delegate;
     this.location = location;
     this.restorationIdentifier = restorationIdentifier || uuid();
-    const {action: action, historyChanged: historyChanged, referrer: referrer, snapshot: snapshot, snapshotHTML: snapshotHTML, response: response, visitCachedSnapshot: visitCachedSnapshot, willRender: willRender, updateHistory: updateHistory, shouldCacheSnapshot: shouldCacheSnapshot, acceptsStreamResponse: acceptsStreamResponse, direction: direction} = {
+    const {action: action, historyChanged: historyChanged, referrer: referrer, snapshot: snapshot, snapshotHTML: snapshotHTML, response: response, visitCachedSnapshot: visitCachedSnapshot, willRender: willRender, updateHistory: updateHistory, shouldCacheSnapshot: shouldCacheSnapshot, acceptsStreamResponse: acceptsStreamResponse, direction: direction, refresh: refresh} = {
       ...defaultOptions,
       ...options
     };
@@ -2758,6 +2705,7 @@ class Visit {
     this.shouldCacheSnapshot = shouldCacheSnapshot;
     this.acceptsStreamResponse = acceptsStreamResponse;
     this.direction = direction || Direction[action];
+    this.refresh = refresh;
   }
   get adapter() {
     return this.delegate.adapter;
@@ -3564,7 +3512,7 @@ class Navigator {
       } else {
         await this.view.renderPage(snapshot, false, true, this.currentVisit);
       }
-      if (!snapshot.shouldPreserveScrollPosition) {
+      if (snapshot.refreshScroll !== "preserve") {
         this.view.scrollToTop();
       }
       this.view.clearSnapshotCache();
@@ -4131,7 +4079,7 @@ class PageView extends View {
     return this.snapshot.prefersViewTransitions && newSnapshot.prefersViewTransitions;
   }
   renderPage(snapshot, isPreview = false, willRender = true, visit) {
-    const shouldMorphPage = this.isPageRefresh(visit) && this.snapshot.shouldMorphPage;
+    const shouldMorphPage = this.isPageRefresh(visit) && (visit?.refresh?.method || this.snapshot.refreshMethod) === "morph";
     const rendererClass = shouldMorphPage ? MorphingPageRenderer : PageRenderer;
     const renderer = new rendererClass(this.snapshot, snapshot, isPreview, willRender);
     if (!renderer.shouldRender) {
@@ -4166,7 +4114,7 @@ class PageView extends View {
     return !visit || this.lastRenderedLocation.pathname === visit.location.pathname && visit.action === "replace";
   }
   shouldPreserveScrollPosition(visit) {
-    return this.isPageRefresh(visit) && this.snapshot.shouldPreserveScrollPosition;
+    return this.isPageRefresh(visit) && (visit?.refresh?.scroll || this.snapshot.refreshScroll) === "preserve";
   }
   get snapshot() {
     return PageSnapshot.fromElement(this.element);
@@ -4319,13 +4267,21 @@ class Session {
       this.navigator.proposeVisit(expandURL(location), options);
     }
   }
-  refresh(url, requestId) {
+  refresh(url, options = {}) {
+    options = typeof options === "string" ? {
+      requestId: options
+    } : options;
+    const {method: method, requestId: requestId, scroll: scroll} = options;
     const isRecentRequest = requestId && this.recentRequests.has(requestId);
     const isCurrentUrl = url === document.baseURI;
     if (!isRecentRequest && !this.navigator.currentVisit && isCurrentUrl) {
       this.visit(url, {
         action: "replace",
-        shouldCacheSnapshot: false
+        shouldCacheSnapshot: false,
+        refresh: {
+          method: method,
+          scroll: scroll
+        }
       });
     }
   }
@@ -4631,6 +4587,51 @@ const deprecatedLocationPropertyDescriptors = {
   }
 };
 
+class Offline {
+  serviceWorker;
+  async start(url = "/service-worker.js", {scope: scope = "/", type: type = "classic", native: native = true} = {}) {
+    if (!("serviceWorker" in navigator)) {
+      console.warn("Service Worker not available.");
+      return;
+    }
+    if (native) this.#setUserAgentCookie();
+    await this.#domReady();
+    this.#checkExistingController(navigator.serviceWorker.controller, url);
+    try {
+      const registration = await navigator.serviceWorker.register(url, {
+        scope: scope,
+        type: type
+      });
+      const registered = registration.active || registration.waiting || registration.installing;
+      this.#checkExistingController(registered, url);
+      this.serviceWorker = registered;
+      return registration;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  #setUserAgentCookie() {
+    const oneYear = 365 * 24 * 60 * 60 * 1e3;
+    setCookie("x_user_agent", window.navigator.userAgent, oneYear);
+  }
+  #checkExistingController(controller, url) {
+    if (controller && !urlsAreEqual(controller.scriptURL, url)) {
+      console.warn(`Expected service worker script ${url} but found ${controller.scriptURL}. ` + `This may indicate multiple service workers or a cached version.`);
+    }
+  }
+  #domReady() {
+    return new Promise((resolve => {
+      if (document.readyState !== "complete") {
+        document.addEventListener("DOMContentLoaded", (() => resolve()));
+      } else {
+        resolve();
+      }
+    }));
+  }
+}
+
+const offline = new Offline;
+
 const session = new Session(recentRequests);
 
 const {cache: cache, navigator: navigator$1} = session;
@@ -4697,6 +4698,7 @@ var Turbo = Object.freeze({
   FrameRenderer: FrameRenderer,
   fetch: fetchWithTurboHeaders,
   config: config,
+  offline: offline,
   start: start,
   registerAdapter: registerAdapter,
   visit: visit,
@@ -5205,7 +5207,14 @@ const StreamActions = {
     }));
   },
   refresh() {
-    session.refresh(this.baseURI, this.requestId);
+    const method = this.getAttribute("method");
+    const requestId = this.requestId;
+    const scroll = this.getAttribute("scroll");
+    session.refresh(this.baseURI, {
+      method: method,
+      requestId: requestId,
+      scroll: scroll
+    });
   }
 };
 
@@ -5410,6 +5419,7 @@ var Turbo$1 = Object.freeze({
   morphElements: morphElements,
   morphTurboFrameElements: morphTurboFrameElements,
   navigator: navigator$1,
+  offline: offline,
   registerAdapter: registerAdapter,
   renderStreamMessage: renderStreamMessage,
   session: session,
