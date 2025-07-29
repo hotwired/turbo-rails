@@ -38,5 +38,43 @@ export default [
         compress: true
       })
     ]
+  },
+
+  // Offline bundle
+  {
+    input: "app/javascript/turbo/offline.js",
+    output: {
+      file: "app/assets/javascripts/turbo-offline.js",
+      format: "esm",
+      inlineDynamicImports: true
+    },
+    plugins: [
+      resolve(),
+      terser({
+        mangle: false,
+        compress: false,
+        format: {
+          beautify: true,
+          indent_level: 2
+        }
+      })
+    ]
+  },
+
+  {
+    input: "app/javascript/turbo/offline.js",
+    output: {
+      file: "app/assets/javascripts/turbo-offline.min.js",
+      format: "esm",
+      inlineDynamicImports: true,
+      sourcemap: true
+    },
+    plugins: [
+      resolve(),
+      terser({
+        mangle: true,
+        compress: true
+      })
+    ]
   }
 ]
