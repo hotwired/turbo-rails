@@ -1,6 +1,6 @@
 /*!
-Turbo 8.0.23
-Copyright © 2026 37signals LLC
+Turbo 8.0.20
+Copyright © 2025 37signals LLC
  */
 const FrameLoadingStyle = {
   eager: "eager",
@@ -360,6 +360,24 @@ function debounce(fn, delay) {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(callback, delay);
   };
+}
+
+function setCookie(name, value, expiry) {
+  const body = [ name, value ].map(encodeURIComponent).join("=");
+  const expires = new Date(Date.now() + expiry).toUTCString();
+  const cookie = `${body}; path=/; expires=${expires}`;
+  document.cookie = cookie;
+}
+
+function getCookie(cookieName) {
+  if (cookieName != null) {
+    const cookies = document.cookie ? document.cookie.split("; ") : [];
+    const cookie = cookies.find((cookie => cookie.startsWith(cookieName)));
+    if (cookie) {
+      const value = cookie.split("=").slice(1).join("=");
+      return value ? decodeURIComponent(value) : undefined;
+    }
+  }
 }
 
 const submitter = {
@@ -977,7 +995,7 @@ class FormSubmission {
   }
   prepareRequest(request) {
     if (!request.isSafe) {
-      const token = getCookieValue(getMetaContent("csrf-param")) || getMetaContent("csrf-token");
+      const token = getCookie(getMetaContent("csrf-param")) || getMetaContent("csrf-token");
       if (token) {
         request.headers["X-CSRF-Token"] = token;
       }
@@ -1091,17 +1109,6 @@ function buildFormData(formElement, submitter) {
     formData.append(name, value || "");
   }
   return formData;
-}
-
-function getCookieValue(cookieName) {
-  if (cookieName != null) {
-    const cookies = document.cookie ? document.cookie.split("; ") : [];
-    const cookie = cookies.find((cookie => cookie.startsWith(cookieName)));
-    if (cookie) {
-      const value = cookie.split("=").slice(1).join("=");
-      return value ? decodeURIComponent(value) : undefined;
-    }
-  }
 }
 
 function responseSucceededWithoutRedirect(response) {
@@ -4563,9 +4570,54 @@ const deprecatedLocationPropertyDescriptors = {
   }
 };
 
+class Offline {
+  serviceWorker;
+  async start(url = "/service-worker.js", {scope: scope = "/", type: type = "classic", native: native = true} = {}) {
+    if (!("serviceWorker" in navigator)) {
+      console.warn("Service Worker not available.");
+      return;
+    }
+    if (native) this.#setUserAgentCookie();
+    await this.#domReady();
+    this.#checkExistingController(navigator.serviceWorker.controller, url);
+    try {
+      const registration = await navigator.serviceWorker.register(url, {
+        scope: scope,
+        type: type
+      });
+      const registered = registration.active || registration.waiting || registration.installing;
+      this.#checkExistingController(registered, url);
+      this.serviceWorker = registered;
+      return registration;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  #setUserAgentCookie() {
+    const oneYear = 365 * 24 * 60 * 60 * 1e3;
+    setCookie("x_user_agent", window.navigator.userAgent, oneYear);
+  }
+  #checkExistingController(controller, url) {
+    if (controller && !urlsAreEqual(controller.scriptURL, url)) {
+      console.warn(`Expected service worker script ${url} but found ${controller.scriptURL}. ` + `This may indicate multiple service workers or a cached version.`);
+    }
+  }
+  #domReady() {
+    return new Promise((resolve => {
+      if (document.readyState !== "complete") {
+        document.addEventListener("DOMContentLoaded", (() => resolve()));
+      } else {
+        resolve();
+      }
+    }));
+  }
+}
+
+const offline = new Offline;
+
 const session = new Session(recentRequests);
 
-const {cache: cache, navigator: sessionNavigator} = session;
+const {cache: cache, navigator: navigator} = session;
 
 function start() {
   session.start();
@@ -4616,14 +4668,15 @@ function morphTurboFrameElements(currentFrame, newFrame) {
 
 var Turbo = Object.freeze({
   __proto__: null,
+  navigator: navigator,
+  session: session,
+  cache: cache,
   PageRenderer: PageRenderer,
   PageSnapshot: PageSnapshot,
   FrameRenderer: FrameRenderer,
   fetch: fetchWithTurboHeaders,
   config: config,
-  session: session,
-  cache: cache,
-  navigator: sessionNavigator,
+  offline: offline,
   start: start,
   registerAdapter: registerAdapter,
   visit: visit,
@@ -5365,7 +5418,8 @@ var Turbo$1 = Object.freeze({
   morphChildren: morphChildren,
   morphElements: morphElements,
   morphTurboFrameElements: morphTurboFrameElements,
-  navigator: sessionNavigator,
+  navigator: navigator$1,
+  offline: offline,
   registerAdapter: registerAdapter,
   renderStreamMessage: renderStreamMessage,
   session: session,
