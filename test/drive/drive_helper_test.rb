@@ -21,6 +21,22 @@ end
 class Turbo::DriverHelperUnitTest < ActionView::TestCase
   include Turbo::DriveHelper
 
+  test "accepts valid Symbol and String method values" do
+    [ :replace, "replace", :morph, "morph" ].each do |method|
+      assert_dom_equal <<~HTML, turbo_refresh_method_tag(method)
+        <meta name="turbo-refresh-method" content="#{method}">
+      HTML
+    end
+  end
+
+  test "accepts valid Symbol and String scroll values" do
+    [ :reset, "reset", :preserve, "preserve" ].each do |scroll|
+      assert_dom_equal <<~HTML, turbo_refresh_scroll_tag(scroll)
+        <meta name="turbo-refresh-scroll" content="#{scroll}">
+      HTML
+    end
+  end
+
   test "validate turbo refresh values" do
     assert_raises ArgumentError do
       turbo_refreshes_with(method: :invalid)
