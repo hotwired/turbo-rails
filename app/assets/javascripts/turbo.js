@@ -5386,7 +5386,32 @@ function walk(obj) {
 
 class TurboCableStreamSourceElement extends HTMLElement {
   static observedAttributes=[ "channel", "signed-stream-name" ];
+  constructor() {
+    super();
+    this.beforeTurboRender = this.beforeTurboRender.bind(this);
+    this.afterTurboRender = this.afterTurboRender.bind(this);
+  }
   async connectedCallback() {
+    document.addEventListener("turbo:before-render", this.beforeTurboRender);
+    document.addEventListener("turbo:render", this.afterTurboRender);
+    if (!this.withinTurboRender) {
+      await this.subscribe();
+    }
+  }
+  async disconnectedCallback() {
+    document.removeEventListener("turbo:before-render", this.beforeTurboRender);
+    document.removeEventListener("turbo:render", this.afterTurboRender);
+    if (!this.withinTurboRender) {
+      this.unsubscribe();
+    }
+  }
+  async attributeChangedCallback() {
+    if (this.subscription) {
+      this.unsubscribe();
+      await this.subscribe();
+    }
+  }
+  async subscribe() {
     connectStreamSource(this);
     this.subscription = await subscribeTo(this.channel, {
       received: this.dispatchMessageEvent.bind(this),
@@ -5394,16 +5419,10 @@ class TurboCableStreamSourceElement extends HTMLElement {
       disconnected: this.subscriptionDisconnected.bind(this)
     });
   }
-  disconnectedCallback() {
+  unsubscribe() {
     disconnectStreamSource(this);
     if (this.subscription) this.subscription.unsubscribe();
     this.subscriptionDisconnected();
-  }
-  attributeChangedCallback() {
-    if (this.subscription) {
-      this.disconnectedCallback();
-      this.connectedCallback();
-    }
   }
   dispatchMessageEvent(data) {
     const event = new MessageEvent("message", {
@@ -5416,6 +5435,15 @@ class TurboCableStreamSourceElement extends HTMLElement {
   }
   subscriptionDisconnected() {
     this.removeAttribute("connected");
+  }
+  beforeTurboRender() {
+    this.withinTurboRender = true;
+  }
+  afterTurboRender() {
+    if (this.withinTurboRender && !this.isConnected) {
+      this.unsubscribe();
+    }
+    this.withinTurboRender = false;
   }
   get channel() {
     const channel = this.getAttribute("channel");
