@@ -11,6 +11,10 @@ class MessagesController < ApplicationController
     @messages = Message.all
   end
 
+  def permanent
+    @messages = Message.all
+  end
+
   def section
   end
 

@@ -5,6 +5,7 @@ Rails.application.routes.draw do
   resources :messages do
     collection do
       get :section
+      get :permanent
     end
   end
   resources :trays

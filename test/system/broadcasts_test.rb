@@ -120,6 +120,39 @@ class BroadcastsTest < ApplicationSystemTestCase
     assert_no_text original.content
   end
 
+  test "the turbo-cable-stream-source does not unsubscribe+resubscribe within turbo-permanent" do
+    visit permanent_messages_path
+    assert_selector "turbo-cable-stream-source[connected]"
+
+    cable_stream_source = find("turbo-cable-stream-source")
+    cable_stream_source.execute_script <<~JS
+      const el = this;
+      
+      let removedOnce = false;
+      el.reconnectedObserver = new MutationObserver((mutations) => {
+        mutations.forEach((m) => {
+          const isConnected = el.hasAttribute("connected");
+          if (m.oldValue === "" && !isConnected) {
+            removedOnce = true;
+            el.setAttribute("disconnected", "");
+          }
+          if (removedOnce && m.oldValue == null && isConnected) {
+            el.setAttribute("reconnected", "");
+          }
+        });
+      });
+      el.reconnectedObserver.observe(el, { attributes: true, attributeOldValue: true, attributeFilter: ["connected"] });
+    JS
+
+    assert_text "Navigations: 0"
+    click_link "Navigate"
+    assert_text "Navigations: 1"
+
+    assert_selector "turbo-cable-stream-source[connected]"
+    assert_no_selector "turbo-cable-stream-source[disconnected]"
+    assert_no_selector "turbo-cable-stream-source[reconnected]"
+  end
+
   private
 
   def reconnect_cable_stream_source(from:, to:)

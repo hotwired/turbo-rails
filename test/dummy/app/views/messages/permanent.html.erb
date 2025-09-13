@@ -1,0 +1,12 @@
+<% navigations = params.fetch(:navigations, 0).to_i %>
+
+<h1>Permanent Messages</h1>
+
+<p>Navigations: <%= navigations %></p>
+<%= link_to "Navigate", permanent_messages_path(navigations: navigations + 1) %>
+
+<div id="messages-wrapper" data-turbo-permanent>
+  <%= turbo_stream_from "messages" %>
+  <div id="messages">
+  </div>
+</div>
