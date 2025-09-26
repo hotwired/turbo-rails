@@ -1,5 +1,5 @@
 /*!
-Turbo 8.0.13
+Turbo 8.0.17
 Copyright © 2025 37signals LLC
  */
 (function(prototype) {
@@ -409,7 +409,11 @@ function doesNotTargetIFrame(name) {
 }
 
 function findLinkFromClickTarget(target) {
-  return findClosestRecursively(target, "a[href]:not([target^=_]):not([download])");
+  const link = findClosestRecursively(target, "a[href], a[xlink\\:href]");
+  if (!link) return null;
+  if (link.hasAttribute("download")) return null;
+  if (link.hasAttribute("target") && link.target !== "_self") return null;
+  return link;
 }
 
 function getLocationForLink(link) {
@@ -488,8 +492,8 @@ function getExtension(url) {
 }
 
 function isPrefixedBy(baseURL, url) {
-  const prefix = getPrefix(url);
-  return baseURL.href === expandURL(prefix).href || baseURL.href.startsWith(prefix);
+  const prefix = addTrailingSlash(url.origin + url.pathname);
+  return addTrailingSlash(baseURL.href) === prefix || baseURL.href.startsWith(prefix);
 }
 
 function locationIsVisitable(location, rootLocation) {
@@ -515,10 +519,6 @@ function getPathComponents(url) {
 
 function getLastPathComponent(url) {
   return getPathComponents(url).slice(-1)[0];
-}
-
-function getPrefix(url) {
-  return addTrailingSlash(url.origin + url.pathname);
 }
 
 function addTrailingSlash(value) {
@@ -588,14 +588,12 @@ class LimitedSet extends Set {
 
 const recentRequests = new LimitedSet(20);
 
-const nativeFetch = window.fetch;
-
 function fetchWithTurboHeaders(url, options = {}) {
   const modifiedHeaders = new Headers(options.headers || {});
   const requestUID = uuid();
   recentRequests.add(requestUID);
   modifiedHeaders.append("X-Turbo-Request-Id", requestUID);
-  return nativeFetch(url, {
+  return window.fetch(url, {
     ...options,
     headers: modifiedHeaders
   });
@@ -1243,8 +1241,8 @@ class View {
   scrollToAnchor(anchor) {
     const element = this.snapshot.getElementForAnchor(anchor);
     if (element) {
-      this.scrollToElement(element);
       this.focusElement(element);
+      this.scrollToElement(element);
     } else {
       this.scrollToPosition({
         x: 0,
@@ -2281,10 +2279,19 @@ function morphElements(currentElement, newElement, {callbacks: callbacks, ...opt
   });
 }
 
-function morphChildren(currentElement, newElement) {
+function morphChildren(currentElement, newElement, options = {}) {
   morphElements(currentElement, newElement.childNodes, {
+    ...options,
     morphStyle: "innerHTML"
   });
+}
+
+function shouldRefreshFrameWithMorphing(currentFrame, newFrame) {
+  return currentFrame instanceof FrameElement && newFrame instanceof Element && newFrame.nodeName === "TURBO-FRAME" && currentFrame.shouldReloadWithMorph && currentFrame.id === newFrame.id && (!newFrame.getAttribute("src") || urlsAreEqual(currentFrame.src, newFrame.getAttribute("src"))) && !currentFrame.closest("[data-turbo-permanent]");
+}
+
+function closestFrameReloadableWithMorphing(node) {
+  return node.parentElement.closest("turbo-frame[src][refresh=morph]");
 }
 
 class DefaultIdiomorphCallbacks {
@@ -2344,7 +2351,17 @@ class MorphingFrameRenderer extends FrameRenderer {
         newElement: newElement
       }
     });
-    morphChildren(currentElement, newElement);
+    morphChildren(currentElement, newElement, {
+      callbacks: {
+        beforeNodeMorphed: (node, newNode) => {
+          if (shouldRefreshFrameWithMorphing(node, newNode) && closestFrameReloadableWithMorphing(node) === currentElement) {
+            node.reload();
+            return false;
+          }
+          return true;
+        }
+      }
+    });
   }
   async preservingPermanentElements(callback) {
     return await callback();
@@ -2596,7 +2613,8 @@ class PageSnapshot extends Snapshot {
     return this.getSetting("visit-control") != "reload";
   }
   get prefersViewTransitions() {
-    return this.headSnapshot.getMetaValue("view-transition") === "same-origin";
+    const viewTransitionEnabled = this.getSetting("view-transition") === "true" || this.headSnapshot.getMetaValue("view-transition") === "same-origin";
+    return viewTransitionEnabled && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }
   get shouldMorphPage() {
     return this.getSetting("refresh-method") === "morph";
@@ -3011,6 +3029,7 @@ class BrowserAdapter {
   }
   visitStarted(visit) {
     this.location = visit.location;
+    this.redirectedToLocation = null;
     visit.loadCachedSnapshot();
     visit.issueRequest();
     visit.goToSamePageAnchor();
@@ -3025,6 +3044,9 @@ class BrowserAdapter {
   }
   visitRequestCompleted(visit) {
     visit.loadResponse();
+    if (visit.response.redirected) {
+      this.redirectedToLocation = visit.redirectedToLocation;
+    }
   }
   visitRequestFailedWithStatusCode(visit, statusCode) {
     switch (statusCode) {
@@ -3095,7 +3117,7 @@ class BrowserAdapter {
     dispatch("turbo:reload", {
       detail: reason
     });
-    window.location.href = this.location?.toString() || window.location.href;
+    window.location.href = (this.redirectedToLocation || this.location)?.toString() || window.location.href;
   }
   get navigator() {
     return this.session.navigator;
@@ -3338,6 +3360,7 @@ class LinkPrefetchObserver {
       if (this.delegate.canPrefetchRequestToLocation(link, location)) {
         this.#prefetchedLink = link;
         const fetchRequest = new FetchRequest(this, FetchMethod.get, location, new URLSearchParams, target);
+        fetchRequest.fetchOptions.priority = "low";
         prefetchCache.setLater(location.toString(), fetchRequest, this.#cacheTtl);
       }
     }
@@ -3988,12 +4011,15 @@ class MorphingPageRenderer extends PageRenderer {
   static renderElement(currentElement, newElement) {
     morphElements(currentElement, newElement, {
       callbacks: {
-        beforeNodeMorphed: element => !canRefreshFrame(element)
+        beforeNodeMorphed: (node, newNode) => {
+          if (shouldRefreshFrameWithMorphing(node, newNode) && !closestFrameReloadableWithMorphing(node)) {
+            node.reload();
+            return false;
+          }
+          return true;
+        }
       }
     });
-    for (const frame of currentElement.querySelectorAll("turbo-frame")) {
-      if (canRefreshFrame(frame)) frame.reload();
-    }
     dispatch("turbo:morph", {
       detail: {
         currentElement: currentElement,
@@ -4010,10 +4036,6 @@ class MorphingPageRenderer extends PageRenderer {
   get shouldAutofocus() {
     return false;
   }
-}
-
-function canRefreshFrame(frame) {
-  return frame instanceof FrameElement && frame.src && frame.refresh === "morph" && !frame.closest("[data-turbo-permanent]");
 }
 
 class SnapshotCache {
@@ -4616,6 +4638,14 @@ function setFormMode(mode) {
   config.forms.mode = mode;
 }
 
+function morphBodyElements(currentBody, newBody) {
+  MorphingPageRenderer.renderElement(currentBody, newBody);
+}
+
+function morphTurboFrameElements(currentFrame, newFrame) {
+  MorphingFrameRenderer.renderElement(currentFrame, newFrame);
+}
+
 var Turbo = Object.freeze({
   __proto__: null,
   navigator: navigator$1,
@@ -4635,7 +4665,11 @@ var Turbo = Object.freeze({
   clearCache: clearCache,
   setProgressBarDelay: setProgressBarDelay,
   setConfirmMethod: setConfirmMethod,
-  setFormMode: setFormMode
+  setFormMode: setFormMode,
+  morphBodyElements: morphBodyElements,
+  morphTurboFrameElements: morphTurboFrameElements,
+  morphChildren: morphChildren,
+  morphElements: morphElements
 });
 
 class TurboFrameMissingError extends Error {}
@@ -5330,6 +5364,10 @@ var Turbo$1 = Object.freeze({
   fetchEnctypeFromString: fetchEnctypeFromString,
   fetchMethodFromString: fetchMethodFromString,
   isSafe: isSafe,
+  morphBodyElements: morphBodyElements,
+  morphChildren: morphChildren,
+  morphElements: morphElements,
+  morphTurboFrameElements: morphTurboFrameElements,
   navigator: navigator$1,
   registerAdapter: registerAdapter,
   renderStreamMessage: renderStreamMessage,
