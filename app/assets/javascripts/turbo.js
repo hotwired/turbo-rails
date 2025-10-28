@@ -1,5 +1,5 @@
 /*!
-Turbo 8.0.18
+Turbo 8.0.19
 Copyright © 2025 37signals LLC
  */
 (function(prototype) {
@@ -1723,12 +1723,8 @@ var Idiomorph = function() {
   }
   function morphOuterHTML(ctx, oldNode, newNode) {
     const oldParent = normalizeParent(oldNode);
-    let childNodes = Array.from(oldParent.childNodes);
-    const index = childNodes.indexOf(oldNode);
-    const rightMargin = childNodes.length - (index + 1);
     morphChildren(ctx, oldParent, newNode, oldNode, oldNode.nextSibling);
-    childNodes = Array.from(oldParent.childNodes);
-    return childNodes.slice(index, childNodes.length - rightMargin);
+    return Array.from(oldParent.childNodes);
   }
   function saveAndRestoreFocus(ctx, fn) {
     if (!ctx.config.restoreFocus) return fn();
@@ -1738,8 +1734,8 @@ var Idiomorph = function() {
     }
     const {id: activeElementId, selectionStart: selectionStart, selectionEnd: selectionEnd} = activeElement;
     const results = fn();
-    if (activeElementId && activeElementId !== document.activeElement?.id) {
-      activeElement = ctx.target.querySelector(`#${activeElementId}`);
+    if (activeElementId && activeElementId !== document.activeElement?.getAttribute("id")) {
+      activeElement = ctx.target.querySelector(`[id="${activeElementId}"]`);
       activeElement?.focus();
     }
     if (activeElement && !activeElement.selectionEnd && selectionEnd) {
@@ -1766,11 +1762,14 @@ var Idiomorph = function() {
             continue;
           }
         }
-        if (newChild instanceof Element && ctx.persistentIds.has(newChild.id)) {
-          const movedChild = moveBeforeById(oldParent, newChild.id, insertionPoint, ctx);
-          morphNode(movedChild, newChild, ctx);
-          insertionPoint = movedChild.nextSibling;
-          continue;
+        if (newChild instanceof Element) {
+          const newChildId = newChild.getAttribute("id");
+          if (ctx.persistentIds.has(newChildId)) {
+            const movedChild = moveBeforeById(oldParent, newChildId, insertionPoint, ctx);
+            morphNode(movedChild, newChild, ctx);
+            insertionPoint = movedChild.nextSibling;
+            continue;
+          }
         }
         const insertedNode = createNode(oldParent, newChild, insertionPoint, ctx);
         if (insertedNode) {
@@ -1822,7 +1821,7 @@ var Idiomorph = function() {
               softMatch = undefined;
             }
           }
-          if (cursor.contains(document.activeElement)) break;
+          if (ctx.activeElementAndParents.includes(cursor)) break;
           cursor = cursor.nextSibling;
         }
         return softMatch || null;
@@ -1841,7 +1840,7 @@ var Idiomorph = function() {
       function isSoftMatch(oldNode, newNode) {
         const oldElt = oldNode;
         const newElt = newNode;
-        return oldElt.nodeType === newElt.nodeType && oldElt.tagName === newElt.tagName && (!oldElt.id || oldElt.id === newElt.id);
+        return oldElt.nodeType === newElt.nodeType && oldElt.tagName === newElt.tagName && (!oldElt.getAttribute?.("id") || oldElt.getAttribute?.("id") === newElt.getAttribute?.("id"));
       }
       return findBestMatch;
     }();
@@ -1864,13 +1863,13 @@ var Idiomorph = function() {
       return cursor;
     }
     function moveBeforeById(parentNode, id, after, ctx) {
-      const target = ctx.target.querySelector(`#${id}`) || ctx.pantry.querySelector(`#${id}`);
+      const target = ctx.target.getAttribute?.("id") === id && ctx.target || ctx.target.querySelector(`[id="${id}"]`) || ctx.pantry.querySelector(`[id="${id}"]`);
       removeElementFromAncestorsIdMaps(target, ctx);
       moveBefore(parentNode, target, after);
       return target;
     }
     function removeElementFromAncestorsIdMaps(element, ctx) {
-      const id = element.id;
+      const id = element.getAttribute("id");
       while (element = element.parentNode) {
         let idSet = ctx.idMap.get(element);
         if (idSet) {
@@ -2114,6 +2113,7 @@ var Idiomorph = function() {
         idMap: idMap,
         persistentIds: persistentIds,
         pantry: createPantry(),
+        activeElementAndParents: createActiveElementAndParents(oldNode),
         callbacks: mergedConfig.callbacks,
         head: mergedConfig.head
       };
@@ -2131,16 +2131,29 @@ var Idiomorph = function() {
       document.body.insertAdjacentElement("afterend", pantry);
       return pantry;
     }
+    function createActiveElementAndParents(oldNode) {
+      let activeElementAndParents = [];
+      let elt = document.activeElement;
+      if (elt?.tagName !== "BODY" && oldNode.contains(elt)) {
+        while (elt) {
+          activeElementAndParents.push(elt);
+          if (elt === oldNode) break;
+          elt = elt.parentElement;
+        }
+      }
+      return activeElementAndParents;
+    }
     function findIdElements(root) {
       let elements = Array.from(root.querySelectorAll("[id]"));
-      if (root.id) {
+      if (root.getAttribute?.("id")) {
         elements.push(root);
       }
       return elements;
     }
     function populateIdMapWithTree(idMap, persistentIds, root, elements) {
       for (const elt of elements) {
-        if (persistentIds.has(elt.id)) {
+        const id = elt.getAttribute("id");
+        if (persistentIds.has(id)) {
           let current = elt;
           while (current) {
             let idSet = idMap.get(current);
@@ -2148,7 +2161,7 @@ var Idiomorph = function() {
               idSet = new Set;
               idMap.set(current, idSet);
             }
-            idSet.add(elt.id);
+            idSet.add(id);
             if (current === root) break;
             current = current.parentElement;
           }
@@ -2211,7 +2224,7 @@ var Idiomorph = function() {
         return newContent;
       } else if (newContent instanceof Node) {
         if (newContent.parentNode) {
-          return createDuckTypedParent(newContent);
+          return new SlicedParentNode(newContent);
         } else {
           const dummyParent = document.createElement("div");
           dummyParent.append(newContent);
@@ -2225,19 +2238,43 @@ var Idiomorph = function() {
         return dummyParent;
       }
     }
-    function createDuckTypedParent(newContent) {
-      return {
-        childNodes: [ newContent ],
-        querySelectorAll: s => {
-          const elements = newContent.querySelectorAll(s);
-          return newContent.matches(s) ? [ newContent, ...elements ] : elements;
-        },
-        insertBefore: (n, r) => newContent.parentNode.insertBefore(n, r),
-        moveBefore: (n, r) => newContent.parentNode.moveBefore(n, r),
-        get __idiomorphRoot() {
-          return newContent;
+    class SlicedParentNode {
+      constructor(node) {
+        this.originalNode = node;
+        this.realParentNode = node.parentNode;
+        this.previousSibling = node.previousSibling;
+        this.nextSibling = node.nextSibling;
+      }
+      get childNodes() {
+        const nodes = [];
+        let cursor = this.previousSibling ? this.previousSibling.nextSibling : this.realParentNode.firstChild;
+        while (cursor && cursor != this.nextSibling) {
+          nodes.push(cursor);
+          cursor = cursor.nextSibling;
         }
-      };
+        return nodes;
+      }
+      querySelectorAll(selector) {
+        return this.childNodes.reduce(((results, node) => {
+          if (node instanceof Element) {
+            if (node.matches(selector)) results.push(node);
+            const nodeList = node.querySelectorAll(selector);
+            for (let i = 0; i < nodeList.length; i++) {
+              results.push(nodeList[i]);
+            }
+          }
+          return results;
+        }), []);
+      }
+      insertBefore(node, referenceNode) {
+        return this.realParentNode.insertBefore(node, referenceNode);
+      }
+      moveBefore(node, referenceNode) {
+        return this.realParentNode.moveBefore(node, referenceNode);
+      }
+      get __idiomorphRoot() {
+        return this.originalNode;
+      }
     }
     function parseContent(newContent) {
       let parser = new DOMParser;
@@ -2287,7 +2324,11 @@ function morphChildren(currentElement, newElement, options = {}) {
 }
 
 function shouldRefreshFrameWithMorphing(currentFrame, newFrame) {
-  return currentFrame instanceof FrameElement && newFrame instanceof Element && newFrame.nodeName === "TURBO-FRAME" && currentFrame.shouldReloadWithMorph && currentFrame.id === newFrame.id && (!newFrame.getAttribute("src") || urlsAreEqual(currentFrame.src, newFrame.getAttribute("src"))) && !currentFrame.closest("[data-turbo-permanent]");
+  return currentFrame instanceof FrameElement && currentFrame.shouldReloadWithMorph && (!newFrame || areFramesCompatibleForRefreshing(currentFrame, newFrame)) && !currentFrame.closest("[data-turbo-permanent]");
+}
+
+function areFramesCompatibleForRefreshing(currentFrame, newFrame) {
+  return newFrame instanceof Element && newFrame.nodeName === "TURBO-FRAME" && currentFrame.id === newFrame.id && (!newFrame.getAttribute("src") || urlsAreEqual(currentFrame.src, newFrame.getAttribute("src")));
 }
 
 function closestFrameReloadableWithMorphing(node) {
