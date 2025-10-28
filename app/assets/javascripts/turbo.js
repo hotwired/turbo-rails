@@ -1,5 +1,5 @@
 /*!
-Turbo 8.0.17
+Turbo 8.0.18
 Copyright © 2025 37signals LLC
  */
 (function(prototype) {
