@@ -493,6 +493,34 @@ class Turbo::BroadcastableBoardTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "creating a board broadcasts refreshes to a channel based on method call" do
+    board = Board.new(id: 1, name: "Board")
+    assert_broadcast_on "#{board.to_gid_param}:cards", turbo_stream_action_tag("refresh") do
+      perform_enqueued_jobs do
+        board.save!
+        Turbo::StreamsChannel.refresh_debouncer_for(["#{board.to_gid_param}:cards"]).wait
+      end
+    end
+  end
+
+  test "creating a board broadcasts refreshes to a channel based on proc evaluation" do
+    board = Board.new(id: 1, name: "Board")
+    assert_broadcast_on "#{board.to_gid_param}:columns", turbo_stream_action_tag("refresh") do
+      perform_enqueued_jobs do
+        board.save!
+        Turbo::StreamsChannel.refresh_debouncer_for(["#{board.to_gid_param}:columns"]).wait
+      end
+    end
+  end
+
+  test "creating a board enqueues 3 broadcast jobs instead of 4 skipping nil argument" do
+    assert_enqueued_jobs 3, only: Turbo::Streams::BroadcastStreamJob do
+      board = Board.create!(name: "Board")
+      streams = ["boards", "#{board.to_gid_param}:cards", "#{board.to_gid_param}:columns"]
+      streams.each { |stream| Turbo::StreamsChannel.refresh_debouncer_for(stream).wait }
+    end
+  end
+
   test "updating a board broadcasts to the models channel" do
     board = Board.suppressing_turbo_broadcasts do
       Board.create!(name: "Hey")
