@@ -13,7 +13,8 @@ module Turbo::Native::Navigation
   # Hotwire Native applications are identified by having the string "Hotwire Native" as part of their user agent.
   # Legacy Turbo Native applications use the "Turbo Native" string.
   def hotwire_native_app?
-    request.user_agent.to_s.match?(/(Turbo|Hotwire) Native/)
+    user_agent = cookies["x_user_agent"].presence || request.user_agent
+    user_agent.to_s.match?(/(Turbo|Hotwire) Native/)
   end
 
   alias_method :turbo_native_app?, :hotwire_native_app?
