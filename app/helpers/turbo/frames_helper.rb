@@ -35,8 +35,13 @@ module Turbo::FramesHelper
   #
   #   <%= turbo_frame_tag(Article.find(1), "comments") %>
   #   # => <turbo-frame id="comments_article_1"></turbo-frame>
+  #
+  # Raises an +ArgumentError+ if called without a frame id.
+  #   <%= turbo_frame_tag(nil) %> # => ArgumentError: You must supply a frame id
   def turbo_frame_tag(*ids, src: nil, target: nil, **attributes, &block)
-    id = ids.first.respond_to?(:to_key) ? ActionView::RecordIdentifier.dom_id(*ids) : ids.join('_')
+    raise ArgumentError, "You must supply a frame id" if ids.all?(&:blank?)
+
+    id = ids.first.respond_to?(:to_key) ? ActionView::RecordIdentifier.dom_id(*ids) : ids.join("_")
     src = url_for(src) if src.present?
 
     tag.turbo_frame(**attributes.merge(id: id, src: src, target: target).compact, &block)
