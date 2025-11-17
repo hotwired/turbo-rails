@@ -6,10 +6,8 @@ class Turbo::ThreadDebouncer
   # Use class_attribute for inheritance-safe configuration (Rails pattern)
   class_attribute :debouncer_class, default: Turbo::Debouncer
 
-  class << self
-    def for(key, delay: Turbo::Debouncer::DEFAULT_DELAY)
-      Thread.current[key] ||= new(key, Thread.current, delay: delay)
-    end
+  def self.for(key, delay: Turbo::Debouncer::DEFAULT_DELAY)
+    Thread.current[key] ||= new(key, Thread.current, delay: delay)
   end
 
   private_class_method :new
