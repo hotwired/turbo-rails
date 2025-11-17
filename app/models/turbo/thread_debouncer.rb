@@ -14,7 +14,7 @@ class Turbo::ThreadDebouncer
 
   def initialize(key, thread, delay: )
     @key = key
-    @debouncer = self.class.debouncer_class.new(delay: delay)
+    @debouncer = debouncer_class.new(delay: delay)
     @thread = thread
   end
 
