@@ -152,13 +152,15 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
   end
 
   test "broadcasting refresh later is debounced" do
-    assert_broadcast_on @message.to_gid_param, turbo_stream_refresh_tag do
-      assert_broadcasts(@message.to_gid_param, 1) do
-        perform_enqueued_jobs do
-          assert_no_changes -> { Thread.current.keys.size } do
-            # Not leaking thread variables once the debounced code executes
-            3.times { @message.broadcast_refresh_later }
-            Turbo::StreamsChannel.refresh_debouncer_for(@message).wait
+    with_production_debouncer do
+      assert_broadcast_on @message.to_gid_param, turbo_stream_refresh_tag do
+        assert_broadcasts(@message.to_gid_param, 1) do
+          perform_enqueued_jobs do
+            assert_no_changes -> { Thread.current.keys.size } do
+              # Not leaking thread variables once the debounced code executes
+              3.times { @message.broadcast_refresh_later }
+              Turbo::StreamsChannel.refresh_debouncer_for(@message).wait
+            end
           end
         end
       end
