@@ -16,22 +16,25 @@ class ActiveSupport::TestCase
 
   setup do
     Turbo.current_request_id = nil
+
+    Thread.current.keys.each do |key|
+      Thread.current[key] = nil if key.to_s.start_with?("turbo-")
+    end
   end
 
   def with_production_debouncer(&block)
     old_class = Turbo::ThreadDebouncer.debouncer_class
     Turbo::ThreadDebouncer.debouncer_class = Turbo::Debouncer
+
     yield
   ensure
     Turbo::ThreadDebouncer.debouncer_class = old_class
 
-    # Wait for all debounced tasks to complete and clean up
-    Thread.current.keys.each do |key|
-      if key.to_s.start_with?("turbo-")
-        Thread.current[key]&.wait
-        Thread.current[key] = nil
-      end
-    end
+    # Wait for any scheduled tasks to complete and verify cleanup
+    sleep Turbo::Debouncer::DEFAULT_DELAY + 0.2
+
+    turbo_keys = Thread.current.keys.select { |k| k.to_s.start_with?("turbo-") }
+    assert_empty turbo_keys, "Thread-locals were not cleaned up"
   end
 end
 

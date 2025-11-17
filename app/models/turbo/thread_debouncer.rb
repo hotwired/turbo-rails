@@ -3,7 +3,6 @@
 class Turbo::ThreadDebouncer
   delegate :wait, to: :debouncer
 
-  # Use class_attribute for inheritance-safe configuration (Rails pattern)
   class_attribute :debouncer_class, default: Turbo::Debouncer
 
   def self.for(key, delay: Turbo::Debouncer::DEFAULT_DELAY)
