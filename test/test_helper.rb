@@ -23,13 +23,8 @@ class ActiveSupport::TestCase
   end
 
   def with_production_debouncer(&block)
-    old_class = Turbo::ThreadDebouncer.debouncer_class
-    Turbo::ThreadDebouncer.debouncer_class = Turbo::Debouncer
-
-    yield
+    Turbo::ThreadDebouncer.with(debouncer_class: Turbo::Debouncer, &block)
   ensure
-    Turbo::ThreadDebouncer.debouncer_class = old_class
-
     # Wait for any scheduled tasks to complete and verify cleanup
     sleep Turbo::Debouncer::DEFAULT_DELAY + 0.2
 
