@@ -121,6 +121,9 @@ module Turbo
       ActiveSupport.on_load(:active_support_test_case) do
         require "turbo/test_assertions"
         include Turbo::TestAssertions
+
+        # Use ImmediateDebouncer in tests to prevent flaky tests from background threads
+        Turbo::ThreadDebouncer.debouncer_class = Turbo::ImmediateDebouncer
       end
 
       ActiveSupport.on_load(:action_cable) do
