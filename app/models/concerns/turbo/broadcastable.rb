@@ -378,8 +378,8 @@ module Turbo::Broadcastable
   #
   #   # Sends <turbo-stream action="refresh"></turbo-stream> to the stream named "identity:2:clearances"
   #   clearance.broadcast_refresh_to examiner.identity, :clearances
-  def broadcast_refresh_to(*streamables)
-    Turbo::StreamsChannel.broadcast_refresh_to(*streamables) unless suppressed_turbo_broadcasts?
+  def broadcast_refresh_to(*streamables, **attributes)
+    Turbo::StreamsChannel.broadcast_refresh_to(*streamables, **attributes) unless suppressed_turbo_broadcasts?
   end
 
   #  Same as <tt>#broadcast_refresh_to</tt>, but the designated stream is automatically set to the current model.
@@ -442,8 +442,8 @@ module Turbo::Broadcastable
   end
 
   #  Same as <tt>broadcast_refresh_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
-  def broadcast_refresh_later_to(*streamables)
-    Turbo::StreamsChannel.broadcast_refresh_later_to(*streamables, request_id: Turbo.current_request_id) unless suppressed_turbo_broadcasts?
+  def broadcast_refresh_later_to(*streamables, **attributes)
+    Turbo::StreamsChannel.broadcast_refresh_later_to(*streamables, request_id: Turbo.current_request_id, **attributes) unless suppressed_turbo_broadcasts?
   end
 
   #  Same as <tt>#broadcast_refresh_later_to</tt>, but the designated stream is automatically set to the current model.
