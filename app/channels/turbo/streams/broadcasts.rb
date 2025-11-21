@@ -33,8 +33,8 @@ module Turbo::Streams::Broadcasts
     broadcast_action_to(*streamables, action: :prepend, **opts)
   end
 
-  def broadcast_refresh_to(*streamables, **opts)
-    broadcast_stream_to(*streamables, content: turbo_stream_refresh_tag)
+  def broadcast_refresh_to(*streamables, **attributes)
+    broadcast_stream_to(*streamables, content: turbo_stream_refresh_tag(**attributes))
   end
 
   def broadcast_action_to(*streamables, action:, target: nil, targets: nil, attributes: {}, **rendering)

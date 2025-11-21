@@ -78,6 +78,22 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "broadcasting refresh now" do
+    Turbo.with_request_id("123") do
+      assert_broadcast_on "stream", turbo_stream_refresh_tag(request_id: nil) do
+        Turbo::StreamsChannel.broadcast_refresh_to "stream", request_id: nil
+      end
+
+      assert_broadcast_on "stream", turbo_stream_refresh_tag(request_id: "123") do
+        Turbo::StreamsChannel.broadcast_refresh_to "stream"
+      end
+      
+      assert_broadcast_on "stream", turbo_stream_refresh_tag(request_id: "456", refresh: "morph") do
+        Turbo::StreamsChannel.broadcast_refresh_to "stream", request_id: "456", refresh: "morph"
+      end
+    end
+  end
+
   test "broadcasting action now" do
     options = { partial: "messages/message", locals: { message: "hello!" } }
 
