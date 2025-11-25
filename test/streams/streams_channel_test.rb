@@ -87,7 +87,7 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
       assert_broadcast_on "stream", turbo_stream_refresh_tag(request_id: "123") do
         Turbo::StreamsChannel.broadcast_refresh_to "stream"
       end
-      
+
       assert_broadcast_on "stream", turbo_stream_refresh_tag(request_id: "456", refresh: "morph") do
         Turbo::StreamsChannel.broadcast_refresh_to "stream", request_id: "456", refresh: "morph"
       end
@@ -229,8 +229,10 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
               Turbo.current_request_id = "456"
               3.times { Turbo::StreamsChannel.broadcast_refresh_later_to "stream" }
 
-              Turbo::StreamsChannel.refresh_debouncer_for("stream", request_id: "123").wait
-              Turbo::StreamsChannel.refresh_debouncer_for("stream", request_id: "456").wait
+              debouncer_123 = Turbo::StreamsChannel.refresh_debouncer_for("stream", request_id: "123")
+              debouncer_456 = Turbo::StreamsChannel.refresh_debouncer_for("stream", request_id: "456")
+              debouncer_123.wait
+              debouncer_456.wait
             end
           end
         end
