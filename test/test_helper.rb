@@ -29,7 +29,7 @@ class ActiveSupport::TestCase
     sleep Turbo::Debouncer::DEFAULT_DELAY + 0.2
 
     turbo_keys = Thread.current.keys.select { |k| k.to_s.start_with?("turbo-") }
-    assert_empty turbo_keys, "Thread-locals were not cleaned up" if RUBY_VERSION >= "3.3"
+    assert_empty turbo_keys, "Thread-locals were not cleaned up"
   end
 end
 
