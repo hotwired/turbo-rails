@@ -53,7 +53,7 @@ module Turbo::DriveHelper
     provide :head, turbo_view_transition_tag unless @disable_view_transition
   end
 
-  # See +turbo_view_transition_unless_page_refresh+.
+  # See +turbo_view_transition+.
   def turbo_view_transition_tag
     tag.meta(name: "view-transition", content: "same-origin")
   end
