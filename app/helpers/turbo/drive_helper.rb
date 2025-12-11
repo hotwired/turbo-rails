@@ -48,6 +48,16 @@ module Turbo::DriveHelper
     tag.meta(name: "turbo-visit-control", content: "reload")
   end
 
+  # Enable view transition when navigating to a new page.
+  def turbo_view_transition
+    provide :head, turbo_view_transition_tag unless @disable_view_transition
+  end
+
+  # See +turbo_view_transition_unless_page_refresh+.
+  def turbo_view_transition_tag
+    tag.meta(name: "view-transition", content: "same-origin")
+  end
+
   # Configure how to handle page refreshes. A page refresh happens when
   # Turbo loads the current page again with a *replace* visit:
   #
@@ -84,4 +94,3 @@ module Turbo::DriveHelper
     tag.meta(name: "turbo-refresh-scroll", content: scroll)
   end
 end
-

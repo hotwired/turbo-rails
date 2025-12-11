@@ -65,6 +65,12 @@ module Turbo
       end
     end
 
+    initializer "turbo.view_transitions" do
+      ActiveSupport.on_load(:action_controller) do
+        include Turbo::ViewTransitions
+      end
+    end
+
     initializer "turbo.broadcastable" do
       ActiveSupport.on_load(:active_record) do
         if defined?(ActiveJob)
