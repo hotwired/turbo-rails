@@ -543,7 +543,7 @@ class Turbo::SuppressingBroadcastsTest < ActionCable::Channel::TestCase
   end
 
   test "suppressing broadcasting replace to stream later" do
-    assert_no_broadcasts_later_when_supressing do
+    assert_no_broadcasts_later_when_suppressing do
       @message.broadcast_replace_later_to "stream"
     end
   end
@@ -555,7 +555,7 @@ class Turbo::SuppressingBroadcastsTest < ActionCable::Channel::TestCase
   end
 
   test "suppressing broadcasting replace later" do
-    assert_no_broadcasts_later_when_supressing do
+    assert_no_broadcasts_later_when_suppressing do
       @message.broadcast_replace_later
     end
   end
@@ -567,7 +567,7 @@ class Turbo::SuppressingBroadcastsTest < ActionCable::Channel::TestCase
   end
 
   test "suppressing broadcasting update to stream later" do
-    assert_no_broadcasts_later_when_supressing do
+    assert_no_broadcasts_later_when_suppressing do
       @message.broadcast_update_later_to "stream"
     end
   end
@@ -579,7 +579,7 @@ class Turbo::SuppressingBroadcastsTest < ActionCable::Channel::TestCase
   end
 
   test "suppressing broadcasting update later" do
-    assert_no_broadcasts_later_when_supressing do
+    assert_no_broadcasts_later_when_suppressing do
       @message.broadcast_update_later
     end
   end
@@ -603,7 +603,7 @@ class Turbo::SuppressingBroadcastsTest < ActionCable::Channel::TestCase
   end
 
   test "suppressing broadcasting append to stream later" do
-    assert_no_broadcasts_later_when_supressing do
+    assert_no_broadcasts_later_when_suppressing do
       @message.broadcast_append_later_to "stream"
     end
   end
@@ -615,7 +615,7 @@ class Turbo::SuppressingBroadcastsTest < ActionCable::Channel::TestCase
   end
 
   test "suppressing broadcasting append later" do
-    assert_no_broadcasts_later_when_supressing do
+    assert_no_broadcasts_later_when_suppressing do
       @message.broadcast_append_later
     end
   end
@@ -627,7 +627,7 @@ class Turbo::SuppressingBroadcastsTest < ActionCable::Channel::TestCase
   end
 
   test "suppressing broadcasting prepend to stream later" do
-    assert_no_broadcasts_later_when_supressing do
+    assert_no_broadcasts_later_when_suppressing do
       @message.broadcast_prepend_later_to "stream"
     end
   end
@@ -639,7 +639,7 @@ class Turbo::SuppressingBroadcastsTest < ActionCable::Channel::TestCase
   end
 
   test "suppressing broadcasting refresh to stream later" do
-    assert_no_broadcasts_later_when_supressing do
+    assert_no_broadcasts_later_when_suppressing do
       @message.broadcast_refresh_later_to "stream"
     end
   end
@@ -651,7 +651,7 @@ class Turbo::SuppressingBroadcastsTest < ActionCable::Channel::TestCase
   end
 
   test "suppressing broadcasting prepend later" do
-    assert_no_broadcasts_later_when_supressing do
+    assert_no_broadcasts_later_when_suppressing do
       @message.broadcast_prepend_later
     end
   end
@@ -663,7 +663,7 @@ class Turbo::SuppressingBroadcastsTest < ActionCable::Channel::TestCase
   end
 
   test "suppressing broadcasting action to stream later" do
-    assert_no_broadcasts_later_when_supressing do
+    assert_no_broadcasts_later_when_suppressing do
       @message.broadcast_action_later_to "stream", action: "prepend"
     end
   end
@@ -675,7 +675,7 @@ class Turbo::SuppressingBroadcastsTest < ActionCable::Channel::TestCase
   end
 
   test "suppressing broadcasting action later" do
-    assert_no_broadcasts_later_when_supressing do
+    assert_no_broadcasts_later_when_suppressing do
       @message.broadcast_action_later action: "prepend"
     end
   end
@@ -687,7 +687,7 @@ class Turbo::SuppressingBroadcastsTest < ActionCable::Channel::TestCase
   end
 
   test "suppressing broadcast render later" do
-    assert_no_broadcasts_later_when_supressing do
+    assert_no_broadcasts_later_when_suppressing do
       @message.broadcast_render_later
     end
   end
@@ -701,7 +701,7 @@ class Turbo::SuppressingBroadcastsTest < ActionCable::Channel::TestCase
 
   test "suppressing broadcast render to stream later" do
     @profile = Users::Profile.new(id: 1, name: "Ryan")
-    assert_no_broadcasts_later_when_supressing do
+    assert_no_broadcasts_later_when_suppressing do
       @message.broadcast_render_to @profile
     end
   end
@@ -715,7 +715,7 @@ class Turbo::SuppressingBroadcastsTest < ActionCable::Channel::TestCase
       end
     end
 
-    def assert_no_broadcasts_later_when_supressing
+    def assert_no_broadcasts_later_when_suppressing
       assert_no_broadcasts_when_suppressing do
         assert_no_enqueued_jobs do
           yield
