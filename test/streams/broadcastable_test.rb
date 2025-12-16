@@ -702,7 +702,7 @@ class Turbo::SuppressingBroadcastsTest < ActionCable::Channel::TestCase
   test "suppressing broadcast render to stream later" do
     @profile = Users::Profile.new(id: 1, name: "Ryan")
     assert_no_broadcasts_later_when_suppressing do
-      @message.broadcast_render_to @profile
+      @message.broadcast_render_later_to @profile
     end
   end
 
