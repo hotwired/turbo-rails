@@ -193,6 +193,22 @@ class Turbo::Broadcastable::TestHelper::AssertTurboStreamBroadcastsTest < Active
       end
     end
   end
+
+  test "#capture_turbo_stream_broadcasts only returns new <turbo-stream> elements when block given" do
+    message = Message.new(id: 1)
+
+    message.broadcast_update_to "messages"
+    message.broadcast_refresh_to "messages"
+
+    replace, remove, *rest = capture_turbo_stream_broadcasts "messages" do
+      message.broadcast_replace_to "messages"
+      message.broadcast_remove_to "messages"
+    end
+
+    assert_empty rest
+    assert_equal "replace", replace["action"]
+    assert_equal "remove", remove["action"]
+  end
 end
 
 class Turbo::Broadcastable::TestHelper::AssertNoTurboStreamBroadcastsTest < ActiveSupport::TestCase

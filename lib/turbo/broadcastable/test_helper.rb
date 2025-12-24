@@ -155,10 +155,12 @@ module Turbo
       #     assert_equal "replace", remove["action"]
       #
       def capture_turbo_stream_broadcasts(stream_name_or_object, &block)
-        block&.call
-
         stream_name = stream_name_from(stream_name_or_object)
-        payloads = broadcasts(stream_name)
+        payloads = if block_given?
+          new_broadcasts_from(broadcasts(stream_name), stream_name, "capture_turbo_stream_broadcasts", &block)
+        else
+          broadcasts(stream_name)
+        end
 
         payloads.flat_map do |payload|
           html = ActiveSupport::JSON.decode(payload)
