@@ -11,6 +11,7 @@ gemfile(true) do
 
   gem "capybara"
   gem "cuprite", require: "capybara/cuprite"
+  gem "minitest", "< 6"
 end
 
 ENV["DATABASE_URL"] = "sqlite3::memory:"
