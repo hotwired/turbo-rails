@@ -38,7 +38,11 @@ module Turbo
     # config.after_initialize do
     #   config.assets.precompile -= Turbo::Engine::PRECOMPILE_ASSETS
     # end
-    PRECOMPILE_ASSETS = %w( turbo.js turbo.min.js turbo.min.js.map )
+    PRECOMPILE_ASSETS = %w(
+      turbo.js turbo.min.js turbo.min.js.map
+      turbo-offline.js turbo-offline.min.js turbo-offline.min.js.map
+      turbo-offline-umd.js turbo-offline-umd.min.js turbo-offline-umd.min.js.map
+    )
 
     initializer "turbo.assets" do
       if Rails.application.config.respond_to?(:assets)

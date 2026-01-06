@@ -76,5 +76,45 @@ export default [
         compress: true
       })
     ]
+  },
+
+  // Offline UMD bundle (for service workers using importScripts)
+  {
+    input: "app/javascript/turbo/offline.js",
+    output: {
+      name: "TurboOffline",
+      file: "app/assets/javascripts/turbo-offline-umd.js",
+      format: "umd",
+      inlineDynamicImports: true
+    },
+    plugins: [
+      resolve(),
+      terser({
+        mangle: false,
+        compress: false,
+        format: {
+          beautify: true,
+          indent_level: 2
+        }
+      })
+    ]
+  },
+
+  {
+    input: "app/javascript/turbo/offline.js",
+    output: {
+      name: "TurboOffline",
+      file: "app/assets/javascripts/turbo-offline-umd.min.js",
+      format: "umd",
+      inlineDynamicImports: true,
+      sourcemap: true
+    },
+    plugins: [
+      resolve(),
+      terser({
+        mangle: true,
+        compress: true
+      })
+    ]
   }
 ]
