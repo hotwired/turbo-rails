@@ -91,7 +91,7 @@ Partial page updates that are **delivered asynchronously over a web socket conne
 
 With this Rails integration, you can create these asynchronous updates directly in response to your model changes. Turbo uses Active Jobs to provide asynchronous partial rendering and Action Cable to deliver those updates to subscribers.
 
-This gem provides a `turbo_stream_from` helper to create a turbo stream.
+This gem provides a [`turbo_stream_from` helper](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/StreamsHelper#turbo_stream_from-instance_method) to create a subscription to a turbo stream.
 
 ```erb
 <%# app/views/todos/show.html.erb %>
@@ -100,65 +100,21 @@ This gem provides a `turbo_stream_from` helper to create a turbo stream.
 <%# Rest of show here %>
 ```
 
-### Testing Turbo Stream Broadcasts
-
-Receiving server-generated Turbo Broadcasts requires a connected Web Socket.
-Views that render `<turbo-cable-stream-source>` elements with the
-`#turbo_stream_from` view helper incur a slight delay before they're ready to
-receive broadcasts. In System Tests, that delay can disrupt Capybara's built-in
-synchronization mechanisms that wait for or assert on content that's broadcast
-over Web Sockets. For example, consider a test that navigates to a page and then
-immediately asserts that broadcast content is present:
+Updates from the relevant model(s) can be broadcast via the [Broadcastable](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/Broadcastable) concern. The types of updates broadcast can be fully configured, or all standard CRUD events can be sent quite simply:
 
 ```ruby
-test "renders broadcasted Messages" do
-  message = Message.new content: "Hello, from Action Cable"
-
-  visit "/"
-  click_link "All Messages"
-  message.save! # execute server-side code to broadcast a Message
-
-  assert_text message.content
+# app/models/todo.erb
+class Todo < ApplicationRecord
+  broadcasts
 end
 ```
 
-If the call to `Message#save!` executes quickly enough, it might beat-out any
-`<turbo-cable-stream-source>` elements rendered by the call to `click_link "All
-Messages"`.
-
-To wait for any disconnected `<turbo-cable-stream-source>` elements to connect,
-call [`#connect_turbo_cable_stream_sources`](https://github.com/hotwired/turbo-rails/blob/main/lib/turbo/system_test_helper.rb):
-
-```diff
- test "renders broadcasted Messages" do
-   message = Message.new content: "Hello, from Action Cable"
-
-   visit "/"
-   click_link "All Messages"
-+  connect_turbo_cable_stream_sources
-   message.save! # execute server-side code to broadcast a Message
-
-   assert_text message.content
- end
-```
-
-By default, calls to [`#visit`](https://rubydoc.info/github/teamcapybara/capybara/master/Capybara/Session:visit) will wait for all `<turbo-cable-stream-source>` elements to connect. You can control this by modifying the `config.turbo.test_connect_after_actions`. For example, to wait after calls to [`#click_link`](https://rubydoc.info/github/teamcapybara/capybara/master/Capybara/Node/Actions:click_link), add the following to `config/environments/test.rb`:
+Turbo Streams can also be broadcast to from non-model code using the [StreamsChannel broadcast methods](https://github.com/hotwired/turbo-rails/blob/main/app/channels/turbo/streams/broadcasts.rb):
 
 ```ruby
-# config/environments/test.rb
+  Turbo::StreamsChannel.broadcast_remove_to :todos, target: 1
 
-config.turbo.test_connect_after_actions << :click_link
 ```
-
-To disable automatic connecting, set the configuration to `[]`:
-
-```ruby
-# config/environments/test.rb
-
-config.turbo.test_connect_after_actions = []
-```
-
-[See documentation](https://turbo.hotwired.dev/handbook/streams).
 
 ## Installation
 
@@ -231,6 +187,66 @@ PostsController.render :show, assigns: { post: Post.first } # => "<html>…"
 ```
 
 [ActionController::Renderer]: https://api.rubyonrails.org/classes/ActionController/Renderer.html
+
+### Testing Turbo Stream Broadcasts
+
+Receiving server-generated Turbo Broadcasts requires a connected Web Socket.
+Views that render `<turbo-cable-stream-source>` elements with the
+`#turbo_stream_from` view helper incur a slight delay before they're ready to
+receive broadcasts. In System Tests, that delay can disrupt Capybara's built-in
+synchronization mechanisms that wait for or assert on content that's broadcast
+over Web Sockets. For example, consider a test that navigates to a page and then
+immediately asserts that broadcast content is present:
+
+```ruby
+test "renders broadcasted Messages" do
+  message = Message.new content: "Hello, from Action Cable"
+
+  visit "/"
+  click_link "All Messages"
+  message.save! # execute server-side code to broadcast a Message
+
+  assert_text message.content
+end
+```
+
+If the call to `Message#save!` executes quickly enough, it might beat-out any
+`<turbo-cable-stream-source>` elements rendered by the call to `click_link "All
+Messages"`.
+
+To wait for any disconnected `<turbo-cable-stream-source>` elements to connect,
+call [`#connect_turbo_cable_stream_sources`](https://github.com/hotwired/turbo-rails/blob/main/lib/turbo/system_test_helper.rb):
+
+```diff
+ test "renders broadcasted Messages" do
+   message = Message.new content: "Hello, from Action Cable"
+
+   visit "/"
+   click_link "All Messages"
++  connect_turbo_cable_stream_sources
+   message.save! # execute server-side code to broadcast a Message
+
+   assert_text message.content
+ end
+```
+
+By default, calls to [`#visit`](https://rubydoc.info/github/teamcapybara/capybara/master/Capybara/Session:visit) will wait for all `<turbo-cable-stream-source>` elements to connect. You can control this by modifying the `config.turbo.test_connect_after_actions`. For example, to wait after calls to [`#click_link`](https://rubydoc.info/github/teamcapybara/capybara/master/Capybara/Node/Actions:click_link), add the following to `config/environments/test.rb`:
+
+```ruby
+# config/environments/test.rb
+
+config.turbo.test_connect_after_actions << :click_link
+```
+
+To disable automatic connecting, set the configuration to `[]`:
+
+```ruby
+# config/environments/test.rb
+
+config.turbo.test_connect_after_actions = []
+```
+
+[See documentation](https://turbo.hotwired.dev/handbook/streams).
 
 ## Development
 
