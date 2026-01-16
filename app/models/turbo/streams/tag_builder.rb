@@ -245,17 +245,29 @@ class Turbo::Streams::TagBuilder
   end
 
   # Send an action of the type <tt>name</tt> to <tt>target</tt>. Options described in the concrete methods.
-  def action(name, target, content = nil, method: nil, allow_inferred_rendering: true, **rendering, &block)
+  #
+  # The <tt>target</tt> is optional, allowing for custom Turbo Stream actions that don't require a DOM target.
+  # Custom HTML attributes can be passed through the <tt>attributes</tt> option:
+  #
+  #   turbo_stream.action(:redirect_to, attributes: { redirect_to: "/dashboard" })
+  #   # => <turbo-stream action="redirect_to" redirect_to="/dashboard"><template></template></turbo-stream>
+  def action(name, target = nil, content = nil, method: nil, allow_inferred_rendering: true, attributes: {}, **rendering, &block)
     template = render_template(target, content, allow_inferred_rendering: allow_inferred_rendering, **rendering, &block)
 
-    turbo_stream_action_tag name, target: target, template: template, method: method
+    turbo_stream_action_tag name, target: target, template: template, method: method, **attributes
   end
 
   # Send an action of the type <tt>name</tt> to <tt>targets</tt>. Options described in the concrete methods.
-  def action_all(name, targets, content = nil, method: nil, allow_inferred_rendering: true, **rendering, &block)
+  #
+  # The <tt>targets</tt> is optional, allowing for custom Turbo Stream actions that don't require DOM targets.
+  # Custom HTML attributes can be passed through the <tt>attributes</tt> option:
+  #
+  #   turbo_stream.action_all(:highlight_all, ".items", attributes: { duration: "500" })
+  #   # => <turbo-stream action="highlight_all" targets=".items" duration="500"><template></template></turbo-stream>
+  def action_all(name, targets = nil, content = nil, method: nil, allow_inferred_rendering: true, attributes: {}, **rendering, &block)
     template = render_template(targets, content, allow_inferred_rendering: allow_inferred_rendering, **rendering, &block)
 
-    turbo_stream_action_tag name, targets: targets, template: template, method: method
+    turbo_stream_action_tag name, targets: targets, template: template, method: method, **attributes
   end
 
   private
