@@ -100,6 +100,15 @@ This gem provides a `turbo_stream_from` helper to create a turbo stream.
 <%# Rest of show here %>
 ```
 
+To configure Active Job priority for all Turbo Streams job, you can set in the initializer:
+
+```ruby
+# config/initializers/turbo.rb
+Rails.application.config.after_initialize do
+  Turbo::Streams::BaseJob.priority = 100
+end
+```
+
 ### Testing Turbo Stream Broadcasts
 
 Receiving server-generated Turbo Broadcasts requires a connected Web Socket.
