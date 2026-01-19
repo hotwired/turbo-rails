@@ -83,5 +83,15 @@ module Turbo::DriveHelper
     raise ArgumentError, "Invalid scroll option '#{scroll}'" unless scroll.to_sym.in?(%i[ reset preserve ])
     tag.meta(name: "turbo-refresh-scroll", content: scroll)
   end
+
+     # Disable InstantClick (prefetch).
+  def turbo_disable_prefetch
+    provide :head, turbo_disable_prefetch_tag
+  end
+
+  # See +turbo_disable_prefetch+.
+  def turbo_disable_prefetch_tag
+    tag.meta(name: "turbo-prefetch", content: "false")
+  end
 end
 
