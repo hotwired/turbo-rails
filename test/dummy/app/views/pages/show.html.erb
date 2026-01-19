@@ -1,0 +1,16 @@
+<%= turbo_refreshes_with method: params.fetch(:turbo_refresh_method, :replace).to_sym, scroll: params.fetch(:turbo_refresh_scroll, :reset).to_sym %>
+
+<h1><%= params[:id].titleize %></h1>
+
+<% {
+  classic: {
+    turbo_refresh_method: :replace,
+    turbo_refresh_scroll: :reset,
+  },
+  morph: {
+    turbo_refresh_method: :morph,
+    turbo_refresh_scroll: :preserve,
+  }
+}.each do |id, refresh| %>
+  <%= link_to_unless_current id.to_s.titleize, page_path(id, refresh) %>
+<% end %>
