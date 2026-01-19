@@ -1,6 +1,6 @@
 /*!
-Turbo 8.0.20
-Copyright © 2025 37signals LLC
+Turbo 8.0.23
+Copyright © 2026 37signals LLC
  */
 const FrameLoadingStyle = {
   eager: "eager",
@@ -311,6 +311,10 @@ function findClosestRecursively(element, selector) {
   if (element instanceof Element) {
     return element.closest(selector) || findClosestRecursively(element.assignedSlot || element.getRootNode()?.host, selector);
   }
+}
+
+function elementIsStylesheet(element) {
+  return element.localName === "style" || element.localName === "link" && element.relList.contains("stylesheet");
 }
 
 function elementIsFocusable(element) {
@@ -2589,11 +2593,6 @@ function elementIsNoscript(element) {
   return tagName == "noscript";
 }
 
-function elementIsStylesheet(element) {
-  const tagName = element.localName;
-  return tagName == "style" || tagName == "link" && element.getAttribute("rel") == "stylesheet";
-}
-
 function elementIsMetaElementWithName(element, name) {
   const tagName = element.localName;
   return tagName == "meta" && element.getAttribute("name") == name;
@@ -2634,7 +2633,11 @@ class PageSnapshot extends Snapshot {
       clonedPasswordInput.value = "";
     }
     for (const clonedNoscriptElement of clonedElement.querySelectorAll("noscript")) {
-      clonedNoscriptElement.remove();
+      for (const child of [ ...clonedNoscriptElement.children ]) {
+        if (elementIsStylesheet(child)) {
+          child.remove();
+        }
+      }
     }
     return new PageSnapshot(this.documentElement, clonedElement, this.headSnapshot);
   }
@@ -3985,12 +3988,16 @@ class PageRenderer extends Renderer {
   }
   activateNewBody() {
     document.adoptNode(this.newElement);
-    this.removeNoscriptElements();
+    this.deactivateNoscriptStylesheetElements();
     this.activateNewBodyScriptElements();
   }
-  removeNoscriptElements() {
+  deactivateNoscriptStylesheetElements() {
     for (const noscriptElement of this.newElement.querySelectorAll("noscript")) {
-      noscriptElement.remove();
+      for (const child of [ ...noscriptElement.children ]) {
+        if (elementIsStylesheet(child)) {
+          child.remove();
+        }
+      }
     }
   }
   activateNewBodyScriptElements() {
@@ -4572,13 +4579,14 @@ const deprecatedLocationPropertyDescriptors = {
 
 class Offline {
   serviceWorker;
-  async start(url = "/service-worker.js", {scope: scope = "/", type: type = "classic", native: native = true} = {}) {
+  async start(url = "/service-worker.js", {scope: scope = "/", type: type = "classic", native: native = true, preload: preload} = {}) {
     if (!("serviceWorker" in navigator)) {
       console.warn("Service Worker not available.");
       return;
     }
     if (native) this.#setUserAgentCookie();
     await this.#domReady();
+    const needsPreloading = preload && !navigator.serviceWorker.controller;
     this.#checkExistingController(navigator.serviceWorker.controller, url);
     try {
       const registration = await navigator.serviceWorker.register(url, {
@@ -4588,6 +4596,9 @@ class Offline {
       const registered = registration.active || registration.waiting || registration.installing;
       this.#checkExistingController(registered, url);
       this.serviceWorker = registered;
+      if (needsPreloading) {
+        this.#preloadWhenReady(preload);
+      }
       return registration;
     } catch (error) {
       console.error(error);
@@ -4601,6 +4612,28 @@ class Offline {
     if (controller && !urlsAreEqual(controller.scriptURL, url)) {
       console.warn(`Expected service worker script ${url} but found ${controller.scriptURL}. ` + `This may indicate multiple service workers or a cached version.`);
     }
+  }
+  async clearCache() {
+    const registration = await (navigator.serviceWorker?.ready);
+    registration?.active?.postMessage({
+      action: "clearCache"
+    });
+  }
+  #preloadWhenReady(pattern) {
+    navigator.serviceWorker.addEventListener("controllerchange", (() => {
+      this.#preloadResources(pattern);
+    }), {
+      once: true
+    });
+  }
+  #preloadResources(pattern) {
+    const urls = performance.getEntriesByType("resource").map((entry => entry.name)).filter((url => pattern.test(url)));
+    navigator.serviceWorker.controller.postMessage({
+      action: "preloadResources",
+      params: {
+        urls: urls
+      }
+    });
   }
   #domReady() {
     return new Promise((resolve => {
@@ -4617,7 +4650,7 @@ const offline = new Offline;
 
 const session = new Session(recentRequests);
 
-const {cache: cache, navigator: navigator} = session;
+const {cache: cache, navigator: sessionNavigator} = session;
 
 function start() {
   session.start();
@@ -4668,15 +4701,15 @@ function morphTurboFrameElements(currentFrame, newFrame) {
 
 var Turbo = Object.freeze({
   __proto__: null,
-  navigator: navigator,
-  session: session,
-  cache: cache,
   PageRenderer: PageRenderer,
   PageSnapshot: PageSnapshot,
   FrameRenderer: FrameRenderer,
   fetch: fetchWithTurboHeaders,
   config: config,
   offline: offline,
+  session: session,
+  cache: cache,
+  navigator: sessionNavigator,
   start: start,
   registerAdapter: registerAdapter,
   visit: visit,
@@ -5418,7 +5451,7 @@ var Turbo$1 = Object.freeze({
   morphChildren: morphChildren,
   morphElements: morphElements,
   morphTurboFrameElements: morphTurboFrameElements,
-  navigator: navigator$1,
+  navigator: sessionNavigator,
   offline: offline,
   registerAdapter: registerAdapter,
   renderStreamMessage: renderStreamMessage,
