@@ -1720,8 +1720,12 @@ var Idiomorph = function() {
   }
   function morphOuterHTML(ctx, oldNode, newNode) {
     const oldParent = normalizeParent(oldNode);
+    let childNodes = Array.from(oldParent.childNodes);
+    const index = childNodes.indexOf(oldNode);
+    const rightMargin = childNodes.length - (index + 1);
     morphChildren(ctx, oldParent, newNode, oldNode, oldNode.nextSibling);
-    return Array.from(oldParent.childNodes);
+    childNodes = Array.from(oldParent.childNodes);
+    return childNodes.slice(index, childNodes.length - rightMargin);
   }
   function saveAndRestoreFocus(ctx, fn) {
     if (!ctx.config.restoreFocus) return fn();
@@ -1731,8 +1735,8 @@ var Idiomorph = function() {
     }
     const {id: activeElementId, selectionStart: selectionStart, selectionEnd: selectionEnd} = activeElement;
     const results = fn();
-    if (activeElementId && activeElementId !== document.activeElement?.getAttribute("id")) {
-      activeElement = ctx.target.querySelector(`[id="${activeElementId}"]`);
+    if (activeElementId && activeElementId !== document.activeElement?.id) {
+      activeElement = ctx.target.querySelector(`#${activeElementId}`);
       activeElement?.focus();
     }
     if (activeElement && !activeElement.selectionEnd && selectionEnd) {
@@ -1759,14 +1763,11 @@ var Idiomorph = function() {
             continue;
           }
         }
-        if (newChild instanceof Element) {
-          const newChildId = newChild.getAttribute("id");
-          if (ctx.persistentIds.has(newChildId)) {
-            const movedChild = moveBeforeById(oldParent, newChildId, insertionPoint, ctx);
-            morphNode(movedChild, newChild, ctx);
-            insertionPoint = movedChild.nextSibling;
-            continue;
-          }
+        if (newChild instanceof Element && ctx.persistentIds.has(newChild.id)) {
+          const movedChild = moveBeforeById(oldParent, newChild.id, insertionPoint, ctx);
+          morphNode(movedChild, newChild, ctx);
+          insertionPoint = movedChild.nextSibling;
+          continue;
         }
         const insertedNode = createNode(oldParent, newChild, insertionPoint, ctx);
         if (insertedNode) {
@@ -1818,7 +1819,7 @@ var Idiomorph = function() {
               softMatch = undefined;
             }
           }
-          if (ctx.activeElementAndParents.includes(cursor)) break;
+          if (cursor.contains(document.activeElement)) break;
           cursor = cursor.nextSibling;
         }
         return softMatch || null;
@@ -1837,7 +1838,7 @@ var Idiomorph = function() {
       function isSoftMatch(oldNode, newNode) {
         const oldElt = oldNode;
         const newElt = newNode;
-        return oldElt.nodeType === newElt.nodeType && oldElt.tagName === newElt.tagName && (!oldElt.getAttribute?.("id") || oldElt.getAttribute?.("id") === newElt.getAttribute?.("id"));
+        return oldElt.nodeType === newElt.nodeType && oldElt.tagName === newElt.tagName && (!oldElt.id || oldElt.id === newElt.id);
       }
       return findBestMatch;
     }();
@@ -1860,13 +1861,13 @@ var Idiomorph = function() {
       return cursor;
     }
     function moveBeforeById(parentNode, id, after, ctx) {
-      const target = ctx.target.getAttribute?.("id") === id && ctx.target || ctx.target.querySelector(`[id="${id}"]`) || ctx.pantry.querySelector(`[id="${id}"]`);
+      const target = ctx.target.querySelector(`#${id}`) || ctx.pantry.querySelector(`#${id}`);
       removeElementFromAncestorsIdMaps(target, ctx);
       moveBefore(parentNode, target, after);
       return target;
     }
     function removeElementFromAncestorsIdMaps(element, ctx) {
-      const id = element.getAttribute("id");
+      const id = element.id;
       while (element = element.parentNode) {
         let idSet = ctx.idMap.get(element);
         if (idSet) {
@@ -2110,7 +2111,6 @@ var Idiomorph = function() {
         idMap: idMap,
         persistentIds: persistentIds,
         pantry: createPantry(),
-        activeElementAndParents: createActiveElementAndParents(oldNode),
         callbacks: mergedConfig.callbacks,
         head: mergedConfig.head
       };
@@ -2128,29 +2128,16 @@ var Idiomorph = function() {
       document.body.insertAdjacentElement("afterend", pantry);
       return pantry;
     }
-    function createActiveElementAndParents(oldNode) {
-      let activeElementAndParents = [];
-      let elt = document.activeElement;
-      if (elt?.tagName !== "BODY" && oldNode.contains(elt)) {
-        while (elt) {
-          activeElementAndParents.push(elt);
-          if (elt === oldNode) break;
-          elt = elt.parentElement;
-        }
-      }
-      return activeElementAndParents;
-    }
     function findIdElements(root) {
       let elements = Array.from(root.querySelectorAll("[id]"));
-      if (root.getAttribute?.("id")) {
+      if (root.id) {
         elements.push(root);
       }
       return elements;
     }
     function populateIdMapWithTree(idMap, persistentIds, root, elements) {
       for (const elt of elements) {
-        const id = elt.getAttribute("id");
-        if (persistentIds.has(id)) {
+        if (persistentIds.has(elt.id)) {
           let current = elt;
           while (current) {
             let idSet = idMap.get(current);
@@ -2158,7 +2145,7 @@ var Idiomorph = function() {
               idSet = new Set;
               idMap.set(current, idSet);
             }
-            idSet.add(id);
+            idSet.add(elt.id);
             if (current === root) break;
             current = current.parentElement;
           }
@@ -2221,7 +2208,7 @@ var Idiomorph = function() {
         return newContent;
       } else if (newContent instanceof Node) {
         if (newContent.parentNode) {
-          return new SlicedParentNode(newContent);
+          return createDuckTypedParent(newContent);
         } else {
           const dummyParent = document.createElement("div");
           dummyParent.append(newContent);
@@ -2235,43 +2222,19 @@ var Idiomorph = function() {
         return dummyParent;
       }
     }
-    class SlicedParentNode {
-      constructor(node) {
-        this.originalNode = node;
-        this.realParentNode = node.parentNode;
-        this.previousSibling = node.previousSibling;
-        this.nextSibling = node.nextSibling;
-      }
-      get childNodes() {
-        const nodes = [];
-        let cursor = this.previousSibling ? this.previousSibling.nextSibling : this.realParentNode.firstChild;
-        while (cursor && cursor != this.nextSibling) {
-          nodes.push(cursor);
-          cursor = cursor.nextSibling;
+    function createDuckTypedParent(newContent) {
+      return {
+        childNodes: [ newContent ],
+        querySelectorAll: s => {
+          const elements = newContent.querySelectorAll(s);
+          return newContent.matches(s) ? [ newContent, ...elements ] : elements;
+        },
+        insertBefore: (n, r) => newContent.parentNode.insertBefore(n, r),
+        moveBefore: (n, r) => newContent.parentNode.moveBefore(n, r),
+        get __idiomorphRoot() {
+          return newContent;
         }
-        return nodes;
-      }
-      querySelectorAll(selector) {
-        return this.childNodes.reduce(((results, node) => {
-          if (node instanceof Element) {
-            if (node.matches(selector)) results.push(node);
-            const nodeList = node.querySelectorAll(selector);
-            for (let i = 0; i < nodeList.length; i++) {
-              results.push(nodeList[i]);
-            }
-          }
-          return results;
-        }), []);
-      }
-      insertBefore(node, referenceNode) {
-        return this.realParentNode.insertBefore(node, referenceNode);
-      }
-      moveBefore(node, referenceNode) {
-        return this.realParentNode.moveBefore(node, referenceNode);
-      }
-      get __idiomorphRoot() {
-        return this.originalNode;
-      }
+      };
     }
     function parseContent(newContent) {
       let parser = new DOMParser;
@@ -4565,7 +4528,7 @@ const deprecatedLocationPropertyDescriptors = {
 
 const session = new Session(recentRequests);
 
-const {cache: cache, navigator: navigator} = session;
+const {cache: cache, navigator: sessionNavigator} = session;
 
 function start() {
   session.start();
@@ -4616,14 +4579,14 @@ function morphTurboFrameElements(currentFrame, newFrame) {
 
 var Turbo = Object.freeze({
   __proto__: null,
-  navigator: navigator,
-  session: session,
-  cache: cache,
   PageRenderer: PageRenderer,
   PageSnapshot: PageSnapshot,
   FrameRenderer: FrameRenderer,
   fetch: fetchWithTurboHeaders,
   config: config,
+  session: session,
+  cache: cache,
+  navigator: sessionNavigator,
   start: start,
   registerAdapter: registerAdapter,
   visit: visit,
@@ -5365,7 +5328,7 @@ var Turbo$1 = Object.freeze({
   morphChildren: morphChildren,
   morphElements: morphElements,
   morphTurboFrameElements: morphTurboFrameElements,
-  navigator: navigator,
+  navigator: sessionNavigator,
   registerAdapter: registerAdapter,
   renderStreamMessage: renderStreamMessage,
   session: session,
