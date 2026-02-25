@@ -89,9 +89,29 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "broadcasting before to stream later" do
+    @message.save! # Need to save the record, otherwise Active Job will not be able to retrieve it
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("before", target: "message_1", template: render(@message)) do
+      perform_enqueued_jobs do
+        @message.broadcast_before_later_to "stream", target: "message_1"
+      end
+    end
+  end
+
   test "broadcasting after to stream now" do
     assert_broadcast_on "stream", turbo_stream_action_tag("after", target: "message_1", template: render(@message)) do
       @message.broadcast_after_to "stream", target: "message_1"
+    end
+  end
+
+  test "broadcasting after to stream later" do
+    @message.save! # Need to save the record, otherwise Active Job will not be able to retrieve it
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("after", target: "message_1", template: render(@message)) do
+      perform_enqueued_jobs do
+        @message.broadcast_after_later_to "stream", target: "message_1"
+      end
     end
   end
 
@@ -333,6 +353,26 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
   test "broadcast_before_to targets" do
     assert_broadcast_on "stream", turbo_stream_action_tag("before", targets: ".message_1", template: render(@message)) do
       @message.broadcast_before_to "stream", targets: ".message_1"
+    end
+  end
+
+  test "broadcast_before_later_to targets" do
+    @message.save! # Need to save the record, otherwise Active Job will not be able to retrieve it
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("before", targets: ".message_1", template: render(@message)) do
+      perform_enqueued_jobs do
+        @message.broadcast_before_later_to "stream", targets: ".message_1"
+      end
+    end
+  end
+
+  test "broadcast_after_later_to targets" do
+    @message.save! # Need to save the record, otherwise Active Job will not be able to retrieve it
+
+    assert_broadcast_on "stream", turbo_stream_action_tag("after", targets: ".message_1", template: render(@message)) do
+      perform_enqueued_jobs do
+        @message.broadcast_after_later_to "stream", targets: ".message_1"
+      end
     end
   end
 
@@ -590,9 +630,21 @@ class Turbo::SuppressingBroadcastsTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "suppressing broadcasting before to stream later" do
+    assert_no_broadcasts_later_when_suppressing "stream" do
+      @message.broadcast_before_later_to "stream", target: "message_1"
+    end
+  end
+
   test "suppressing broadcasting after to stream now" do
     assert_no_broadcasts_when_suppressing "stream" do
       @message.broadcast_after_to "stream", target: "message_1"
+    end
+  end
+
+  test "suppressing broadcasting after to stream later" do
+    assert_no_broadcasts_later_when_suppressing "stream" do
+      @message.broadcast_after_later_to "stream", target: "message_1"
     end
   end
 
