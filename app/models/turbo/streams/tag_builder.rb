@@ -165,11 +165,11 @@ class Turbo::Streams::TagBuilder
   # Update the <tt>targets</tt> in the dom with either the <tt>content</tt> passed in or a rendering result determined
   # by the <tt>rendering</tt> keyword arguments, the content in the block, or the rendering of the targets as a record. Examples:
   #
-  #   <%= turbo_stream.update_all "clearance_item", "Update the content of the dom target identified by the class clearance_item" %>
+  #   <%= turbo_stream.update_all ".clearance_item", "Update the content of the dom targets identified by the class clearance_item" %>
   #   <%= turbo_stream.update_all clearance %>
   #   <%= turbo_stream.update_all clearance, partial: "clearances/new_clearance", locals: { title: "Hello" } %>
-  #   <%= turbo_stream.update_all "clearance_item" do %>
-  #     Update the content of the dom target identified by the class clearance_item
+  #   <%= turbo_stream.update_all ".clearance_item" do %>
+  #     Update the content of the dom targets identified by the class clearance_item
   #   <% end %>
   #   <%= turbo_stream.update_all clearance, "<div>Morph the dom target</div>", method: :morph %>
   def update_all(targets, content = nil, method: nil, **rendering, &block)
