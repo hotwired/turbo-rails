@@ -57,6 +57,22 @@ class Turbo::FrameRequestControllerTest < ActionDispatch::IntegrationTest
     end
 end
 
+class Turbo::FrameRequestLayoutTest < ActiveSupport::TestCase
+  # Regression test for #783. The frame layout must be installed as a method
+  # (Symbol) rather than a Proc. A Proc-based layout makes Rails define a private
+  # `_layout_from_proc` on every controller that includes the module, which is
+  # then redefined whenever a controller in the chain sets its own layout —
+  # emitting a "method redefined; discarding old _layout_from_proc" warning under
+  # verbose mode (on by default in Ruby 4.0).
+  test "frame layout does not define _layout_from_proc on including controllers" do
+    controller = Class.new(ActionController::Base)
+
+    assert_not controller.private_instance_methods.include?(:_layout_from_proc),
+      "Turbo's frame layout should be a Symbol-based layout so that Rails does " \
+      "not define (and later redefine, with a warning) _layout_from_proc. See #783."
+  end
+end
+
 class Turbo::FrameRequestViewTest < ActionView::TestCase
   test "supports rendering context without request object" do
     @rendered = ApplicationController.render(template: "trays/show")

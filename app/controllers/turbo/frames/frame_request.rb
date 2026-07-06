@@ -21,13 +21,24 @@ module Turbo::Frames::FrameRequest
   extend ActiveSupport::Concern
 
   included do
-    layout -> { "turbo_rails/frame" if turbo_frame_request? }
+    layout :turbo_frame_request_layout
     etag { :frame if turbo_frame_request? }
 
     helper_method :turbo_frame_request?, :turbo_frame_request_id
   end
 
   private
+    # Use a method-based (Symbol) layout rather than a Proc. A Proc-based layout
+    # makes Rails define a private +_layout_from_proc+ method on every including
+    # controller, which is then redefined whenever a controller in the chain sets
+    # its own layout — emitting a "method redefined; discarding old
+    # _layout_from_proc" warning under Ruby's verbose mode (on by default in Ruby
+    # 4.0). A Symbol layout resolves the same way (frame layout on frame requests,
+    # default layout otherwise) without defining that method. See issue #783.
+    def turbo_frame_request_layout
+      "turbo_rails/frame" if turbo_frame_request?
+    end
+
     def turbo_frame_request?
       turbo_frame_request_id.present?
     end
