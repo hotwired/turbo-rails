@@ -308,6 +308,14 @@ class Turbo::StreamsChannelTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "broadcasting direct update later" do
+    assert_broadcast_on "stream", %(direct) do
+      perform_enqueued_jobs do
+        Turbo::StreamsChannel.broadcast_stream_later_to "stream", content: "direct"
+      end
+    end
+  end
+
   test "broadcasting actions with method morph now" do
     options = { attributes: { method: :morph }, partial: "messages/message", locals: { message: "hello!" } }
 
