@@ -50,6 +50,8 @@ module Turbo::Streams::ActionHelper
       target_array = Array.wrap(target)
       if target_array.any? { |value| value.respond_to?(:to_key) || value.is_a?(Class) }
         "#{"#" if include_selector}#{ActionView::RecordIdentifier.dom_id(*target_array)}"
+      elsif target.present?
+        target_array.join('_')
       else
         target
       end
