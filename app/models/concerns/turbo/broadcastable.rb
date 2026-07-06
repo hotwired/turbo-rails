@@ -210,10 +210,20 @@ module Turbo::Broadcastable
       after_commit -> { broadcast_refresh_later_to(stream.try(:call, self) || send(stream)) }
     end
 
-    # Same as <tt>#broadcasts_refreshes_to</tt>, but the designated stream for page refreshes is automatically set to
-    # the current model, for creates - to the model plural name, which can be overriden by passing <tt>stream</tt>.
+    # Same as <tt>#broadcasts_refreshes_to</tt>, but the designated stream for page refreshes is
+    # automatically set to the current model. For creates, the stream defaults to the model's plural
+    # name, which can be overridden by passing <tt>stream</tt>.
+    # If <tt>stream</tt> is a Symbol, a method with that name will be called to determine the stream.
+    # If <tt>stream</tt> is a Proc, it will be called with the model instance to determine the stream.
+    # If <tt>stream</tt> is explicitly set to nil, the after_create_commit callback will be skipped entirely.
     def broadcasts_refreshes(stream = model_name.plural)
-      after_create_commit  -> { broadcast_refresh_later_to(stream) }
+      after_create_commit do
+        case stream
+        when String then broadcast_refresh_later_to(stream)
+        when Symbol then broadcast_refresh_later_to(send(stream))
+        else broadcast_refresh_later_to(stream.try(:call, self))
+        end
+      end if stream
       after_update_commit  -> { broadcast_refresh_later }
       after_destroy_commit -> { broadcast_refresh }
     end
