@@ -383,8 +383,8 @@ module Turbo::Broadcastable
   end
 
   #  Same as <tt>#broadcast_refresh_to</tt>, but the designated stream is automatically set to the current model.
-  def broadcast_refresh
-    broadcast_refresh_to self
+  def broadcast_refresh(**attributes)
+    broadcast_refresh_to self, **attributes
   end
 
   # Broadcast a named <tt>action</tt>, allowing for dynamic dispatch, instead of using the concrete action methods. Examples:
@@ -447,8 +447,8 @@ module Turbo::Broadcastable
   end
 
   #  Same as <tt>#broadcast_refresh_later_to</tt>, but the designated stream is automatically set to the current model.
-  def broadcast_refresh_later
-    broadcast_refresh_later_to self
+  def broadcast_refresh_later(**attributes)
+    broadcast_refresh_later_to self, **attributes
   end
 
   # Same as <tt>broadcast_action_to</tt> but run asynchronously via a <tt>Turbo::Streams::BroadcastJob</tt>.
