@@ -151,6 +151,12 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
     end
   end
 
+  test "broadcasting refresh now forwards attributes" do
+    assert_broadcast_on @message.to_gid_param, turbo_stream_refresh_tag(refresh: "morph") do
+      @message.broadcast_refresh refresh: "morph"
+    end
+  end
+
   test "broadcasting refresh later is debounced" do
     with_production_debouncer do
       assert_broadcast_on @message.to_gid_param, turbo_stream_refresh_tag do
@@ -162,6 +168,17 @@ class Turbo::BroadcastableTest < ActionCable::Channel::TestCase
               Turbo::StreamsChannel.refresh_debouncer_for(@message).wait
             end
           end
+        end
+      end
+    end
+  end
+
+  test "broadcasting refresh later forwards attributes" do
+    with_production_debouncer do
+      assert_broadcast_on @message.to_gid_param, turbo_stream_refresh_tag(refresh: "morph") do
+        perform_enqueued_jobs do
+          @message.broadcast_refresh_later refresh: "morph"
+          Turbo::StreamsChannel.refresh_debouncer_for(@message).wait
         end
       end
     end
