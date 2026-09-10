@@ -79,28 +79,57 @@ module Turbo
     # and cache all of them upfront. Without this, a partial only exists once
     # its defining page has rendered at least once — landing cold on a page
     # that only *consumes* the partial (never defines it) fails.
+    #
+    # Two phases, not one, and that split matters: collision detection is
+    # only correct if it compares claims made *within the same scan* — not
+    # against whatever the cache said last time. Comparing against history
+    # would raise a false collision on every legitimate rename (the old file
+    # hasn't been re-scanned yet this pass to confirm it dropped the name).
     def self.hydrate_all!
+      claims = {} # partial_name => { file:, source: }
+
       view_paths.each do |root|
-        Dir.glob("#{root}/**/*.erb").each { |file| hydrate_file!(file) }
+        Dir.glob("#{root}/**/*.erb").each { |file| collect_claims!(file, claims) }
       end
+
+      commit!(claims)
     end
 
     def self.view_paths
       Rails.application.config.paths["app/views"].existent
     end
 
-    def self.hydrate_file!(file)
+    def self.collect_claims!(file, claims)
       original = File.read(file)
       compiled = ActionView::Template::Handlers::ERB::Erubi.new(original, escape: false, trim: true).src
       ast = RubyVM::AbstractSyntaxTree.parse(compiled)
 
       find_turbo_frame_tag_calls(ast).each do |node, partial_name|
+        if claims.key?(partial_name) && claims[partial_name][:file] != file
+          raise CollisionError,
+            "Turbo::PartialExtractor: partial #{partial_name.inspect} is already defined in " \
+            "#{claims[partial_name][:file]} — it can only be defined in one location. " \
+            "Found a second definition in #{file}."
+        end
+
         validate_locals!(node, partial_name)
         source = original.lines[(node.first_lineno - 1)...node.last_lineno].join
-        write_source!(partial_name, source)
+        claims[partial_name] = { file: file, source: source }
       end
     rescue SyntaxError
       nil # not every .erb file is guaranteed to compile standalone; skip it
+    end
+
+    # Cache entries for names that dropped out since the last pass (the
+    # block was deleted outright, not moved) get removed — so render then
+    # correctly fails loud instead of serving stale, orphaned content forever.
+    def self.commit!(claims)
+      stale = (Rails.cache.read(REGISTRY_KEY) || []) - claims.keys
+      stale.each { |name| Rails.cache.delete(cache_key(name)) }
+
+      claims.each { |partial_name, data| write_source!(partial_name, data[:source]) }
+
+      Rails.cache.write(REGISTRY_KEY, claims.keys)
     end
 
     # Every turbo_frame_tag(..., partial: "x") do...end call in the tree,
@@ -117,6 +146,11 @@ module Turbo
       results
     end
 
+    # The lazy, single-block path, triggered whenever the defining page
+    # happens to render. Deliberately no collision check here — it only ever
+    # sees one block at a time, with no visibility into what else might claim
+    # the same name, so it can't detect collisions correctly (see hydrate_all!
+    # above). It's a fallback the next authoritative to_prepare pass corrects.
     def self.ensure_generated!(partial_name, block)
       file, approx_line = block.source_location
       return unless file && File.exist?(file)
