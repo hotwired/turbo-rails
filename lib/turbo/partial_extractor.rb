@@ -88,6 +88,7 @@ module Turbo
               "partial #{partial_name.inspect} near #{file}:#{approx_line}"
       end
 
+      validate_locals!(node, partial_name)
       source = original.lines[(node.first_lineno - 1)...node.last_lineno].join
       write_source!(partial_name, source)
     end
@@ -169,6 +170,17 @@ module Turbo
     def self.partial_kwarg(fcall_node)
       value = kwarg_value_node(fcall_node, :partial)
       value.children[0] if value&.type == :STR
+    end
+
+    def self.locals_kwarg_keys(fcall_node)
+      value = kwarg_value_node(fcall_node, :locals)
+      return [] unless value&.type == :HASH
+
+      pairs = value.children[0]
+      return [] unless pairs.is_a?(RubyVM::AbstractSyntaxTree::Node)
+
+      pairs.children.select { |c| c.is_a?(RubyVM::AbstractSyntaxTree::Node) }
+        .each_slice(2).filter_map { |key, _value| key.children[0].to_s if key.type == :LIT }
     end
   end
 end

@@ -12,6 +12,7 @@ class Turbo::PartialExtractorTest < ActiveSupport::TestCase
   teardown do
     FileUtils.rm_rf(FIXTURES_DIR)
     Rails.cache.delete("turbo_generated_partial/partial_extractor_spec/widget")
+    Rails.cache.delete("turbo_generated_partial/partial_extractor_spec/leaky")
   end
 
   test "a turbo_frame_tag(partial:) block renders standalone via render(partial:), once its defining page has rendered" do
@@ -27,6 +28,22 @@ class Turbo::PartialExtractorTest < ActiveSupport::TestCase
     standalone = render(partial: "partial_extractor_spec/widget", locals: { greeting: "again" })
     assert_match "again", standalone
     assert_match "<turbo-frame", standalone
+  end
+
+  test "a block referencing an outer local not passed via locals: raises LocalsError, at extraction time" do
+    write_fixture "leaky_host.html.erb", <<~ERB
+      <% outer = "leaked" %>
+      <%= turbo_frame_tag "leaky", partial: "partial_extractor_spec/leaky", locals: {} do %>
+        <p><%= outer %></p>
+      <% end %>
+    ERB
+
+    error = assert_raises(ActionView::Template::Error) do
+      render template: "partial_extractor_spec/leaky_host"
+    end
+    assert_kind_of Turbo::PartialExtractor::LocalsError, error.cause
+    assert_match "outer", error.cause.message
+    assert_match "locals:", error.cause.message
   end
 
   private
