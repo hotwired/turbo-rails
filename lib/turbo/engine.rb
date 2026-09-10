@@ -59,6 +59,15 @@ module Turbo
       end
     end
 
+    # turbo_frame_tag(..., partial: "posts/like") { ... } generates that
+    # partial's source at render time (see Turbo::PartialExtractor) instead
+    # of requiring a hand-written file.
+    initializer "turbo.generated_partials", before: :load_config_initializers do
+      ActiveSupport.on_load(:action_controller_base) do
+        append_view_path Turbo::CachedPartialResolver.new
+      end
+    end
+
     initializer "turbo.request_id_tracking" do
       ActiveSupport.on_load(:action_controller) do
         include Turbo::RequestIdTracking
