@@ -74,6 +74,49 @@ module Turbo
       results
     end
 
+    # Boot-time (and dev-reload-time, via config.to_prepare) hydration: scan
+    # every .erb file directly for turbo_frame_tag(..., partial: "x") calls
+    # and cache all of them upfront. Without this, a partial only exists once
+    # its defining page has rendered at least once — landing cold on a page
+    # that only *consumes* the partial (never defines it) fails.
+    def self.hydrate_all!
+      view_paths.each do |root|
+        Dir.glob("#{root}/**/*.erb").each { |file| hydrate_file!(file) }
+      end
+    end
+
+    def self.view_paths
+      Rails.application.config.paths["app/views"].existent
+    end
+
+    def self.hydrate_file!(file)
+      original = File.read(file)
+      compiled = ActionView::Template::Handlers::ERB::Erubi.new(original, escape: false, trim: true).src
+      ast = RubyVM::AbstractSyntaxTree.parse(compiled)
+
+      find_turbo_frame_tag_calls(ast).each do |node, partial_name|
+        validate_locals!(node, partial_name)
+        source = original.lines[(node.first_lineno - 1)...node.last_lineno].join
+        write_source!(partial_name, source)
+      end
+    rescue SyntaxError
+      nil # not every .erb file is guaranteed to compile standalone; skip it
+    end
+
+    # Every turbo_frame_tag(..., partial: "x") do...end call in the tree,
+    # paired with its partial: argument's literal string value.
+    def self.find_turbo_frame_tag_calls(node, results = [])
+      return results unless node.is_a?(RubyVM::AbstractSyntaxTree::Node)
+
+      if node.type == :ITER && call_method_name(node.children[0]) == :turbo_frame_tag
+        partial_name = partial_kwarg(node.children[0])
+        results << [node, partial_name] if partial_name
+      end
+
+      node.children.each { |child| find_turbo_frame_tag_calls(child, results) }
+      results
+    end
+
     def self.ensure_generated!(partial_name, block)
       file, approx_line = block.source_location
       return unless file && File.exist?(file)
