@@ -1,4 +1,6 @@
 require "turbo/engine"
+require "turbo/partial_extractor"
+require "turbo/cached_partial_resolver"
 require "active_support/core_ext/module/attribute_accessors_per_thread"
 
 module Turbo
