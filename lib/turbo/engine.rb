@@ -98,14 +98,16 @@ module Turbo
 
         # Use ImmediateDebouncer in tests to prevent flaky tests from background threads
         Turbo::ThreadDebouncer.debouncer_class = Turbo::ImmediateDebouncer
-      end
 
-      ActiveSupport.on_load(:action_cable) do
-        ActiveSupport.on_load(:active_support_test_case) do
-          if defined?(ActiveJob)
-            require "turbo/broadcastable/test_helper"
-            include Turbo::Broadcastable::TestHelper
-          end
+        # Include the broadcast test helpers when the test case class loads, not
+        # when the :action_cable load hook runs. The hook runs when
+        # ActionCable::Server::Base first loads. With deferred route loading, that
+        # happens inside the first test, which installs these helpers mid-suite.
+        # The ActionCable constant is defined at boot when the gem is bundled, and
+        # stays undefined when the application does not bundle Action Cable.
+        if defined?(ActiveJob) && defined?(ActionCable)
+          require "turbo/broadcastable/test_helper"
+          include Turbo::Broadcastable::TestHelper
         end
       end
 
