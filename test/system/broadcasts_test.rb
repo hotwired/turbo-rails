@@ -120,6 +120,19 @@ class BroadcastsTest < ApplicationSystemTestCase
     assert_no_text original.content
   end
 
+  test "the turbo-cable-stream-source stays connected through a morph refresh" do
+    message = Message.create!(content: "original content")
+
+    visit message_path(message)
+    assert_turbo_cable_stream_source message, connected: true
+
+    message.update!(content: "refreshed content")
+    message.broadcast_refresh
+
+    assert_text message.content
+    assert_turbo_cable_stream_source message, connected: true
+  end
+
   private
 
   def reconnect_cable_stream_source(from:, to:)

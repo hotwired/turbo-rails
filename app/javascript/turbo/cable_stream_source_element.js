@@ -5,6 +5,11 @@ import snakeize from "./snakeize"
 class TurboCableStreamSourceElement extends HTMLElement {
   static observedAttributes = ["channel", "signed-stream-name"]
 
+  constructor() {
+    super()
+    this.addEventListener("turbo:before-morph-attribute", this.preserveConnectedAttribute)
+  }
+
   async connectedCallback() {
     connectStreamSource(this)
     this.subscription = await subscribeTo(this.channel, {
@@ -30,6 +35,12 @@ class TurboCableStreamSourceElement extends HTMLElement {
   dispatchMessageEvent(data) {
     const event = new MessageEvent("message", { data })
     return this.dispatchEvent(event)
+  }
+
+  preserveConnectedAttribute(event) {
+    if (event.target === this && event.detail.attributeName === "connected") {
+      event.preventDefault()
+    }
   }
 
   subscriptionConnected() {
