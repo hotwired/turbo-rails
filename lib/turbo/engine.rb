@@ -140,13 +140,12 @@ module Turbo
     end
 
     initializer "turbo.integration_test_request_encoding" do
-      ActiveSupport.on_load(:action_dispatch_integration_test) do
+      ActiveSupport.on_load(:action_dispatch_integration_test, run_once: true) do
         # Support `as: :turbo_stream`. Public `register_encoder` API is a little too strict.
-        require "active_support/core_ext/module/redefine_method"
         class ActionDispatch::RequestEncoder
           class TurboStreamEncoder < IdentityEncoder
             header = [ Mime[:turbo_stream], Mime[:html] ].join(",")
-            redefine_method(:accept_header) { header }
+            define_method(:accept_header) { header }
           end
 
           @encoders[:turbo_stream] = TurboStreamEncoder.new
