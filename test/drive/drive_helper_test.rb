@@ -16,6 +16,14 @@ class Turbo::DriveHelperTest < ActionDispatch::IntegrationTest
     assert_match(/<meta name="turbo-refresh-method" content="morph">/, @response.body)
     assert_match(/<meta name="turbo-refresh-scroll" content="preserve">/, @response.body)
   end
+
+  test "enabling view transition" do
+    get trays_path
+    assert_match(/<meta name="view-transition" content="same-origin">/, @response.body)
+
+    get trays_path, headers: { "HTTP_REFERER" => trays_url }
+    assert_no_match(/<meta name="view-transition" content="same-origin">/, @response.body)
+  end
 end
 
 class Turbo::DriverHelperUnitTest < ActionView::TestCase
