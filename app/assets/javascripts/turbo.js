@@ -5421,6 +5421,10 @@ function walk(obj) {
 
 class TurboCableStreamSourceElement extends HTMLElement {
   static observedAttributes=[ "channel", "signed-stream-name" ];
+  constructor() {
+    super();
+    this.addEventListener("turbo:before-morph-attribute", this.#preserveConnectedAttribute);
+  }
   async connectedCallback() {
     connectStreamSource(this);
     this.subscription = await subscribeTo(this.channel, {
@@ -5463,6 +5467,11 @@ class TurboCableStreamSourceElement extends HTMLElement {
       })
     };
   }
+  #preserveConnectedAttribute=event => {
+    if (event.target === this && event.detail.attributeName === "connected") {
+      event.preventDefault();
+    }
+  };
 }
 
 if (customElements.get("turbo-cable-stream-source") === undefined) {
