@@ -148,6 +148,50 @@ class Turbo::StreamsHelperTest < ActionView::TestCase
     HTML
   end
 
+  test "custom turbo_stream builder action without target" do
+    assert_dom_equal <<~HTML.strip, turbo_stream.redirect_to("/dashboard")
+      <turbo-stream redirect_to="/dashboard" action="redirect_to"><template></template></turbo-stream>
+    HTML
+  end
+
+  test "custom turbo_stream builder action with target and attributes" do
+    assert_dom_equal <<~HTML.strip, turbo_stream.flash("flash-container", type: "success")
+      <turbo-stream type="success" action="flash" target="flash-container"><template></template></turbo-stream>
+    HTML
+  end
+
+  test "custom turbo_stream builder action_all with targets and attributes" do
+    assert_dom_equal <<~HTML.strip, turbo_stream.flash_all(".flash-items", type: "warning")
+      <turbo-stream type="warning" action="flash" targets=".flash-items"><template></template></turbo-stream>
+    HTML
+  end
+
+  test "action method with optional target" do
+    # Call action directly without a target
+    assert_dom_equal <<~HTML.strip, turbo_stream.action(:custom_action, attributes: { data_url: "/path" })
+      <turbo-stream data_url="/path" action="custom_action"><template></template></turbo-stream>
+    HTML
+  end
+
+  test "action method with target and attributes" do
+    assert_dom_equal <<~HTML.strip, turbo_stream.action(:custom, "my-target", attributes: { custom_attr: "value" })
+      <turbo-stream custom_attr="value" action="custom" target="my-target"><template></template></turbo-stream>
+    HTML
+  end
+
+  test "action_all method with optional targets" do
+    # Call action_all directly without targets
+    assert_dom_equal <<~HTML.strip, turbo_stream.action_all(:broadcast, attributes: { channel: "updates" })
+      <turbo-stream channel="updates" action="broadcast"><template></template></turbo-stream>
+    HTML
+  end
+
+  test "action_all method with targets and attributes" do
+    assert_dom_equal <<~HTML.strip, turbo_stream.action_all(:notify, ".listeners", attributes: { priority: "high" })
+      <turbo-stream priority="high" action="notify" targets=".listeners"><template></template></turbo-stream>
+    HTML
+  end
+
   test "supports valid :partial option objects" do
     message = Message.new(id: 1, content: "Hello, world")
 
