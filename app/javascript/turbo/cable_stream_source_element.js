@@ -7,7 +7,7 @@ class TurboCableStreamSourceElement extends HTMLElement {
 
   constructor() {
     super()
-    this.addEventListener("turbo:before-morph-attribute", this.preserveConnectedAttribute)
+    this.addEventListener("turbo:before-morph-attribute", this.#preserveConnectedAttribute)
   }
 
   async connectedCallback() {
@@ -37,12 +37,6 @@ class TurboCableStreamSourceElement extends HTMLElement {
     return this.dispatchEvent(event)
   }
 
-  preserveConnectedAttribute(event) {
-    if (event.target === this && event.detail.attributeName === "connected") {
-      event.preventDefault()
-    }
-  }
-
   subscriptionConnected() {
     this.setAttribute("connected", "")
   }
@@ -55,6 +49,12 @@ class TurboCableStreamSourceElement extends HTMLElement {
     const channel = this.getAttribute("channel")
     const signed_stream_name = this.getAttribute("signed-stream-name")
     return { channel, signed_stream_name, ...snakeize({ ...this.dataset }) }
+  }
+
+  #preserveConnectedAttribute = (event) => {
+    if (event.target === this && event.detail.attributeName === "connected") {
+      event.preventDefault()
+    }
   }
 }
 

@@ -5423,7 +5423,7 @@ class TurboCableStreamSourceElement extends HTMLElement {
   static observedAttributes=[ "channel", "signed-stream-name" ];
   constructor() {
     super();
-    this.addEventListener("turbo:before-morph-attribute", this.preserveConnectedAttribute);
+    this.addEventListener("turbo:before-morph-attribute", this.#preserveConnectedAttribute);
   }
   async connectedCallback() {
     connectStreamSource(this);
@@ -5450,11 +5450,6 @@ class TurboCableStreamSourceElement extends HTMLElement {
     });
     return this.dispatchEvent(event);
   }
-  preserveConnectedAttribute(event) {
-    if (event.target === this && event.detail.attributeName === "connected") {
-      event.preventDefault();
-    }
-  }
   subscriptionConnected() {
     this.setAttribute("connected", "");
   }
@@ -5472,6 +5467,11 @@ class TurboCableStreamSourceElement extends HTMLElement {
       })
     };
   }
+  #preserveConnectedAttribute=event => {
+    if (event.target === this && event.detail.attributeName === "connected") {
+      event.preventDefault();
+    }
+  };
 }
 
 if (customElements.get("turbo-cable-stream-source") === undefined) {
