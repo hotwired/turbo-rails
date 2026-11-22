@@ -95,15 +95,17 @@ This gem provides a [`turbo_stream_from` helper](https://rubydoc.info/github/hot
 
 ```erb
 <%# app/views/todos/show.html.erb %>
-<%= turbo_stream_from dom_id(@todo) %>
+<%= turbo_stream_from @todo %>
 
-<%# Rest of show here %>
+<%= render @todo %>
 ```
 
-Updates from the relevant model(s) can be broadcast via the [Broadcastable](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/Broadcastable) concern. The types of updates broadcast can be fully configured, or all standard CRUD events can be sent quite simply:
+Use `dom_id(todo)` as the ID of the root element in the todo partial so broadcasts can target it.
+
+The [Broadcastable](https://rubydoc.info/github/hotwired/turbo-rails/main/Turbo/Broadcastable) concern provides `broadcasts`. After commit, it sends updates and removals to the record's own stream. Newly created todos are appended on the separate `todos` stream.
 
 ```ruby
-# app/models/todo.erb
+# app/models/todo.rb
 class Todo < ApplicationRecord
   broadcasts
 end
@@ -112,8 +114,8 @@ end
 Turbo Streams can also be broadcast to from non-model code using the [StreamsChannel broadcast methods](https://github.com/hotwired/turbo-rails/blob/main/app/channels/turbo/streams/broadcasts.rb):
 
 ```ruby
-  Turbo::StreamsChannel.broadcast_remove_to :todos, target: 1
-
+todo = Todo.find(1)
+Turbo::StreamsChannel.broadcast_remove_to todo, target: todo
 ```
 
 ## Installation
