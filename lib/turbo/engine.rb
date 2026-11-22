@@ -59,6 +59,24 @@ module Turbo
       end
     end
 
+    # turbo_frame_tag(..., partial: "posts/like") { ... } generates that
+    # partial's source at render time (see Turbo::PartialExtractor) instead
+    # of requiring a hand-written file.
+    initializer "turbo.generated_partials", before: :load_config_initializers do
+      ActiveSupport.on_load(:action_controller_base) do
+        append_view_path Turbo::CachedPartialResolver.new
+      end
+
+      # to_prepare runs once at boot AND on every dev-mode reload — the same
+      # trigger this whole design leans on elsewhere (ActionView's own
+      # mtime-based recompile check). Landing cold on a page that only
+      # *consumes* a generated partial (never defines it) needs this; without
+      # it, the cache only exists after the defining page happens to render.
+      config.to_prepare do
+        Turbo::PartialExtractor.hydrate_all!
+      end
+    end
+
     initializer "turbo.request_id_tracking" do
       ActiveSupport.on_load(:action_controller) do
         include Turbo::RequestIdTracking

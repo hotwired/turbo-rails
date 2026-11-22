@@ -38,9 +38,18 @@ module Turbo::FramesHelper
   #
   #   <%= turbo_frame_tag(Article.find(1), "comments") %>
   #   # => <turbo-frame id="comments_article_1"></turbo-frame>
-  def turbo_frame_tag(*ids, src: nil, target: nil, **attributes, &block)
+  # Optional: pass `partial:` (and optionally `locals:`) to define the
+  # frame's boundary and its file in one place. No app/views/.../_x.html.erb
+  # needed: Turbo::PartialExtractor captures the block's own ERB source and
+  # makes it renderable under that name via Turbo::CachedPartialResolver.
+  #   <%= turbo_frame_tag dom_id(post, :like), partial: "posts/like", locals: { post: post } do %>
+  #     ...
+  #   <% end %>
+  def turbo_frame_tag(*ids, src: nil, target: nil, partial: nil, locals: {}, **attributes, &block)
     id = ids.first.respond_to?(:to_key) || ids.first.is_a?(Class) ? ActionView::RecordIdentifier.dom_id(*ids) : ids.join('_')
     src = url_for(src) if src.present?
+
+    Turbo::PartialExtractor.ensure_generated!(partial, block) if partial && block
 
     tag.turbo_frame(**attributes.merge(id: id, src: src, target: target).compact, &block)
   end
