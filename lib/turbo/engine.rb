@@ -117,7 +117,7 @@ module Turbo
     end
 
     initializer "turbo.integration_test_request_encoding" do
-      ActiveSupport.on_load(:action_dispatch_integration_test) do
+      ActiveSupport.on_load(:action_dispatch_integration_test, run_once: true) do
         # Support `as: :turbo_stream`. Public `register_encoder` API is a little too strict.
         class ActionDispatch::RequestEncoder
           class TurboStreamEncoder < IdentityEncoder
